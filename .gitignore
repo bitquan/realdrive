@@ -5,5 +5,11 @@ dist
 .env.local
 coverage
 .turbo
+package-lock.json
+*.tsbuildinfo
+shared/contracts.js
+apps/web/vite.config.js
+apps/web/src/*.js
+apps/web/src/**/*.js
 apps/api/prisma/dev.db
 apps/api/prisma/dev.db-journal
