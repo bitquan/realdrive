@@ -1,0 +1,363 @@
+import type {
+  AdminDuesResponse,
+  AdminLeadsResponse,
+  AdminLogin,
+  AdminSetupInput,
+  AdminSetupStatusResponse,
+  AdminUpdateCommunityCommentInput,
+  AdminUpdateCommunityProposalInput,
+  AdminUpdateDriverApprovalInput,
+  AdminUpdateDriverInput,
+  AdminUpdatePlatformDueInput,
+  AdminUpdateRideInput,
+  AuthOtpRequest,
+  AuthOtpVerify,
+  CommunityAccessExchangeInput,
+  CommunityBoardResponse,
+  CommunityComment,
+  CommunityCommentsResponse,
+  CommunityProposal,
+  CommunityVoteInput,
+  CreateCommunityCommentInput,
+  CreateCommunityProposalInput,
+  CreateDriverRoleInput,
+  CreateRideInput,
+  DriverAccount,
+  DriverDispatchSettings,
+  DriverDuesResponse,
+  DriverInterest,
+  DriverInterestInput,
+  DriverLocationInput,
+  DriverLoginInput,
+  DriverProfileUpdateInput,
+  DriverRateCard,
+  DriverRateCardUpdateInput,
+  DriverSignupInput,
+  PlatformDue,
+  PlatformPayoutSettings,
+  PricingRule,
+  PublicRideRequest,
+  PublicRideResponse,
+  PublicRideTrackingResponse,
+  PublicShareResolveResponse,
+  Ride,
+  RideQuoteResponse,
+  RiderLeadResponse,
+  SessionUser,
+  ShareInfo,
+  UpdatePlatformPayoutSettingsInput,
+  UpdatePlatformRatesInput,
+  UpdateRideStatusInput
+} from "@shared/contracts";
+
+const API_URL = import.meta.env.VITE_API_URL ?? "";
+const AUTH_STORAGE_KEY = "realdrive.auth";
+
+export interface StoredAuth {
+  token: string;
+  user: SessionUser;
+}
+
+export function loadStoredAuth(): StoredAuth | null {
+  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as StoredAuth;
+  } catch {
+    return null;
+  }
+}
+
+export function saveStoredAuth(auth: StoredAuth | null) {
+  if (!auth) {
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+}
+
+export async function apiFetch<T>(path: string, options?: RequestInit, token?: string): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {})
+    }
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(payload?.message ?? "Request failed");
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export const api = {
+  requestOtp(input: AuthOtpRequest) {
+    return apiFetch<{ ok: true; devCode?: string }>("/auth/otp/request", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  verifyOtp(input: AuthOtpVerify) {
+    return apiFetch<StoredAuth>("/auth/otp/verify", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  adminSetupStatus() {
+    return apiFetch<AdminSetupStatusResponse>("/admin/setup/status");
+  },
+  setupAdmin(input: AdminSetupInput) {
+    return apiFetch<StoredAuth>("/admin/setup", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  loginAdmin(input: AdminLogin) {
+    return apiFetch<StoredAuth>("/admin/auth/login", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  signupDriver(input: DriverSignupInput) {
+    return apiFetch<DriverAccount>("/driver/signup", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  loginDriver(input: DriverLoginInput) {
+    return apiFetch<StoredAuth>("/driver/auth/login", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  exchangeCommunityAccess(input: CommunityAccessExchangeInput) {
+    return apiFetch<StoredAuth>("/community/access/exchange", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  logout(token?: string) {
+    return apiFetch<{ ok: true }>("/auth/logout", { method: "POST" }, token);
+  },
+  me(token: string) {
+    return apiFetch<SessionUser>("/me", undefined, token);
+  },
+  meShare(token: string) {
+    return apiFetch<ShareInfo | null>("/me/share", undefined, token);
+  },
+  createDriverRole(input: CreateDriverRoleInput, token: string) {
+    return apiFetch<DriverAccount>("/me/roles/driver", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  quoteRide(input: Omit<CreateRideInput, "paymentMethod" | "scheduledFor"> & { pickupAddress: string; dropoffAddress: string }) {
+    return apiFetch<RideQuoteResponse>("/quotes/ride", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  publicDrivers() {
+    return apiFetch<DriverAccount[]>("/public/drivers");
+  },
+  createPublicRide(input: PublicRideRequest) {
+    return apiFetch<PublicRideResponse>("/public/rides", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  getPublicTrack(token: string) {
+    return apiFetch<PublicRideTrackingResponse>(`/public/track/${token}`);
+  },
+  createRiderLead(input: { name: string; email: string; phone?: string; referredByCode?: string }) {
+    return apiFetch<RiderLeadResponse>("/public/rider-leads", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  createDriverInterest(input: DriverInterestInput) {
+    return apiFetch<DriverInterest>("/public/driver-interest", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  resolveShare(referralCode: string) {
+    return apiFetch<PublicShareResolveResponse>(`/public/share/${referralCode}`);
+  },
+  createRide(input: CreateRideInput, token: string) {
+    return apiFetch<Ride>("/rides", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  getRide(id: string, token: string) {
+    return apiFetch<Ride>(`/rides/${id}`, undefined, token);
+  },
+  cancelRide(id: string, token: string) {
+    return apiFetch<Ride>(`/rides/${id}/cancel`, { method: "POST" }, token);
+  },
+  listRiderRides(token: string) {
+    return apiFetch<Ride[]>("/rider/rides", undefined, token);
+  },
+  getDriverProfile(token: string) {
+    return apiFetch<DriverAccount>("/driver/profile", undefined, token);
+  },
+  updateDriverProfile(input: DriverProfileUpdateInput, token: string) {
+    return apiFetch<DriverAccount>("/driver/profile", {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  getDriverDispatchSettings(token: string) {
+    return apiFetch<DriverDispatchSettings>("/driver/dispatch-settings", undefined, token);
+  },
+  updateDriverDispatchSettings(input: DriverDispatchSettings, token: string) {
+    return apiFetch<DriverDispatchSettings>("/driver/dispatch-settings", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  getDriverRates(token: string) {
+    return apiFetch<DriverRateCard>("/driver/rates", undefined, token);
+  },
+  updateDriverRates(input: DriverRateCardUpdateInput, token: string) {
+    return apiFetch<DriverRateCard>("/driver/rates", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  getDriverDues(token: string) {
+    return apiFetch<DriverDuesResponse>("/driver/dues", undefined, token);
+  },
+  listDriverOffers(token: string) {
+    return apiFetch<Ride[]>("/driver/offers", undefined, token);
+  },
+  acceptOffer(rideId: string, token: string) {
+    return apiFetch<Ride>(`/driver/offers/${rideId}/accept`, { method: "POST" }, token);
+  },
+  declineOffer(rideId: string, token: string) {
+    return apiFetch<Ride>(`/driver/offers/${rideId}/decline`, { method: "POST" }, token);
+  },
+  updateDriverAvailability(available: boolean, token: string) {
+    return apiFetch<SessionUser>("/driver/availability", {
+      method: "POST",
+      body: JSON.stringify({ available })
+    }, token);
+  },
+  listActiveDriverRides(token: string) {
+    return apiFetch<Ride[]>("/driver/rides/active", undefined, token);
+  },
+  updateRideStatus(rideId: string, input: UpdateRideStatusInput, token: string) {
+    return apiFetch<Ride>(`/driver/rides/${rideId}/status`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  sendDriverLocation(input: DriverLocationInput, token: string) {
+    return apiFetch<Ride>("/driver/location", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  listAdminRides(token: string) {
+    return apiFetch<Ride[]>("/admin/rides", undefined, token);
+  },
+  listAdminLeads(token: string) {
+    return apiFetch<AdminLeadsResponse>("/admin/leads", undefined, token);
+  },
+  updateAdminRide(rideId: string, input: AdminUpdateRideInput, token: string) {
+    return apiFetch<Ride>(`/admin/rides/${rideId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  listAdminDues(token: string) {
+    return apiFetch<AdminDuesResponse>("/admin/dues", undefined, token);
+  },
+  updateAdminDue(dueId: string, input: AdminUpdatePlatformDueInput, token: string) {
+    return apiFetch<PlatformDue>(`/admin/dues/${dueId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  getPlatformPayoutSettings(token: string) {
+    return apiFetch<PlatformPayoutSettings | null>("/admin/platform-payout-settings", undefined, token);
+  },
+  updatePlatformPayoutSettings(input: UpdatePlatformPayoutSettingsInput, token: string) {
+    return apiFetch<PlatformPayoutSettings>("/admin/platform-payout-settings", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  listDriverApplications(token: string) {
+    return apiFetch<DriverAccount[]>("/admin/driver-applications", undefined, token);
+  },
+  updateDriverApproval(driverId: string, input: AdminUpdateDriverApprovalInput, token: string) {
+    return apiFetch<DriverAccount>(`/admin/drivers/${driverId}/approval`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  listDrivers(token: string) {
+    return apiFetch<DriverAccount[]>("/admin/drivers", undefined, token);
+  },
+  updateDriver(driverId: string, input: AdminUpdateDriverInput, token: string) {
+    return apiFetch<DriverAccount>(`/admin/drivers/${driverId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  listPlatformRates(token: string) {
+    return apiFetch<PricingRule[]>("/admin/platform-rates", undefined, token);
+  },
+  updatePlatformRates(input: UpdatePlatformRatesInput, token: string) {
+    return apiFetch<PricingRule[]>("/admin/platform-rates", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  listCommunityProposals(token: string) {
+    return apiFetch<CommunityBoardResponse>("/community/proposals", undefined, token);
+  },
+  createCommunityProposal(input: CreateCommunityProposalInput, token: string) {
+    return apiFetch<CommunityProposal>("/community/proposals", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  voteOnCommunityProposal(proposalId: string, input: CommunityVoteInput, token: string) {
+    return apiFetch<CommunityProposal>(`/community/proposals/${proposalId}/vote`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  getCommunityComments(proposalId: string, token: string) {
+    return apiFetch<CommunityCommentsResponse>(`/community/proposals/${proposalId}/comments`, undefined, token);
+  },
+  createCommunityComment(proposalId: string, input: CreateCommunityCommentInput, token: string) {
+    return apiFetch<CommunityComment>(`/community/proposals/${proposalId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  updateCommunityProposal(proposalId: string, input: AdminUpdateCommunityProposalInput, token: string) {
+    return apiFetch<CommunityProposal>(`/admin/community/proposals/${proposalId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  updateCommunityComment(commentId: string, input: AdminUpdateCommunityCommentInput, token: string) {
+    return apiFetch<CommunityComment>(`/admin/community/comments/${commentId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  }
+};

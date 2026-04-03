@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: realdrive-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: realdrive
+      POSTGRES_USER: realdrive
+      POSTGRES_PASSWORD: realdrive
+    ports:
+      - "5434:5432"
+    volumes:
+      - realdrive_pgdata:/var/lib/postgresql/data
+
+volumes:
+  realdrive_pgdata:

@@ -1,0 +1,379 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  RIDER
+  DRIVER
+  ADMIN
+}
+
+enum CommunityVoteChoice {
+  YES
+  NO
+}
+
+enum RideType {
+  STANDARD
+  SUV
+  XL
+}
+
+enum RideStatus {
+  DRAFT
+  REQUESTED
+  SCHEDULED
+  OFFERED
+  ACCEPTED
+  EN_ROUTE
+  ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  JIM
+  CASHAPP
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  COLLECTED
+  WAIVED
+}
+
+enum DuePaymentMethod {
+  CASHAPP
+  ZELLE
+  JIM
+  CASH
+  OTHER
+}
+
+enum PlatformDueStatus {
+  PENDING
+  PAID
+  WAIVED
+  OVERDUE
+}
+
+enum RideOfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum DriverInterestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DriverApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DriverPricingMode {
+  PLATFORM
+  CUSTOM
+}
+
+enum RidePricingSource {
+  PLATFORM_MARKET
+  DRIVER_CUSTOM
+  ADMIN_OVERRIDE
+}
+
+model User {
+  id                    String              @id @default(cuid())
+  role                  Role
+  roles                 Role[]              @default([RIDER])
+  name                  String
+  phone                 String?             @unique
+  email                 String?             @unique
+  referralCode          String?             @unique
+  communityAccessToken  String?             @unique
+  passwordHash          String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  riderProfile          RiderProfile?
+  driverProfile         DriverProfile?
+  riderRides            Ride[]              @relation("RiderRides")
+  assignedRides         Ride[]              @relation("DriverRides")
+  receivedOffers        RideOffer[]         @relation("DriverOffers")
+  locationPings         LocationPing[]      @relation("DriverPings")
+  auditLogs             AuditLog[]          @relation("ActorAuditLogs")
+  referredRides         Ride[]              @relation("RideReferrals")
+  riderLeads            RiderLead[]         @relation("RiderLeadUsers")
+  referredLeads         RiderLead[]         @relation("RiderLeadReferrals")
+  driverRateCards       DriverRateCard[]    @relation("DriverRateCards")
+  platformDues          PlatformDue[]       @relation("PlatformDueDrivers")
+  resolvedPlatformDues  PlatformDue[]       @relation("PlatformDueResolvers")
+  communityProposals    CommunityProposal[] @relation("CommunityProposalAuthors")
+  communityVotes        CommunityVote[]     @relation("CommunityVoteUsers")
+  communityComments     CommunityComment[]  @relation("CommunityCommentAuthors")
+}
+
+model RiderProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model DriverProfile {
+  id                         String               @id @default(cuid())
+  userId                     String               @unique
+  user                       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approved                   Boolean              @default(false)
+  approvalStatus             DriverApprovalStatus @default(PENDING)
+  available                  Boolean              @default(false)
+  currentLat                 Float?
+  currentLng                 Float?
+  lastLocationAt             DateTime?
+  rating                     Float                @default(5)
+  homeState                  String?
+  homeCity                   String?
+  localDispatchEnabled       Boolean              @default(true)
+  localRadiusMiles           Int                  @default(25)
+  serviceAreaDispatchEnabled Boolean              @default(true)
+  serviceAreaStates          String[]             @default([])
+  nationwideDispatchEnabled  Boolean              @default(false)
+  pricingMode                DriverPricingMode    @default(PLATFORM)
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+  vehicle                    Vehicle?
+}
+
+model Vehicle {
+  id        String        @id @default(cuid())
+  driverId  String        @unique
+  driver    DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  makeModel String
+  plate     String        @unique
+  color     String?
+  rideType  RideType      @default(STANDARD)
+  seats     Int           @default(4)
+}
+
+model Ride {
+  id                       String             @id @default(cuid())
+  riderId                  String
+  driverId                 String?
+  publicTrackingToken      String?            @unique
+  referredByUserId         String?
+  referredByCode           String?
+  status                   RideStatus         @default(DRAFT)
+  rideType                 RideType           @default(STANDARD)
+  pickupAddress            String
+  pickupLat                Float
+  pickupLng                Float
+  pickupStateCode          String?
+  dropoffAddress           String
+  dropoffLat               Float
+  dropoffLng               Float
+  dropoffStateCode         String?
+  estimatedMiles           Float
+  estimatedMinutes         Int
+  routeProvider            String
+  routeFallbackMiles       Float?
+  platformMarketKey        String?
+  estimatedPricingSource   RidePricingSource  @default(PLATFORM_MARKET)
+  finalPricingSource       RidePricingSource?
+  matchedDriverPricingMode DriverPricingMode?
+  quotedFare               Decimal            @db.Decimal(10, 2)
+  estimatedPlatformDue     Decimal            @db.Decimal(10, 2)
+  estimatedCustomerTotal   Decimal            @db.Decimal(10, 2)
+  fareOverride             Decimal?           @db.Decimal(10, 2)
+  finalFare                Decimal?           @db.Decimal(10, 2)
+  finalPlatformDue         Decimal?           @db.Decimal(10, 2)
+  finalCustomerTotal       Decimal?           @db.Decimal(10, 2)
+  paymentMethod            PaymentMethod
+  paymentStatus            PaymentStatus      @default(PENDING)
+  paymentCollectedById     String?
+  paymentCollectedAt       DateTime?
+  requestedAt              DateTime?
+  scheduledFor             DateTime?
+  acceptedAt               DateTime?
+  startedAt                DateTime?
+  completedAt              DateTime?
+  canceledAt               DateTime?
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+  rider                    User               @relation("RiderRides", fields: [riderId], references: [id], onDelete: Cascade)
+  driver                   User?              @relation("DriverRides", fields: [driverId], references: [id], onDelete: SetNull)
+  referredByUser           User?              @relation("RideReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  offers                   RideOffer[]
+  locationPings            LocationPing[]
+  platformDue              PlatformDue?
+}
+
+model RideOffer {
+  id          String          @id @default(cuid())
+  rideId      String
+  driverId    String
+  status      RideOfferStatus @default(PENDING)
+  offeredAt   DateTime        @default(now())
+  respondedAt DateTime?
+  expiresAt   DateTime
+  ride        Ride            @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  driver      User            @relation("DriverOffers", fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([rideId, driverId])
+}
+
+model LocationPing {
+  id        String   @id @default(cuid())
+  rideId    String
+  driverId  String
+  lat       Float
+  lng       Float
+  heading   Float?
+  speed     Float?
+  createdAt DateTime @default(now())
+  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  driver    User     @relation("DriverPings", fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+model PricingRule {
+  id         String   @id @default(cuid())
+  marketKey  String   @default("DEFAULT")
+  rideType   RideType
+  baseFare   Decimal  @db.Decimal(10, 2)
+  perMile    Decimal  @db.Decimal(10, 2)
+  perMinute  Decimal  @db.Decimal(10, 2)
+  multiplier Decimal  @db.Decimal(10, 2)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([marketKey, rideType])
+}
+
+model DriverRateCard {
+  id         String   @id @default(cuid())
+  driverId   String
+  rideType   RideType
+  baseFare   Decimal  @db.Decimal(10, 2)
+  perMile    Decimal  @db.Decimal(10, 2)
+  perMinute  Decimal  @db.Decimal(10, 2)
+  multiplier Decimal  @db.Decimal(10, 2)
+  updatedAt  DateTime @updatedAt
+  driver     User     @relation("DriverRateCards", fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([driverId, rideType])
+}
+
+model RiderLead {
+  id               String   @id @default(cuid())
+  userId           String?
+  name             String
+  email            String
+  phone            String?
+  referredByUserId String?
+  referredByCode   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User?    @relation("RiderLeadUsers", fields: [userId], references: [id], onDelete: SetNull)
+  referredByUser   User?    @relation("RiderLeadReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+}
+
+model DriverInterest {
+  id                String               @id @default(cuid())
+  name              String
+  email             String
+  phone             String
+  serviceArea       String
+  vehicleInfo       String
+  availabilityNotes String?
+  status            DriverInterestStatus @default(PENDING)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+}
+
+model PlatformDue {
+  id            String            @id @default(cuid())
+  rideId        String            @unique
+  driverId      String
+  amount        Decimal           @db.Decimal(10, 2)
+  status        PlatformDueStatus @default(PENDING)
+  dueAt         DateTime
+  paidAt        DateTime?
+  paymentMethod DuePaymentMethod?
+  note          String?
+  resolvedById  String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  ride          Ride              @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  driver        User              @relation("PlatformDueDrivers", fields: [driverId], references: [id], onDelete: Cascade)
+  resolvedBy    User?             @relation("PlatformDueResolvers", fields: [resolvedById], references: [id], onDelete: SetNull)
+}
+
+model PlatformPayoutSettings {
+  id               String   @id @default("platform")
+  cashAppHandle    String?
+  zelleHandle      String?
+  jimHandle        String?
+  cashInstructions String?
+  otherInstructions String?
+  updatedAt        DateTime @updatedAt
+}
+
+model CommunityProposal {
+  id        String           @id @default(cuid())
+  authorId  String
+  title     String
+  body      String
+  pinned    Boolean          @default(false)
+  closed    Boolean          @default(false)
+  hidden    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  author    User             @relation("CommunityProposalAuthors", fields: [authorId], references: [id], onDelete: Cascade)
+  votes     CommunityVote[]
+  comments  CommunityComment[]
+}
+
+model CommunityVote {
+  id         String              @id @default(cuid())
+  proposalId String
+  userId     String
+  choice     CommunityVoteChoice
+  createdAt  DateTime            @default(now())
+  proposal   CommunityProposal   @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  user       User                @relation("CommunityVoteUsers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([proposalId, userId])
+}
+
+model CommunityComment {
+  id         String            @id @default(cuid())
+  proposalId String
+  authorId   String
+  body       String
+  hidden     Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  proposal   CommunityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  author     User              @relation("CommunityCommentAuthors", fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+}
