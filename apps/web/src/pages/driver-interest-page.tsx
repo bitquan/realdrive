@@ -28,28 +28,29 @@ export function DriverInterestPage() {
   });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-6 shadow-soft md:p-8">
+    <div className="grid gap-5 md:gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-brand-moss/20 bg-brand-mist px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-brand-ink/55">
           <Route className="h-4 w-4" />
-          Driver application
+          Driver onboarding
         </div>
-        <h1 className="mt-5 text-3xl font-extrabold tracking-tight md:text-5xl">Apply to drive with RealDrive</h1>
+        <h1 className="mt-4 text-[2rem] font-extrabold leading-tight tracking-tight md:mt-5 md:text-5xl">Drive with RealDrive in your market</h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-brand-ink/60 md:text-base">
-          Drivers can sign up normally now. New accounts stay pending until an admin approves them, then you can log in and accept rides from your own market.
+          Create your driver account, submit your home market and vehicle, and go live after admin approval.
+          Once approved, you can sign in and accept rider requests.
         </p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5">
-            <p className="font-semibold">How approval works</p>
+            <p className="font-semibold">Approval flow</p>
             <p className="mt-2 text-sm text-brand-ink/60">
-              Your application creates a real driver account, but dispatch stays locked until an admin approves you.
+              Your account is created instantly, but dispatch remains locked until admin approval.
             </p>
           </div>
           <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5">
-            <p className="font-semibold">What you can control later</p>
+            <p className="font-semibold">After approval</p>
             <p className="mt-2 text-sm text-brand-ink/60">
-              After approval, you can set local, service-area, or nationwide dispatch and choose platform or custom rates.
+              Set dispatch radius, choose service-area coverage, and manage your own rate preferences.
             </p>
           </div>
         </div>
@@ -57,8 +58,8 @@ export function DriverInterestPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Driver signup</CardTitle>
-          <CardDescription>Submit your account, home market, and vehicle details.</CardDescription>
+          <CardTitle>Create driver account</CardTitle>
+          <CardDescription>Submit your profile, market, and vehicle details.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {signupMutation.isSuccess ? (

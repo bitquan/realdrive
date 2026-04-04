@@ -26,9 +26,9 @@ Providers:
 ## Public And Rider
 
 - `/`
-  Public guest rider landing page with booking and email capture
+  Public rideshare-style landing page with booking-first flow, live quote preview, and secondary rider share capture
 - `/track/:token`
-  Public ride tracking page
+  Public live ride tracking page with driver, payment, and community/share follow-up modules
 - `/community/join/:token`
   Rider community-access exchange page from the public tracking flow
 - `/drive-with-us`
@@ -134,6 +134,12 @@ Layout wrapper:
 Map component:
 
 - `apps/web/src/components/maps/live-map.tsx`
+
+Current public UX direction:
+
+- Hybrid rideshare-first funnel (fast booking first, community/referral second)
+- Guest rider flow remains primary acquisition path
+- Driver/admin controls stay available as secondary operational surfaces
 
 ## Current Frontend Limitations
 

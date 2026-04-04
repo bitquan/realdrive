@@ -26,16 +26,16 @@ export function AppShell() {
             </div>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-ink/45">RealDrive</p>
-              <p className="text-lg font-bold">Community ride operations</p>
+              <p className="text-lg font-bold">Community-powered rides</p>
             </div>
           </Link>
 
           <nav className="hidden items-center gap-2 md:flex">
             <NavLink to="/" className="rounded-full px-4 py-2 text-sm font-medium text-brand-ink/70 hover:bg-brand-ink/5">
-              Book
+              Book a ride
             </NavLink>
             <NavLink to="/driver/signup" className="rounded-full px-4 py-2 text-sm font-medium text-brand-ink/70 hover:bg-brand-ink/5">
-              Drive With Us
+              Drive with us
             </NavLink>
             {user ? (
               <NavLink to="/community" className="rounded-full px-4 py-2 text-sm font-medium text-brand-ink/70 hover:bg-brand-ink/5">

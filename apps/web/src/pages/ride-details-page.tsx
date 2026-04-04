@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { Clock3, CreditCard, Phone, User } from "lucide-react";
-import { LiveMap } from "@/components/maps/live-map";
+import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ export function RideDetailsPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-      <LiveMap ride={ride} />
+      <DeferredLiveMap ride={ride} />
 
       <div className="space-y-6">
         <Card>

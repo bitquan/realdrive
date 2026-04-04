@@ -26,11 +26,28 @@ export function DriverLoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="grid gap-5 md:gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
+        <h1 className="text-[2rem] font-extrabold leading-tight tracking-tight md:text-4xl">Driver sign in</h1>
+        <p className="mt-4 text-sm leading-6 text-brand-ink/60 md:text-base">
+          Approved drivers use email and password to access live offers, active rides, dues status, and dispatch settings.
+        </p>
+
+        <div className="mt-6 rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5 text-sm text-brand-ink/65">
+          <p className="font-semibold text-brand-ink">No account yet?</p>
+          <p className="mt-2">
+            New driver accounts begin in pending status and unlock after admin approval.
+          </p>
+          <Link to="/driver/signup" className="mt-3 inline-flex font-semibold text-brand-copper hover:underline">
+            Apply to drive
+          </Link>
+        </div>
+      </section>
+
       <Card>
         <CardHeader>
-          <CardTitle>Driver sign-in</CardTitle>
-          <CardDescription>Approved drivers sign in with email and password after admin review.</CardDescription>
+          <CardTitle>Access driver app</CardTitle>
+          <CardDescription>Sign in with your approved driver account.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

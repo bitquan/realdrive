@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { LiveMap } from "@/components/maps/live-map";
+import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,7 +101,7 @@ export function DriverRidePage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-      <LiveMap ride={ride} />
+      <DeferredLiveMap ride={ride} />
       <Card>
         <CardHeader>
           <CardTitle>Trip workflow</CardTitle>

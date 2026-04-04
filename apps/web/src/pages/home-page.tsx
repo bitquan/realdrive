@@ -144,56 +144,56 @@ export function HomePage() {
     !bookingMutation.isPending;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-6 shadow-soft md:p-8">
+    <div className="space-y-5 md:space-y-6">
+      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <Badge className="gap-2 border-brand-moss/20 bg-brand-mist">
               <Shield className="h-4 w-4" />
-              Rider-first launch pilot
+              Community-powered rideshare pilot
             </Badge>
-            <h1 className="mt-5 text-3xl font-extrabold tracking-tight md:text-5xl">
-              Book a RealDrive ride fast, pay outside the app, and share your own rider QR after booking.
+            <h1 className="mt-4 text-[2rem] font-extrabold leading-tight tracking-tight md:mt-5 md:text-5xl">
+              Book your ride in under a minute and track everything from one live link.
             </h1>
-            <p className="mt-4 text-sm leading-6 text-brand-ink/60 md:text-base">
-              This pilot is focused on rider growth first. Guests can book without OTP, track their ride from a
-              link, and get a personal referral QR to share with friends.
+            <p className="mt-3 text-sm leading-6 text-brand-ink/60 md:mt-4 md:text-base">
+              RealDrive keeps the rider flow simple: instant quote, guest checkout, live trip tracking, and personal
+              share links for referral growth.
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
               <a
                 href="#book"
-                className="inline-flex items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:w-auto"
               >
-                Book a ride
+                Start booking
               </a>
               <Link
                 to="/driver/signup"
-                className="inline-flex items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60"
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
               >
                 Driver signup
               </Link>
               {userHasRole(user, "rider") ? (
                 <Link
                   to="/rider/rides"
-                  className="inline-flex items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60"
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
                 >
-                  Your rides
+                  My rides
                 </Link>
               ) : null}
             </div>
           </div>
 
-          <div className="w-full max-w-sm rounded-4xl border border-brand-ink/10 bg-brand-sand/60 p-5 text-sm shadow-soft">
-            <p className="font-semibold">Launch mode</p>
+          <div className="w-full max-w-sm rounded-4xl border border-brand-ink/10 bg-brand-sand/60 p-4 text-sm shadow-soft md:p-5">
+            <p className="font-semibold">What riders get now</p>
             <div className="mt-3 space-y-2 text-brand-ink/65">
-              <p>Guest booking is live.</p>
-              <p>Driver signup is live with admin approval.</p>
-              <p>Referrals are tracked, not rewarded yet.</p>
+              <p>Guest booking and live trip tracking.</p>
+              <p>Upfront quote before booking confirmation.</p>
+              <p>Personal rider share link after booking.</p>
             </div>
             {availableDriver ? (
               <div className="mt-4 rounded-3xl border border-brand-ink/10 bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Available driver right now</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Next available driver</p>
                 <p className="mt-2 font-semibold">{availableDriver.name}</p>
                 <p className="text-sm text-brand-ink/55">{availableDriver.vehicle?.makeModel ?? "Vehicle ready"}</p>
               </div>
@@ -209,22 +209,22 @@ export function HomePage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Stat icon={Car} label="Driver setup" value={availableDriver ? "Owner online" : "On demand"} />
+      <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+        <Stat icon={Car} label="Driver network" value={availableDriver ? "Drivers online" : "On demand"} />
         <Stat
           icon={Clock3}
-          label="Estimated pickup"
-          value={quoteQuery.data ? `${Math.max(5, Math.round(quoteQuery.data.estimatedMinutes / 2))} min` : "Live quotes"}
+          label="ETA preview"
+          value={quoteQuery.data ? `${Math.max(5, Math.round(quoteQuery.data.estimatedMinutes / 2))} min` : "From quote"}
         />
-        <Stat icon={MapPin} label="Routing" value={quoteQuery.data?.routeProvider === "mapbox" ? "Mapbox live" : "Ready with fallback"} />
+        <Stat icon={MapPin} label="Route engine" value={quoteQuery.data?.routeProvider === "mapbox" ? "Mapbox live" : "Fallback ready"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <Card id="book">
           <CardHeader>
-            <CardTitle className="text-2xl">Book a ride as a guest</CardTitle>
+            <CardTitle className="text-2xl">Book your ride</CardTitle>
             <CardDescription>
-              No OTP required for the pilot. You will get a tracking link and your own rider referral QR after booking.
+              Fast guest checkout for the pilot. You get a tracking link right away and your rider share link after booking.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -431,8 +431,34 @@ export function HomePage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Stay updated by email</CardTitle>
-              <CardDescription>Not ready to book yet? Leave your info and still get your own rider share link.</CardDescription>
+              <CardTitle>Trip estimate</CardTitle>
+              <CardDescription>Use pickup and dropoff to preview your all-in total before confirming.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-brand-ink/60">
+              <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/35 p-4">
+                <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/45">All-in fare</p>
+                <p className="mt-2 text-2xl font-extrabold text-brand-ink">
+                  {formatMoney(quoteQuery.data?.estimatedCustomerTotal ?? 0)}
+                </p>
+                {quoteQuery.data ? (
+                  <p className="mt-2">
+                    {quoteQuery.data.estimatedMiles} miles · {quoteQuery.data.estimatedMinutes} minutes · {quoteQuery.data.routeProvider}
+                  </p>
+                ) : (
+                  <p className="mt-2">Enter both addresses to load a live quote.</p>
+                )}
+              </div>
+              <div className="rounded-4xl border border-brand-ink/10 p-4">
+                <p className="font-semibold">Pilot payment model</p>
+                <p className="mt-1 text-brand-ink/55">Cash App, Jim, or cash are collected outside the app.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Save your rider profile</CardTitle>
+              <CardDescription>Not ready yet? Save your info and still get your personal rider share link.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {riderLeadMutation.isSuccess ? (
@@ -484,7 +510,7 @@ export function HomePage() {
                 }
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Save rider interest
+                Save rider profile
               </Button>
               {riderLeadMutation.error ? (
                 <p className="text-sm text-red-600">{riderLeadMutation.error.message}</p>
@@ -504,13 +530,13 @@ export function HomePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Why this flow is cheaper</CardTitle>
-              <CardDescription>Tomorrow’s pilot stays lean while leaving the future driver system intact.</CardDescription>
+              <CardTitle>Driver and admin access</CardTitle>
+              <CardDescription>Use these for operations while the rider funnel stays public and booking-first.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-brand-ink/60">
-              <p>Guests can book and track without SMS verification, so Twilio can stay off for the pilot.</p>
-              <p>Real Mapbox routing is still used for pricing and maps because you already have a key.</p>
-              <p>Drivers share rider-growth links too, and new drivers can now apply for real accounts pending approval.</p>
+              <p>Driver signup is live and requires admin approval before ride offers are unlocked.</p>
+              <p>Admin controls dispatch approvals, pricing, dues, and payout instructions.</p>
+              <p>Rider referrals are tracked through booking and lead capture links.</p>
               <p className="pt-2">
                 <Link to="/driver/login" className="font-semibold text-brand-copper hover:underline">
                   Approved driver login
@@ -525,8 +551,8 @@ export function HomePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Public pilot surfaces</CardTitle>
-              <CardDescription>Use the rider path as the primary promotion channel.</CardDescription>
+              <CardTitle>How the growth loop works</CardTitle>
+              <CardDescription>Keep the booking flow simple, then let riders and drivers share back into it.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="rounded-4xl border border-brand-ink/10 p-4">

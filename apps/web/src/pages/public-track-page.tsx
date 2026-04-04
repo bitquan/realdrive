@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { Clock3, CreditCard, Phone, Share2, User, Vote } from "lucide-react";
-import { LiveMap } from "@/components/maps/live-map";
+import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,33 +28,36 @@ export function PublicTrackPage() {
   const { ride, share, communityAccess } = trackQuery.data;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-6 shadow-soft md:p-8">
+    <div className="space-y-5 md:space-y-6">
+      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
         <Badge className="gap-2 border-brand-moss/20 bg-brand-mist">
           <Share2 className="h-4 w-4" />
-          Guest ride tracking
+          Live trip tracking
         </Badge>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">Track your RealDrive trip without signing in</h1>
+        <h1 className="mt-4 text-[2rem] font-extrabold leading-tight tracking-tight md:text-4xl">Track your ride live from this link</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-brand-ink/60 md:text-base">
-          This page stays live for your ride. Keep it bookmarked so you can reopen status, driver progress,
-          and pickup details from any device.
+          Keep this page open to follow status, route progress, pickup details, and driver updates in real time
+          without signing in.
         </p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <LiveMap ride={ride} />
+        <DeferredLiveMap ride={ride} />
 
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Ride status</CardTitle>
-              <CardDescription>Updates refresh automatically while your driver is moving.</CardDescription>
+              <CardDescription>Updates refresh automatically while dispatch and driver status change.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Badge>{ride.status.replaceAll("_", " ")}</Badge>
                 <p className="text-sm text-brand-ink/55">{formatMoney(ride.payment.amountDue)}</p>
               </div>
+              <p className="text-sm text-brand-ink/60">
+                Current stage: <span className="font-semibold text-brand-ink">{ride.status.replaceAll("_", " ")}</span>
+              </p>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-4xl border border-brand-ink/10 p-4">
                   <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Pickup</p>
