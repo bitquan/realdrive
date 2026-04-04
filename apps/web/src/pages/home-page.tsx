@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useDeferredValue,
   useEffect,
   useState
@@ -18,7 +19,7 @@ import {
   Users,
   Wallet
 } from "lucide-react";
-import type { PublicRideRequest } from "@shared/contracts";
+import type { AddressSuggestion, PublicRideRequest } from "@shared/contracts";
 import { PageHero } from "@/components/layout/page-hero";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ export function HomePage() {
     email: "",
     phone: ""
   });
+  const [activeAddressField, setActiveAddressField] = useState<"pickup" | "dropoff" | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -99,6 +101,42 @@ export function HomePage() {
     dropoffAddress: bookingForm.dropoffAddress,
     rideType: bookingForm.rideType
   });
+
+  const deferredPickupQuery = useDeferredValue(bookingForm.pickupAddress.trim());
+  const deferredDropoffQuery = useDeferredValue(bookingForm.dropoffAddress.trim());
+
+  const pickupSuggestionsQuery = useQuery({
+    queryKey: ["address-suggestions", "pickup", deferredPickupQuery],
+    queryFn: () => api.addressSuggestions(deferredPickupQuery),
+    enabled: activeAddressField === "pickup" && deferredPickupQuery.length >= 3
+  });
+
+  const dropoffSuggestionsQuery = useQuery({
+    queryKey: ["address-suggestions", "dropoff", deferredDropoffQuery],
+    queryFn: () => api.addressSuggestions(deferredDropoffQuery),
+    enabled: activeAddressField === "dropoff" && deferredDropoffQuery.length >= 3
+  });
+
+  const closeAddressSuggestions = useCallback(() => {
+    window.setTimeout(() => {
+      setActiveAddressField((current) => (current === null ? null : null));
+    }, 120);
+  }, []);
+
+  const openAddressSuggestions = useCallback((field: "pickup" | "dropoff") => {
+    setActiveAddressField(field);
+  }, []);
+
+  function applyAddressSuggestion(field: "pickup" | "dropoff", suggestion: AddressSuggestion) {
+    setBookingForm((current) => ({
+      ...current,
+      ...(field === "pickup" ? { pickupAddress: suggestion.address } : { dropoffAddress: suggestion.address })
+    }));
+    setActiveAddressField(null);
+  }
+
+  const pickupSuggestions = activeAddressField === "pickup" ? (pickupSuggestionsQuery.data ?? []) : [];
+  const dropoffSuggestions = activeAddressField === "dropoff" ? (dropoffSuggestionsQuery.data ?? []) : [];
 
   const publicDriversQuery = useQuery({
     queryKey: ["public-drivers"],
@@ -257,22 +295,70 @@ export function HomePage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="pickupAddress">Pickup address</Label>
-              <Input
-                id="pickupAddress"
-                placeholder="123 Main St"
-                value={bookingForm.pickupAddress}
-                onChange={(event) => setBookingForm((current) => ({ ...current, pickupAddress: event.target.value }))}
-              />
+              <div className="relative">
+                <Input
+                  id="pickupAddress"
+                  placeholder="123 Main St"
+                  value={bookingForm.pickupAddress}
+                  onFocus={() => openAddressSuggestions("pickup")}
+                  onBlur={closeAddressSuggestions}
+                  onChange={(event) => setBookingForm((current) => ({ ...current, pickupAddress: event.target.value }))}
+                />
+                {activeAddressField === "pickup" && bookingForm.pickupAddress.trim().length >= 3 ? (
+                  <div className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.98),rgba(12,15,21,0.98))] p-1 shadow-elevated">
+                    {pickupSuggestionsQuery.isLoading ? (
+                      <p className="px-3 py-2 text-sm text-ops-muted">Searching addresses…</p>
+                    ) : pickupSuggestions.length ? (
+                      pickupSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          type="button"
+                          onMouseDown={() => applyAddressSuggestion("pickup", suggestion)}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm text-ops-text transition hover:bg-ops-panel"
+                        >
+                          {suggestion.address}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-2 text-sm text-ops-muted">No suggestions yet. Keep typing.</p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="dropoffAddress">Dropoff address</Label>
-              <Input
-                id="dropoffAddress"
-                placeholder="Airport, downtown, hotel, work..."
-                value={bookingForm.dropoffAddress}
-                onChange={(event) => setBookingForm((current) => ({ ...current, dropoffAddress: event.target.value }))}
-              />
+              <div className="relative">
+                <Input
+                  id="dropoffAddress"
+                  placeholder="Airport, downtown, hotel, work..."
+                  value={bookingForm.dropoffAddress}
+                  onFocus={() => openAddressSuggestions("dropoff")}
+                  onBlur={closeAddressSuggestions}
+                  onChange={(event) => setBookingForm((current) => ({ ...current, dropoffAddress: event.target.value }))}
+                />
+                {activeAddressField === "dropoff" && bookingForm.dropoffAddress.trim().length >= 3 ? (
+                  <div className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.98),rgba(12,15,21,0.98))] p-1 shadow-elevated">
+                    {dropoffSuggestionsQuery.isLoading ? (
+                      <p className="px-3 py-2 text-sm text-ops-muted">Searching addresses…</p>
+                    ) : dropoffSuggestions.length ? (
+                      dropoffSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          type="button"
+                          onMouseDown={() => applyAddressSuggestion("dropoff", suggestion)}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm text-ops-text transition hover:bg-ops-panel"
+                        >
+                          {suggestion.address}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-2 text-sm text-ops-muted">No suggestions yet. Keep typing.</p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-4 md:gap-4">

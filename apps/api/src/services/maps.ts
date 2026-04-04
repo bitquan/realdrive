@@ -1,3 +1,4 @@
+import type { AddressSuggestion } from "@shared/contracts";
 import type { MapsService, RouteEstimate } from "./types.js";
 
 const DEFAULT_CENTER = {
@@ -118,6 +119,49 @@ async function mapboxGeocode(token: string, address: string) {
   };
 }
 
+async function mapboxAutocomplete(token: string, query: string): Promise<AddressSuggestion[]> {
+  const url = new URL(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`
+  );
+  url.searchParams.set("access_token", token);
+  url.searchParams.set("autocomplete", "true");
+  url.searchParams.set("limit", "6");
+  url.searchParams.set("country", "us");
+  url.searchParams.set("types", "address,place,poi");
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Mapbox autocomplete failed with ${response.status}`);
+  }
+
+  const payload = (await response.json()) as {
+    features?: Array<{
+      id: string;
+      place_name: string;
+      properties?: {
+        short_code?: string;
+      };
+      context?: Array<{
+        id: string;
+        short_code?: string;
+      }>;
+    }>;
+  };
+
+  return (payload.features ?? []).map((feature) => {
+    const regionContext = feature.context?.find((entry) => entry.id.startsWith("region"));
+    const shortCode = regionContext?.short_code ?? feature.properties?.short_code ?? null;
+    const stateCode = normalizeStateCode(shortCode?.split("-").at(-1) ?? extractStateCodeFromText(feature.place_name));
+
+    return {
+      id: feature.id,
+      address: feature.place_name,
+      placeId: feature.id,
+      stateCode
+    } satisfies AddressSuggestion;
+  });
+}
+
 async function mapboxDirections(
   token: string,
   pickup: { lat: number; lng: number },
@@ -182,6 +226,19 @@ function fallbackRoute(pickupAddress: string, dropoffAddress: string): RouteEsti
 
 export function createMapsService(token: string): MapsService {
   return {
+    async autocompleteAddress(query) {
+      const normalized = query.trim();
+      if (normalized.length < 3 || !token) {
+        return [];
+      }
+
+      try {
+        return await mapboxAutocomplete(token, normalized);
+      } catch {
+        return [];
+      }
+    },
+
     async estimateRoute(pickupAddress, dropoffAddress) {
       if (!token) {
         return fallbackRoute(pickupAddress, dropoffAddress);

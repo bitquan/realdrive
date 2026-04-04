@@ -1,5 +1,6 @@
 import type {
   AcceptAdminInviteInput,
+  AddressSuggestion,
   AdminInvite,
   AdminInvitesResponse,
   AdminTeamResponse,
@@ -203,6 +204,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input)
     });
+  },
+  addressSuggestions(query: string) {
+    const params = new URLSearchParams({ q: query });
+    return apiFetch<AddressSuggestion[]>(`/public/address-suggestions?${params.toString()}`);
   },
   publicDrivers() {
     return apiFetch<DriverAccount[]>("/public/drivers");

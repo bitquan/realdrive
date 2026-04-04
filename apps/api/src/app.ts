@@ -516,6 +516,21 @@ export function buildApp() {
     });
   });
 
+  app.get("/public/address-suggestions", async (request, reply) => {
+    const parsed = z
+      .object({
+        q: z.string().min(3)
+      })
+      .safeParse(request.query);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const suggestions = await maps.autocompleteAddress(parsed.data.q);
+    return reply.send(suggestions);
+  });
+
   app.get("/public/drivers", async () => {
     const drivers = await store.listDrivers();
     return drivers.filter((driver) => driver.approved && isOwnerDriver(driver));

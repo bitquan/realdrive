@@ -44,6 +44,13 @@ export const routeLocationSchema = z.object({
   stateCode: z.string().nullable().optional()
 });
 
+export const addressSuggestionSchema = z.object({
+  id: z.string(),
+  address: z.string().min(3),
+  placeId: z.string().nullable().optional(),
+  stateCode: z.string().nullable().optional()
+});
+
 export const vehicleSchema = z.object({
   id: z.string(),
   makeModel: z.string(),
@@ -736,6 +743,8 @@ export const rideQuoteResponseSchema = z.object({
   estimatedCustomerTotal: z.number().nonnegative()
 });
 
+export const addressSuggestionsResponseSchema = z.array(addressSuggestionSchema);
+
 export const publicRideResponseSchema = z.object({
   ride: rideSchema,
   trackingUrl: z.string().url(),
@@ -835,6 +844,7 @@ export type RideStatus = z.infer<typeof rideStatusSchema>;
 export type RideOfferStatus = z.infer<typeof rideOfferStatusSchema>;
 export type Coordinates = z.infer<typeof coordinatesSchema>;
 export type RouteLocation = z.infer<typeof routeLocationSchema>;
+export type AddressSuggestion = z.infer<typeof addressSuggestionSchema>;
 export type Vehicle = z.infer<typeof vehicleSchema>;
 export type VehicleInput = z.infer<typeof vehicleInputSchema>;
 export type DriverDispatchSettings = z.infer<typeof driverDispatchSettingsSchema>;
@@ -902,6 +912,7 @@ export type CreateCommunityCommentInput = z.infer<typeof createCommunityCommentS
 export type AdminUpdateCommunityProposalInput = z.infer<typeof adminUpdateCommunityProposalSchema>;
 export type AdminUpdateCommunityCommentInput = z.infer<typeof adminUpdateCommunityCommentSchema>;
 export type RideQuoteResponse = z.infer<typeof rideQuoteResponseSchema>;
+export type AddressSuggestionsResponse = z.infer<typeof addressSuggestionsResponseSchema>;
 export type AdminInviteStatus = z.infer<typeof adminInviteStatusSchema>;
 export type AdminInvite = z.infer<typeof adminInviteSchema>;
 export type CreateAdminInviteInput = z.infer<typeof createAdminInviteSchema>;

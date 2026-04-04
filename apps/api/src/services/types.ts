@@ -1,5 +1,6 @@
 import type {
   AcceptAdminInviteInput,
+  AddressSuggestion,
   AdminInvite,
   AdminSetupStatusResponse,
   AdminTransferDriverCollectorInput,
@@ -285,6 +286,7 @@ export interface Store {
 
 export interface MapsService {
   estimateRoute(pickupAddress: string, dropoffAddress: string): Promise<RouteEstimate>;
+  autocompleteAddress(query: string): Promise<AddressSuggestion[]>;
 }
 
 export interface OtpService {
