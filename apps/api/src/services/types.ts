@@ -21,6 +21,9 @@ import type {
   DriverIdleLocationInput,
   DriverInterest,
   DriverInterestInput,
+  IssueReport,
+  IssueReportSource,
+  IssueReportStatus,
   DriverPricingMode,
   DriverProfileUpdateInput,
   DriverRateCard,
@@ -282,6 +285,25 @@ export interface Store {
   ): Promise<CommunityProposal>;
   updateCommunityComment(commentId: string, patch: { hidden: boolean }): Promise<CommunityComment>;
   addAuditLog(input: { actorId?: string; action: string; entityType: string; entityId: string; metadata?: unknown }): Promise<void>;
+  createIssueReport(input: {
+    reporterId: string;
+    reporterRole: "rider" | "driver" | "admin";
+    source: IssueReportSource;
+    summary: string;
+    details?: string | null;
+    page?: string | null;
+    rideId?: string | null;
+    metadata?: Record<string, string | number | boolean | null> | null;
+  }): Promise<IssueReport>;
+  updateIssueReportGitHubSync(
+    reportId: string,
+    patch: {
+      status: IssueReportStatus;
+      githubIssueNumber?: number | null;
+      githubIssueUrl?: string | null;
+      error?: string | null;
+    }
+  ): Promise<IssueReport>;
 }
 
 export interface MapsService {

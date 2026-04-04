@@ -1,5 +1,6 @@
 import {
   DriverOnboardingDocumentType as DbDriverOnboardingDocumentType,
+  type IssueReport as DbIssueReport,
   PlatformDueBatchStatus as DbPlatformDueBatchStatus,
   Prisma,
   Role as DbRole
@@ -10,6 +11,8 @@ import type {
   AdminUpdatePlatformDueBatchInput,
   CollectorAdminSummary,
   CreateAdminInviteInput,
+  IssueReport,
+  IssueReportStatus,
   DriverDueSnapshot,
   DriverDocumentType,
   DriverDocumentUpload,
@@ -301,6 +304,26 @@ function toCollectorSummary(
     email: user.email,
     phone: user.phone,
     referralCode: user.referralCode ?? null
+  };
+}
+
+function mapIssueReport(report: DbIssueReport): IssueReport {
+  return {
+    id: report.id,
+    reporterId: report.reporterId,
+    reporterRole: report.reporterRole.toLowerCase() as IssueReport["reporterRole"],
+    source: report.source as IssueReport["source"],
+    summary: report.summary,
+    details: report.details,
+    page: report.page,
+    rideId: report.rideId,
+    metadata: (report.metadata as Record<string, unknown> | null) ?? null,
+    githubIssueNumber: report.githubIssueNumber,
+    githubIssueUrl: report.githubIssueUrl,
+    githubSyncStatus: report.githubSyncStatus as IssueReportStatus,
+    githubSyncError: report.githubSyncError,
+    createdAt: report.createdAt.toISOString(),
+    updatedAt: report.updatedAt.toISOString()
   };
 }
 
@@ -3116,5 +3139,37 @@ export const store: Store = {
         metadata: input.metadata as Prisma.InputJsonValue | undefined
       }
     });
+  },
+
+  async createIssueReport(input) {
+    const report = await prisma.issueReport.create({
+      data: {
+        reporterId: input.reporterId,
+        reporterRole: input.reporterRole.toUpperCase() as DbRole,
+        source: input.source,
+        summary: input.summary,
+        details: input.details ?? null,
+        page: input.page ?? null,
+        rideId: input.rideId ?? null,
+        metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null
+      }
+    });
+
+    return mapIssueReport(report);
+  },
+
+  async updateIssueReportGitHubSync(reportId, patch) {
+    const report = await prisma.issueReport.update({
+      where: { id: reportId },
+      data: {
+        githubSyncStatus: patch.status,
+        githubIssueNumber: patch.githubIssueNumber ?? null,
+        githubIssueUrl: patch.githubIssueUrl ?? null,
+        githubSyncError: patch.error ?? null,
+        githubSyncedAt: patch.status === "synced" ? new Date() : null
+      }
+    });
+
+    return mapIssueReport(report);
   }
 };

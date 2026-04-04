@@ -152,6 +152,7 @@ model User {
   communityProposals    CommunityProposal[] @relation("CommunityProposalAuthors")
   communityVotes        CommunityVote[]     @relation("CommunityVoteUsers")
   communityComments     CommunityComment[]  @relation("CommunityCommentAuthors")
+  issueReports          IssueReport[]       @relation("IssueReportReporter")
 }
 
 model RiderProfile {
@@ -249,6 +250,7 @@ model Ride {
   offers                   RideOffer[]
   locationPings            LocationPing[]
   platformDue              PlatformDue?
+  issueReports             IssueReport[]
 }
 
 model RideOffer {
@@ -460,6 +462,31 @@ model CommunityComment {
   updatedAt  DateTime          @updatedAt
   proposal   CommunityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   author     User              @relation("CommunityCommentAuthors", fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model IssueReport {
+  id                String   @id @default(cuid())
+  reporterId        String
+  reporterRole      Role
+  source            String
+  summary           String
+  details           String?
+  page              String?
+  rideId            String?
+  metadata          Json?
+  githubIssueNumber Int?
+  githubIssueUrl    String?
+  githubSyncStatus  String   @default("pending")
+  githubSyncError   String?
+  githubSyncedAt    DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  reporter          User     @relation("IssueReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  ride              Ride?    @relation(fields: [rideId], references: [id], onDelete: SetNull)
+
+  @@index([reporterId, createdAt])
+  @@index([rideId])
+  @@index([githubSyncStatus, createdAt])
 }
 
 model AuditLog {

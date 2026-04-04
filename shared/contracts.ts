@@ -15,6 +15,8 @@ export const driverDocumentStatusSchema = z.enum(["pending", "approved", "reject
 export const dispatchModeSchema = z.enum(["local", "service_area", "nationwide"]);
 export const ridePricingSourceSchema = z.enum(["platform_market", "driver_custom", "admin_override"]);
 export const communityVoteChoiceSchema = z.enum(["yes", "no"]);
+export const issueReportSourceSchema = z.enum(["rider_app", "driver_app", "admin_dashboard"]);
+export const issueReportStatusSchema = z.enum(["pending", "synced", "failed"]);
 export const rideStatusSchema = z.enum([
   "draft",
   "requested",
@@ -691,6 +693,35 @@ export const adminUpdateCommunityCommentSchema = z.object({
   hidden: z.boolean()
 });
 
+export const createIssueReportSchema = z.object({
+  source: issueReportSourceSchema,
+  summary: z.string().min(5).max(280),
+  details: z.string().max(4000).optional(),
+  page: z.string().max(240).optional(),
+  rideId: z.string().optional(),
+  metadata: z
+    .record(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .optional()
+});
+
+export const issueReportSchema = z.object({
+  id: z.string(),
+  reporterId: z.string(),
+  reporterRole: roleSchema,
+  source: issueReportSourceSchema,
+  summary: z.string(),
+  details: z.string().nullable(),
+  page: z.string().nullable(),
+  rideId: z.string().nullable(),
+  metadata: z.record(z.unknown()).nullable(),
+  githubIssueNumber: z.number().int().nullable(),
+  githubIssueUrl: z.string().nullable(),
+  githubSyncStatus: issueReportStatusSchema,
+  githubSyncError: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
 export const otpRequestResponseSchema = z.object({
   ok: z.literal(true),
   devCode: z.string().optional()
@@ -819,6 +850,10 @@ export const communityCommentsResponseSchema = z.object({
   eligibility: communityEligibilitySchema
 });
 
+export const issueReportResponseSchema = z.object({
+  report: issueReportSchema
+});
+
 export const ridesResponseSchema = z.array(rideSchema);
 export const pricingRulesResponseSchema = z.array(pricingRuleSchema);
 export const driverRatesResponseSchema = driverRateCardSchema;
@@ -840,6 +875,8 @@ export type DriverDocumentStatus = z.infer<typeof driverDocumentStatusSchema>;
 export type DispatchMode = z.infer<typeof dispatchModeSchema>;
 export type RidePricingSource = z.infer<typeof ridePricingSourceSchema>;
 export type CommunityVoteChoice = z.infer<typeof communityVoteChoiceSchema>;
+export type IssueReportSource = z.infer<typeof issueReportSourceSchema>;
+export type IssueReportStatus = z.infer<typeof issueReportStatusSchema>;
 export type RideStatus = z.infer<typeof rideStatusSchema>;
 export type RideOfferStatus = z.infer<typeof rideOfferStatusSchema>;
 export type Coordinates = z.infer<typeof coordinatesSchema>;
@@ -911,6 +948,8 @@ export type CommunityVoteInput = z.infer<typeof communityVoteInputSchema>;
 export type CreateCommunityCommentInput = z.infer<typeof createCommunityCommentSchema>;
 export type AdminUpdateCommunityProposalInput = z.infer<typeof adminUpdateCommunityProposalSchema>;
 export type AdminUpdateCommunityCommentInput = z.infer<typeof adminUpdateCommunityCommentSchema>;
+export type CreateIssueReportInput = z.infer<typeof createIssueReportSchema>;
+export type IssueReport = z.infer<typeof issueReportSchema>;
 export type RideQuoteResponse = z.infer<typeof rideQuoteResponseSchema>;
 export type AddressSuggestionsResponse = z.infer<typeof addressSuggestionsResponseSchema>;
 export type AdminInviteStatus = z.infer<typeof adminInviteStatusSchema>;
@@ -929,3 +968,4 @@ export type AdminInvitesResponse = z.infer<typeof adminInvitesResponseSchema>;
 export type AdminTeamResponse = z.infer<typeof adminTeamResponseSchema>;
 export type CommunityBoardResponse = z.infer<typeof communityBoardResponseSchema>;
 export type CommunityCommentsResponse = z.infer<typeof communityCommentsResponseSchema>;
+export type IssueReportResponse = z.infer<typeof issueReportResponseSchema>;

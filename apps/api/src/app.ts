@@ -29,6 +29,7 @@ import {
   createCommunityCommentSchema,
   createCommunityProposalSchema,
   createAdminInviteSchema,
+  createIssueReportSchema,
   createDriverRoleSchema,
   driverDispatchSettingsUpdateSchema,
   driverIdleLocationSchema,
@@ -49,6 +50,13 @@ import { createPublicTrackingToken } from "./lib/codes.js";
 import { normalizePhone } from "./lib/phone.js";
 import { store } from "./lib/store.js";
 import { createMapsService } from "./services/maps.js";
+import {
+  createGitHubIssueForReport,
+  sanitizeIssueDetails,
+  sanitizeIssueMetadata,
+  sanitizeIssuePage,
+  sanitizeIssueSummary
+} from "./services/issue-reports.js";
 import { createOtpService } from "./services/otp.js";
 import { calculateCustomerTotal, calculateFare, calculatePlatformDue, findPlatformPricingRule } from "./services/pricing.js";
 import { createRideService } from "./services/ride-service.js";
@@ -678,6 +686,71 @@ export function buildApp() {
   app.get("/me/share", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
     const user = await store.ensureUserReferralCode(request.userContext.id);
     return buildShareInfo(request, user);
+  });
+
+  app.post("/issues/report", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
+    const parsed = createIssueReportSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const user = request.userContext;
+    if (parsed.data.rideId) {
+      const ride = await store.getRideById(parsed.data.rideId);
+      if (!ride) {
+        return reply.notFound("Ride not found");
+      }
+
+      if (!hasRole(user, "admin") && ride.riderId !== user.id && ride.driverId !== user.id) {
+        return reply.forbidden("You do not have access to this ride");
+      }
+    }
+
+    const report = await store.createIssueReport({
+      reporterId: user.id,
+      reporterRole: user.role,
+      source: parsed.data.source,
+      summary: sanitizeIssueSummary(parsed.data.summary),
+      details: sanitizeIssueDetails(parsed.data.details),
+      page: sanitizeIssuePage(parsed.data.page),
+      rideId: parsed.data.rideId,
+      metadata: sanitizeIssueMetadata(parsed.data.metadata)
+    });
+
+    await store.addAuditLog({
+      actorId: user.id,
+      action: "issue.report.created",
+      entityType: "issueReport",
+      entityId: report.id,
+      metadata: {
+        source: report.source,
+        rideId: report.rideId
+      }
+    });
+
+    void (async () => {
+      try {
+        const github = await createGitHubIssueForReport(report, {
+          githubRepo: env.githubRepo,
+          githubToken: env.githubToken
+        });
+
+        await store.updateIssueReportGitHubSync(report.id, {
+          status: "synced",
+          githubIssueNumber: github.issueNumber,
+          githubIssueUrl: github.issueUrl,
+          error: null
+        });
+      } catch (error) {
+        request.log.error({ err: error, issueReportId: report.id }, "Issue report GitHub sync failed");
+        await store.updateIssueReportGitHubSync(report.id, {
+          status: "failed",
+          error: error instanceof Error ? error.message : "GitHub sync failed"
+        });
+      }
+    })();
+
+    return reply.status(201).send({ report });
   });
 
   app.post("/me/roles/driver", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {

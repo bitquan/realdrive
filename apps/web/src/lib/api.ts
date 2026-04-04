@@ -26,6 +26,7 @@ import type {
   CommunityCommentsResponse,
   CommunityProposal,
   CommunityVoteInput,
+  CreateIssueReportInput,
   CreateCommunityCommentInput,
   CreateCommunityProposalInput,
   CreateDriverRoleInput,
@@ -43,6 +44,7 @@ import type {
   DriverRateCard,
   DriverRateCardUpdateInput,
   DriverSignupInput,
+  IssueReportResponse,
   PlatformDue,
   PlatformDueBatch,
   PlatformPayoutSettings,
@@ -456,6 +458,12 @@ export const api = {
   updateCommunityComment(commentId: string, input: AdminUpdateCommunityCommentInput, token: string) {
     return apiFetch<CommunityComment>(`/admin/community/comments/${commentId}`, {
       method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  submitIssueReport(input: CreateIssueReportInput, token: string) {
+    return apiFetch<IssueReportResponse>("/issues/report", {
+      method: "POST",
       body: JSON.stringify(input)
     }, token);
   }

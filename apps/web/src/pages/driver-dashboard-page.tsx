@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DriverDispatchSettings, PaymentMethod, Ride, RideType } from "@shared/contracts";
 import { Link } from "react-router-dom";
-import { BellRing, CarFront, CreditCard, MessageSquare } from "lucide-react";
+import { AlertTriangle, BellRing, CarFront, CreditCard, MessageSquare } from "lucide-react";
 import { MetricCard, MetricStrip, SurfaceHeader } from "@/components/layout/ops-layout";
 import { HeadrestPrintTemplate } from "@/components/share/headrest-print-template";
 import { ShareQrCard } from "@/components/share/share-qr-card";
@@ -98,6 +98,7 @@ export function DriverDashboardPage() {
   const [rateMode, setRateMode] = useState<"platform" | "custom">("platform");
   const [rateForm, setRateForm] = useState(emptyRateForm);
   const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<PaymentMethod[]>(paymentMethodOptions);
+  const [issueFeedback, setIssueFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profileQuery.data) {
@@ -231,6 +232,29 @@ export function DriverDashboardPage() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["driver-offers"] })
   });
 
+  const issueReportMutation = useMutation({
+    mutationFn: (payload: { summary: string; details?: string }) =>
+      api.submitIssueReport(
+        {
+          source: "driver_app",
+          summary: payload.summary,
+          details: payload.details,
+          page: window.location.pathname,
+          metadata: {
+            activeRideCount: activeRidesQuery.data?.length ?? 0,
+            offerCount: offersQuery.data?.length ?? 0
+          }
+        },
+        token!
+      ),
+    onSuccess: () => {
+      setIssueFeedback("Issue submitted. We will review it shortly.");
+    },
+    onError: (error) => {
+      setIssueFeedback(error instanceof Error ? error.message : "Issue report failed");
+    }
+  });
+
   useEffect(() => {
     if (!token) {
       return;
@@ -295,6 +319,24 @@ export function DriverDashboardPage() {
               >
                 {profileQuery.data?.available ? "Set offline" : suspended ? "Clear dues to go available" : "Go available"}
               </Button>
+              <Button
+                variant="ghost"
+                className="mt-3"
+                disabled={issueReportMutation.isPending}
+                onClick={() => {
+                  const summary = window.prompt("Describe the issue in one sentence.")?.trim();
+                  if (!summary) {
+                    return;
+                  }
+
+                  const details = window.prompt("Optional details (steps, expected behavior).")?.trim();
+                  issueReportMutation.mutate({ summary, details: details || undefined });
+                }}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Report an issue
+              </Button>
+              {issueFeedback ? <p className="mt-2 text-xs text-ops-muted">{issueFeedback}</p> : null}
             </div>
           </div>
         }
