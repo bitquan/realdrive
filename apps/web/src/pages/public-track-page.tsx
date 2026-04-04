@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { Clock3, CreditCard, Phone, Share2, User, Vote } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
@@ -29,17 +30,12 @@ export function PublicTrackPage() {
 
   return (
     <div className="space-y-5 md:space-y-6">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
-        <Badge className="gap-2 border-brand-moss/20 bg-brand-mist">
-          <Share2 className="h-4 w-4" />
-          Live trip tracking
-        </Badge>
-        <h1 className="mt-4 text-[2rem] font-extrabold leading-tight tracking-tight md:text-4xl">Track your ride live from this link</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-brand-ink/60 md:text-base">
-          Keep this page open to follow status, route progress, pickup details, and driver updates in real time
-          without signing in.
-        </p>
-      </section>
+      <PageHero
+        eyebrow="Live trip tracking"
+        icon={Share2}
+        title="Track your ride live from this link"
+        description="Keep this page open to follow status, route progress, pickup details, and driver updates in real time without signing in."
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <DeferredLiveMap ride={ride} />

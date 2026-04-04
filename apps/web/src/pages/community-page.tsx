@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PageHero } from "@/components/layout/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,21 +106,16 @@ export function CommunityPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-6 shadow-soft md:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-3xl">
-            <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">RealDrive community board</h1>
-            <p className="mt-3 text-sm leading-6 text-brand-ink/60 md:text-base">
-              One board, simple yes-or-no voting, flat comments, and a clear path for drivers and experienced riders to
-              guide what gets built next.
-            </p>
-          </div>
+      <PageHero
+        title="RealDrive community board"
+        description="One board, simple yes-or-no voting, flat comments, and a clear path for drivers and experienced riders to guide what gets built next."
+        aside={(
           <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-4 text-sm">
             <p className="font-semibold">{user ? `${user.name} · ${roleLabel(user.role)}` : "Community access"}</p>
             <p className="mt-2 text-brand-ink/60">{summary}</p>
           </div>
-        </div>
-      </section>
+        )}
+      />
 
       <Card>
         <CardHeader>

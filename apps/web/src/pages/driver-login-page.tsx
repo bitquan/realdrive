@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Navigate, Link, useNavigate } from "react-router-dom";
+import { PageHero } from "@/components/layout/page-hero";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,12 +29,13 @@ export function DriverLoginPage() {
   return (
     <div className="grid gap-5 md:gap-6 lg:grid-cols-[0.95fr_1.05fr]">
       <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
-        <h1 className="text-[2rem] font-extrabold leading-tight tracking-tight md:text-4xl">Driver sign in</h1>
-        <p className="mt-4 text-sm leading-6 text-brand-ink/60 md:text-base">
-          Approved drivers use email and password to access live offers, active rides, dues status, and dispatch settings.
-        </p>
+        <PageHero
+          title="Driver sign in"
+          description="Approved drivers use email and password to access live offers, active rides, dues status, and dispatch settings."
+          className="border-0 bg-transparent p-0 shadow-none"
+        />
 
-        <div className="mt-6 rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5 text-sm text-brand-ink/65">
+        <div className="mt-4 rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5 text-sm text-brand-ink/65">
           <p className="font-semibold text-brand-ink">No account yet?</p>
           <p className="mt-2">
             New driver accounts begin in pending status and unlock after admin approval.

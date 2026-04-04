@@ -1,4 +1,5 @@
 import { Share2 } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -13,17 +14,12 @@ export function AdminSharePage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-6 shadow-soft md:p-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-brand-moss/20 bg-brand-mist px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-brand-ink/55">
-          <Share2 className="h-4 w-4" />
-          Business QR kit
-        </div>
-        <h1 className="mt-5 text-3xl font-extrabold tracking-tight md:text-4xl">Stable launch QR codes for riders and drivers</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-brand-ink/60 md:text-base">
-          These business QR codes stay tied to the service itself. Personal rider and driver referral QR codes are
-          handled separately inside their own surfaces.
-        </p>
-      </section>
+      <PageHero
+        eyebrow="Business QR kit"
+        icon={Share2}
+        title="Stable launch QR codes for riders and drivers"
+        description="These business QR codes stay tied to the service itself. Personal rider and driver referral QR codes are handled separately inside their own surfaces."
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ShareQrCard

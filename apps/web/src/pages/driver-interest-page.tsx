@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { CheckCircle2, Route, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PageHero } from "@/components/layout/page-hero";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,16 +30,13 @@ export function DriverInterestPage() {
 
   return (
     <div className="grid gap-5 md:gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-brand-moss/20 bg-brand-mist px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-brand-ink/55">
-          <Route className="h-4 w-4" />
-          Driver onboarding
-        </div>
-        <h1 className="mt-4 text-[2rem] font-extrabold leading-tight tracking-tight md:mt-5 md:text-5xl">Drive with RealDrive in your market</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-brand-ink/60 md:text-base">
-          Create your driver account, submit your home market and vehicle, and go live after admin approval.
-          Once approved, you can sign in and accept rider requests.
-        </p>
+      <section className="space-y-4">
+        <PageHero
+          eyebrow="Driver onboarding"
+          icon={Route}
+          title="Drive with RealDrive in your market"
+          description="Create your driver account, submit your home market and vehicle, and go live after admin approval. Once approved, you can sign in and accept rider requests."
+        />
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5">

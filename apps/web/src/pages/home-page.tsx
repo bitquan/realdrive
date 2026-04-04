@@ -19,8 +19,8 @@ import {
   Wallet
 } from "lucide-react";
 import type { PublicRideRequest } from "@shared/contracts";
+import { PageHero } from "@/components/layout/page-hero";
 import { ShareQrCard } from "@/components/share/share-qr-card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -145,46 +145,13 @@ export function HomePage() {
 
   return (
     <div className="space-y-5 md:space-y-6">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <Badge className="gap-2 border-brand-moss/20 bg-brand-mist">
-              <Shield className="h-4 w-4" />
-              Community-powered rideshare pilot
-            </Badge>
-            <h1 className="mt-4 text-[2rem] font-extrabold leading-tight tracking-tight md:mt-5 md:text-5xl">
-              Book your ride in under a minute and track everything from one live link.
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-brand-ink/60 md:mt-4 md:text-base">
-              RealDrive keeps the rider flow simple: instant quote, guest checkout, live trip tracking, and personal
-              share links for referral growth.
-            </p>
-
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-              <a
-                href="#book"
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:w-auto"
-              >
-                Start booking
-              </a>
-              <Link
-                to="/driver/signup"
-                className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
-              >
-                Driver signup
-              </Link>
-              {userHasRole(user, "rider") ? (
-                <Link
-                  to="/rider/rides"
-                  className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
-                >
-                  My rides
-                </Link>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="w-full max-w-sm rounded-4xl border border-brand-ink/10 bg-brand-sand/60 p-4 text-sm shadow-soft md:p-5">
+      <PageHero
+        eyebrow="Community-powered rideshare pilot"
+        icon={Shield}
+        title="Book your ride in under a minute and track everything from one live link."
+        description="RealDrive keeps the rider flow simple: instant quote, guest checkout, live trip tracking, and personal share links for referral growth."
+        aside={(
+          <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/60 p-4 text-sm shadow-soft md:p-5">
             <p className="font-semibold">What riders get now</p>
             <div className="mt-3 space-y-2 text-brand-ink/65">
               <p>Guest booking and live trip tracking.</p>
@@ -199,8 +166,31 @@ export function HomePage() {
               </div>
             ) : null}
           </div>
-        </div>
-      </section>
+        )}
+      />
+
+      <div className="-mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+        <a
+          href="#book"
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:w-auto"
+        >
+          Start booking
+        </a>
+        <Link
+          to="/driver/signup"
+          className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
+        >
+          Driver signup
+        </Link>
+        {userHasRole(user, "rider") ? (
+          <Link
+            to="/rider/rides"
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
+          >
+            My rides
+          </Link>
+        ) : null}
+      </div>
 
       {referredByQuery.data?.ownerName ? (
         <div className="rounded-4xl border border-brand-copper/20 bg-brand-sand/50 p-4 text-sm text-brand-ink/70">
