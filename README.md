@@ -1,5 +1,8 @@
 # RealDrive
 
+[![Ops Health Check](https://github.com/bitquan/realdrive/actions/workflows/ops-health-check.yml/badge.svg)](https://github.com/bitquan/realdrive/actions/workflows/ops-health-check.yml)
+[![Ops Daily Digest](https://github.com/bitquan/realdrive/actions/workflows/ops-daily-digest.yml/badge.svg)](https://github.com/bitquan/realdrive/actions/workflows/ops-daily-digest.yml)
+
 RealDrive is a web-first ride dispatch MVP with separate rider, driver, and admin surfaces. The current implementation supports guest rider booking, first-admin setup, real driver signup with admin approval, state-aware dispatch, referral QR codes, multi-role admin/driver accounts, a simple community board, and 5% platform dues on completed trips.
 
 Project docs live in [`docs/README.md`](./docs/README.md).
