@@ -31,3 +31,5 @@ This folder is the project handbook for RealDrive.
   Current tests, verification commands, and recommended next coverage.
 - [10 Known Gaps And Next Steps](./10-known-gaps-and-next-steps.md)
   Current limitations, non-production defaults, and recommended next implementation steps.
+- [11 Live Deployment](./11-live-deployment.md)
+  Render + Vercel deployment flow, required env vars, and post-deploy checks.

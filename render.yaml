@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: realdrive-api
+    runtime: node
+    rootDir: .
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @realdrive/api build && pnpm --filter @realdrive/api exec prisma migrate deploy
+    startCommand: pnpm --filter @realdrive/api exec node apps/api/dist/index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: LAUNCH_MODE
+        value: marketplace
+      - key: OWNER_DRIVER_USER_ID
+        sync: false
+      - key: OWNER_DRIVER_PHONE
+        sync: false
+      - key: PUBLIC_BASE_URL
+        value: https://realdrive.vercel.app
+      - key: MAPBOX_TOKEN
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_VERIFY_SERVICE_SID
+        sync: false
+      - key: CLIENT_ORIGIN
+        value: https://realdrive.vercel.app
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+
