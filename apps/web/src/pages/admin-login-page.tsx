@@ -17,7 +17,8 @@ export function AdminLoginPage() {
 
   const setupStatusQuery = useQuery({
     queryKey: ["admin-setup-status"],
-    queryFn: api.adminSetupStatus
+    queryFn: api.adminSetupStatus,
+    retry: false
   });
 
   const loginMutation = useMutation({
@@ -48,9 +49,14 @@ export function AdminLoginPage() {
       <Card>
         <CardHeader>
           <CardTitle>Admin sign-in</CardTitle>
-          <CardDescription>Use the admin account you created during the one-time setup.</CardDescription>
+          <CardDescription>Use the admin account you created during the one-time setup or from an admin invite.</CardDescription>
         </CardHeader>
         <CardContent>
+          {setupStatusQuery.error ? (
+            <div className="mb-4 rounded-3xl border border-ops-error/25 bg-ops-error/10 p-4 text-sm text-ops-error">
+              {setupStatusQuery.error.message}
+            </div>
+          ) : null}
           <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label htmlFor="adminEmail">Email</Label>

@@ -1,7 +1,21 @@
-import { Prisma, Role as DbRole } from "@prisma/client";
+import {
+  DriverOnboardingDocumentType as DbDriverOnboardingDocumentType,
+  PlatformDueBatchStatus as DbPlatformDueBatchStatus,
+  Prisma,
+  Role as DbRole
+} from "@prisma/client";
 import type {
+  AcceptAdminInviteInput,
+  AdminReviewDriverDocumentInput,
+  AdminUpdatePlatformDueBatchInput,
+  CollectorAdminSummary,
+  CreateAdminInviteInput,
+  DriverDueSnapshot,
+  DriverDocumentType,
+  DriverDocumentUpload,
   CommunityEligibility,
   DriverProfileUpdateInput,
+  DuePaymentMethod,
   RideType
 } from "@shared/contracts";
 import { env } from "../config/env.js";
@@ -15,14 +29,22 @@ import type {
 import { createCommunityAccessToken, createReferralCode } from "./codes.js";
 import { prisma } from "./db.js";
 import {
+  persistDriverDocumentUpload,
+  removeStoredDriverDocument,
+  resolveStoredDriverDocumentPath
+} from "./driver-document-storage.js";
+import {
   fromDbPaymentStatus,
   mapCommunityComment,
   mapCommunityProposal,
   mapDispatchSettings,
   mapDriverAccount,
+  mapDriverDueSnapshot,
+  mapDriverOnboardingDocument,
   mapDriverInterest,
   mapDriverRateCard,
   mapPlatformDue,
+  mapPlatformDueBatch,
   mapPlatformPayoutSettings,
   mapPricingRule,
   mapRide,
@@ -30,10 +52,13 @@ import {
   mapSessionUser,
   toDbCommunityVoteChoice,
   toDbDriverApprovalStatus,
+  toDbDriverDocumentStatus,
+  toDbDriverDocumentType,
   toDbDriverPricingMode,
   toDbDuePaymentMethod,
   toDbPaymentMethod,
   toDbPaymentStatus,
+  toDbPlatformDueBatchStatus,
   toDbPlatformDueStatus,
   toDbRidePricingSource,
   toDbRideStatus,
@@ -57,7 +82,13 @@ const COMMUNITY_COMPLETED_RIDE_THRESHOLD = 51;
 const userInclude = {
   driverProfile: {
     include: {
-      vehicle: true
+      vehicle: true,
+      collectorAdmin: true
+    }
+  },
+  driverDocuments: {
+    orderBy: {
+      createdAt: "asc"
     }
   },
   driverRateCards: {
@@ -119,6 +150,81 @@ function normalizeStateList(states: string[]) {
   );
 }
 
+const requiredDriverDocumentTypes: DriverDocumentType[] = [
+  "insurance",
+  "registration",
+  "background_check",
+  "mvr"
+];
+
+const requiredDriverDocumentDbTypes = requiredDriverDocumentTypes.map(toDbDriverDocumentType);
+
+async function createDriverDocumentRecords(
+  tx: Prisma.TransactionClient,
+  driverId: string,
+  uploads: DriverDocumentUpload[]
+) {
+  const storedPaths: string[] = [];
+
+  try {
+    for (const upload of uploads) {
+      const stored = await persistDriverDocumentUpload(driverId, upload);
+      storedPaths.push(stored.storagePath);
+
+      await tx.driverOnboardingDocument.create({
+        data: {
+          driverId,
+          type: toDbDriverDocumentType(upload.type),
+          status: toDbDriverDocumentStatus("pending"),
+          fileName: upload.fileName,
+          mimeType: upload.mimeType,
+          fileSizeBytes: stored.fileSizeBytes,
+          storagePath: stored.storagePath
+        }
+      });
+    }
+  } catch (error) {
+    await Promise.all(storedPaths.map((storagePath) => removeStoredDriverDocument(storagePath)));
+    throw error;
+  }
+}
+
+async function driverDocumentsReadyForApproval(
+  tx: Prisma.TransactionClient | typeof prisma,
+  driverId: string
+) {
+  const documents = await tx.driverOnboardingDocument.findMany({
+    where: { driverId }
+  });
+
+  if (documents.length < requiredDriverDocumentDbTypes.length) {
+    return false;
+  }
+
+  return requiredDriverDocumentDbTypes.every((requiredType) =>
+    documents.some((document) => document.type === requiredType && document.status === "APPROVED")
+  );
+}
+
+async function getDriverDocumentOrThrow(
+  tx: Prisma.TransactionClient | typeof prisma,
+  driverId: string,
+  documentId: string
+) {
+  const document = await tx.driverOnboardingDocument.findFirst({
+    where: {
+      id: documentId,
+      driverId
+    }
+  });
+
+  if (!document) {
+    throw new Error("Driver document not found");
+  }
+
+  return document;
+}
+
 function ownerDriverFilter() {
   if (env.launchMode !== "solo_driver") {
     return {};
@@ -127,6 +233,69 @@ function ownerDriverFilter() {
   return {
     ...(env.ownerDriverUserId ? { id: env.ownerDriverUserId } : {}),
     ...(env.ownerDriverPhone ? { phone: env.ownerDriverPhone } : {})
+  };
+}
+
+const collectorSummarySelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  referralCode: true
+} as const;
+
+const platformDueInclude = {
+  driver: {
+    include: {
+      driverProfile: true
+    }
+  },
+  ride: {
+    include: {
+      rider: true
+    }
+  }
+} as const;
+
+const platformDueBatchInclude = {
+  driver: {
+    include: {
+      driverProfile: true
+    }
+  },
+  collectorAdmin: {
+    select: collectorSummarySelect
+  },
+  dues: {
+    include: platformDueInclude,
+    orderBy: {
+      createdAt: "asc"
+    }
+  }
+} as const;
+
+function toCollectorSummary(
+  user:
+    | {
+        id: string;
+        name: string;
+        email: string | null;
+        phone: string | null;
+        referralCode?: string | null;
+      }
+    | null
+    | undefined
+): CollectorAdminSummary | null {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    referralCode: user.referralCode ?? null
   };
 }
 
@@ -329,87 +498,348 @@ async function ensureRoles(
 }
 
 async function ensurePayoutSettingsRecord(tx: Prisma.TransactionClient = prisma) {
+  return tx.platformPayoutSettings.findFirst({
+    where: {
+      adminId: null
+    }
+  });
+}
+
+async function ensureCollectorPayoutSettingsRecord(
+  adminId: string,
+  tx: Prisma.TransactionClient | typeof prisma = prisma
+) {
   return tx.platformPayoutSettings.upsert({
-    where: { id: "platform" },
+    where: { adminId },
     update: {},
     create: {
-      id: "platform"
+      adminId
     }
   });
 }
 
 async function markOverduePlatformDuesInternal(now = new Date()) {
-  const overdue = await prisma.platformDue.findMany({
+  const overdueUnbatched = await prisma.platformDue.findMany({
     where: {
       status: "PENDING",
+      batchId: null,
       dueAt: {
         lt: now
       }
     },
-    include: {
-      driver: {
-        include: {
-          driverProfile: true
-        }
-      },
-      ride: {
-        include: {
-          rider: true
-        }
-      }
+    select: {
+      driverId: true
     }
   });
 
-  if (!overdue.length) {
+  const overdueDriverIds = Array.from(new Set(overdueUnbatched.map((due) => due.driverId)));
+
+  for (const driverId of overdueDriverIds) {
+    await createDueBatchForDriverInternal(prisma, driverId, undefined, {
+      markOverdue: true,
+      adminNote: "Automatically generated after 48 hours with collectible completed-trip dues."
+    });
+  }
+
+  const openBatches = await prisma.platformDueBatch.findMany({
+    where: {
+      status: "OPEN",
+      dueAt: {
+        lt: now
+      }
+    },
+    include: platformDueBatchInclude
+  });
+
+  const openBatchIds = openBatches.map((batch) => batch.id);
+  const driverIds = Array.from(new Set([...overdueDriverIds, ...openBatches.map((batch) => batch.driverId)]));
+
+  if (openBatchIds.length) {
+    await prisma.$transaction([
+      prisma.platformDueBatch.updateMany({
+        where: {
+          id: {
+            in: openBatchIds
+          }
+        },
+        data: {
+          status: "OVERDUE"
+        }
+      }),
+      prisma.platformDue.updateMany({
+        where: {
+          batchId: {
+            in: openBatchIds
+          }
+        },
+        data: {
+          status: "OVERDUE"
+        }
+      })
+    ]);
+  }
+
+  if (!driverIds.length) {
     return [];
   }
 
-  const driverIds = Array.from(new Set(overdue.map((due) => due.driverId)));
-
-  await prisma.$transaction([
-    prisma.platformDue.updateMany({
-      where: {
-        id: {
-          in: overdue.map((due) => due.id)
-        }
-      },
-      data: {
-        status: "OVERDUE"
-      }
-    }),
-    prisma.driverProfile.updateMany({
-      where: {
-        userId: {
-          in: driverIds
-        }
-      },
-      data: {
-        available: false
-      }
-    })
-  ]);
-
-  const refreshed = await prisma.platformDue.findMany({
+  await prisma.driverProfile.updateMany({
     where: {
-      id: {
-        in: overdue.map((due) => due.id)
+      userId: {
+        in: driverIds
       }
     },
-    include: {
-      driver: {
-        include: {
-          driverProfile: true
-        }
-      },
-      ride: {
-        include: {
-          rider: true
-        }
-      }
+    data: {
+      available: false
     }
   });
 
+  const refreshed = await prisma.platformDue.findMany({
+    where: {
+      driverId: {
+        in: driverIds
+      },
+      status: "OVERDUE"
+    },
+    include: platformDueInclude
+  });
+
   return refreshed.map(mapPlatformDue);
+}
+
+async function findCollectorAdminByCode(
+  tx: Prisma.TransactionClient | typeof prisma,
+  collectorCode?: string | null
+) {
+  if (!collectorCode) {
+    return null;
+  }
+
+  const user = await tx.user.findFirst({
+    where: {
+      referralCode: collectorCode,
+      OR: [{ role: DbRole.ADMIN }, { roles: { has: DbRole.ADMIN } }]
+    },
+    select: collectorSummarySelect
+  });
+
+  return user ?? null;
+}
+
+async function resolveCollectorAdminId(
+  tx: Prisma.TransactionClient | typeof prisma,
+  options: {
+    collectorCode?: string | null;
+    fallbackUserId?: string | null;
+  }
+) {
+  const referredAdmin = await findCollectorAdminByCode(tx, options.collectorCode);
+  if (referredAdmin) {
+    return referredAdmin.id;
+  }
+
+  if (!options.fallbackUserId) {
+    return null;
+  }
+
+  const fallbackUser = await tx.user.findUnique({
+    where: { id: options.fallbackUserId },
+    select: {
+      id: true,
+      role: true,
+      roles: true
+    }
+  });
+
+  if (fallbackUser && hasDbRole(fallbackUser, DbRole.ADMIN)) {
+    return fallbackUser.id;
+  }
+
+  return null;
+}
+
+async function generateDueReferenceCode(tx: Prisma.TransactionClient) {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const count = await tx.platformDueBatch.count();
+    const code = `#DUES${String(count + attempt + 1).padStart(6, "0")}`;
+    const existing = await tx.platformDueBatch.findUnique({
+      where: { referenceCode: code },
+      select: { id: true }
+    });
+
+    if (!existing) {
+      return code;
+    }
+  }
+
+  throw new Error("Unable to generate a unique dues reference");
+}
+
+async function createDueBatchForDriverInternal(
+  tx: Prisma.TransactionClient | typeof prisma,
+  driverId: string,
+  collectorAdminId?: string | null,
+  options?: { markOverdue?: boolean; adminNote?: string | null; dueIds?: string[] }
+) {
+  const dues = await tx.platformDue.findMany({
+    where: {
+      driverId,
+      ...(options?.dueIds?.length
+        ? {
+            id: {
+              in: options.dueIds
+            }
+          }
+        : {}),
+      batchId: null,
+      status: "PENDING"
+    },
+    include: platformDueInclude,
+    orderBy: [{ collectibleAt: "asc" }, { createdAt: "asc" }]
+  });
+
+  if (!dues.length) {
+    return null;
+  }
+
+  const resolvedCollectorAdminId =
+    collectorAdminId ??
+    (
+      await tx.driverProfile.findUnique({
+        where: { userId: driverId },
+        select: { collectorAdminId: true }
+      })
+    )?.collectorAdminId ??
+    null;
+
+  const generatedAt = new Date();
+  const referenceCode = "platformDueBatch" in tx ? await generateDueReferenceCode(tx as Prisma.TransactionClient) : `#DUES${generatedAt.getTime()}`;
+  const amount = Number(dues.reduce((total, due) => total + Number(due.amount), 0).toFixed(2));
+  const dueAt = options?.markOverdue ? generatedAt : new Date(generatedAt.getTime() + 48 * 60 * 60 * 1000);
+  const status: DbPlatformDueBatchStatus = options?.markOverdue ? DbPlatformDueBatchStatus.OVERDUE : DbPlatformDueBatchStatus.OPEN;
+
+  const batch = await tx.platformDueBatch.create({
+    data: {
+      referenceCode,
+      driverId,
+      collectorAdminId: resolvedCollectorAdminId,
+      amount,
+      status,
+      adminNote: options?.adminNote ?? null,
+      generatedAt,
+      dueAt,
+      dues: {
+        connect: dues.map((due) => ({ id: due.id }))
+      }
+    },
+    include: platformDueBatchInclude
+  });
+
+  await tx.platformDue.updateMany({
+    where: {
+      id: {
+        in: dues.map((due) => due.id)
+      }
+    },
+    data: {
+      batchId: batch.id,
+      status: options?.markOverdue ? "OVERDUE" : "PENDING"
+    }
+  });
+
+  const refreshed = await tx.platformDueBatch.findUniqueOrThrow({
+    where: { id: batch.id },
+    include: platformDueBatchInclude
+  });
+
+  return mapPlatformDueBatch(refreshed);
+}
+
+async function listDriverDueBatchesInternal(
+  tx: Prisma.TransactionClient | typeof prisma,
+  driverId: string
+) {
+  const batches = await tx.platformDueBatch.findMany({
+    where: { driverId },
+    orderBy: [{ status: "asc" }, { generatedAt: "desc" }],
+    include: platformDueBatchInclude
+  });
+
+  return batches.map(mapPlatformDueBatch);
+}
+
+async function buildDriverDueSnapshotInternal(
+  tx: Prisma.TransactionClient | typeof prisma,
+  driverId: string
+) {
+  const driver = await tx.user.findUnique({
+    where: { id: driverId },
+    include: userInclude
+  });
+
+  if (!driver?.driverProfile) {
+    throw new Error("Driver not found");
+  }
+
+  const [unbatchedDues, batches] = await Promise.all([
+    tx.platformDue.findMany({
+      where: {
+        driverId,
+        batchId: null,
+        status: "PENDING"
+      },
+      orderBy: {
+        collectibleAt: "desc"
+      }
+    }),
+    tx.platformDueBatch.findMany({
+      where: { driverId },
+      orderBy: [{ status: "asc" }, { generatedAt: "desc" }]
+    })
+  ]);
+
+  const openBatches = batches.filter((batch) => batch.status === "OPEN");
+  const overdueBatches = batches.filter((batch) => batch.status === "OVERDUE");
+  const lastCompletedRideAt = unbatchedDues[0]?.collectibleAt ?? null;
+
+  return mapDriverDueSnapshot({
+    driver: {
+      id: driver.id,
+      name: driver.name,
+      email: driver.email,
+      phone: driver.phone,
+      available: driver.driverProfile.available
+    },
+    collector: toCollectorSummary(driver.driverProfile.collectorAdmin),
+    collectibleUnbatchedTotal: unbatchedDues.reduce((total, due) => total + Number(due.amount), 0),
+    collectibleUnbatchedCount: unbatchedDues.length,
+    openBatchCount: openBatches.length,
+    openBatchTotal: openBatches.reduce((total, batch) => total + Number(batch.amount), 0),
+    overdueBatchCount: overdueBatches.length,
+    overdueBatchTotal: overdueBatches.reduce((total, batch) => total + Number(batch.amount), 0),
+    lastCompletedRideAt
+  });
+}
+
+async function releaseDriverBlockIfClear(
+  tx: Prisma.TransactionClient | typeof prisma,
+  driverId: string
+) {
+  const overdueCount = await tx.platformDueBatch.count({
+    where: {
+      driverId,
+      status: "OVERDUE"
+    }
+  });
+
+  if (overdueCount === 0) {
+    await tx.driverProfile.updateMany({
+      where: { userId: driverId },
+      data: {
+        available: false
+      }
+    });
+  }
 }
 
 function buildVehicleUpdate(patch: DriverProfileUpdateInput["vehicle"]) {
@@ -645,6 +1075,7 @@ export const store: Store = {
                       }
                     },
                     create: {
+                      collectorAdminId: user.id,
                       approved: true,
                       approvalStatus: "APPROVED",
                       available: false,
@@ -672,6 +1103,8 @@ export const store: Store = {
           },
           include: userInclude
         });
+
+        await ensureCollectorPayoutSettingsRecord(user.id, tx);
 
         if (input.driverProfile) {
           await ensureDriverRateCards(tx, user.id);
@@ -728,7 +1161,12 @@ export const store: Store = {
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      await ensureRoles(tx, userId, [DbRole.DRIVER], existing.role === DbRole.RIDER ? DbRole.DRIVER : existing.role);
+      const collectorAdminId = await resolveCollectorAdminId(tx, {
+        collectorCode: input.collectorCode,
+        fallbackUserId: userId
+      });
+
+      await ensureRoles(tx, userId, [DbRole.DRIVER], existing.role);
 
       const user = await tx.user.update({
         where: { id: userId },
@@ -736,63 +1174,7 @@ export const store: Store = {
           phone: input.phone,
           driverProfile: {
             create: {
-              approved: true,
-              approvalStatus: "APPROVED",
-              available: false,
-              homeState: input.homeState.toUpperCase(),
-              homeCity: input.homeCity,
-              localDispatchEnabled: true,
-              localRadiusMiles: 25,
-              serviceAreaDispatchEnabled: true,
-              serviceAreaStates: [input.homeState.toUpperCase()],
-              nationwideDispatchEnabled: false,
-              pricingMode: "PLATFORM",
-              vehicle: {
-                create: {
-                  makeModel: input.vehicle.makeModel,
-                  plate: input.vehicle.plate,
-                  color: input.vehicle.color ?? null,
-                  rideType: toDbRideType(input.vehicle.rideType),
-                  seats: input.vehicle.seats
-                }
-              }
-            }
-          }
-        },
-        include: userInclude
-      });
-
-      await ensureDriverRateCards(tx, user.id);
-
-      return tx.user.findUniqueOrThrow({
-        where: { id: user.id },
-        include: userInclude
-      });
-    });
-
-    return mapDriverAccount(await ensureCommunityAccessToken(await ensureReferralCode(updated)));
-  },
-
-  async createDriverAccount(input) {
-    const email = input.email.toLowerCase();
-    const phone = input.phone;
-    const existing = await findUserByContact(phone, email);
-
-    if (existing) {
-      throw new Error("A user with that phone number or email already exists");
-    }
-
-    const created = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          role: DbRole.DRIVER,
-          roles: [DbRole.DRIVER],
-          name: input.name,
-          email,
-          phone,
-          passwordHash: input.passwordHash,
-          driverProfile: {
-            create: {
+              collectorAdminId,
               approved: false,
               approvalStatus: "PENDING",
               available: false,
@@ -819,6 +1201,70 @@ export const store: Store = {
         include: userInclude
       });
 
+      await createDriverDocumentRecords(tx, user.id, input.documents);
+      await ensureDriverRateCards(tx, user.id);
+
+      return tx.user.findUniqueOrThrow({
+        where: { id: user.id },
+        include: userInclude
+      });
+    });
+
+    return mapDriverAccount(await ensureCommunityAccessToken(await ensureReferralCode(updated)));
+  },
+
+  async createDriverAccount(input) {
+    const email = input.email.toLowerCase();
+    const phone = input.phone;
+    const existing = await findUserByContact(phone, email);
+
+    if (existing) {
+      throw new Error("A user with that phone number or email already exists");
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const collectorAdminId = await resolveCollectorAdminId(tx, {
+        collectorCode: input.collectorCode
+      });
+
+      const user = await tx.user.create({
+        data: {
+          role: DbRole.DRIVER,
+          roles: [DbRole.DRIVER],
+          name: input.name,
+          email,
+          phone,
+          passwordHash: input.passwordHash,
+          driverProfile: {
+            create: {
+              collectorAdminId,
+              approved: false,
+              approvalStatus: "PENDING",
+              available: false,
+              homeState: input.homeState.toUpperCase(),
+              homeCity: input.homeCity,
+              localDispatchEnabled: true,
+              localRadiusMiles: 25,
+              serviceAreaDispatchEnabled: true,
+              serviceAreaStates: [input.homeState.toUpperCase()],
+              nationwideDispatchEnabled: false,
+              pricingMode: "PLATFORM",
+              vehicle: {
+                create: {
+                  makeModel: input.vehicle.makeModel,
+                  plate: input.vehicle.plate,
+                  color: input.vehicle.color ?? null,
+                  rideType: toDbRideType(input.vehicle.rideType),
+                  seats: input.vehicle.seats
+                }
+              }
+            }
+          }
+        },
+        include: userInclude
+      });
+
+      await createDriverDocumentRecords(tx, user.id, input.documents);
       await ensureDriverRateCards(tx, user.id);
 
       return tx.user.findUniqueOrThrow({
@@ -1474,18 +1920,7 @@ export const store: Store = {
     if (ride.paymentStatus === "WAIVED" || amount <= 0) {
       const existing = await prisma.platformDue.findUnique({
         where: { rideId },
-        include: {
-          driver: {
-            include: {
-              driverProfile: true
-            }
-          },
-          ride: {
-            include: {
-              rider: true
-            }
-          }
-        }
+        include: platformDueInclude
       });
 
       if (!existing) {
@@ -1498,51 +1933,50 @@ export const store: Store = {
           status: "WAIVED",
           amount: 0
         },
-        include: {
-          driver: {
-            include: {
-              driverProfile: true
-            }
-          },
-          ride: {
-            include: {
-              rider: true
-            }
-          }
-        }
+        include: platformDueInclude
       });
 
       return mapPlatformDue(waived);
     }
+
+    const collectibleAt = ride.completedAt ?? new Date();
+    const dueAt = new Date(collectibleAt.getTime() + 48 * 60 * 60 * 1000);
 
     const due = await prisma.platformDue.upsert({
       where: { rideId },
       update: {
         driverId: ride.driverId,
         amount,
-        dueAt: new Date((ride.completedAt ?? new Date()).getTime() + 48 * 60 * 60 * 1000),
+        collectibleAt,
+        dueAt,
         status: "PENDING"
       },
       create: {
         rideId,
         driverId: ride.driverId,
         amount,
-        dueAt: new Date((ride.completedAt ?? new Date()).getTime() + 48 * 60 * 60 * 1000),
+        collectibleAt,
+        dueAt,
         status: "PENDING"
       },
-      include: {
-        driver: {
-          include: {
-            driverProfile: true
-          }
-        },
-        ride: {
-          include: {
-            rider: true
-          }
-        }
-      }
+      include: platformDueInclude
     });
+
+    if (ride.paymentMethod === "CASH") {
+      await prisma.$transaction(async (tx) => {
+        const refreshed = await tx.platformDue.findUnique({
+          where: { rideId },
+          select: { batchId: true }
+        });
+
+        if (!refreshed?.batchId) {
+          await createDueBatchForDriverInternal(tx, ride.driverId!, undefined, {
+            dueIds: [due.id],
+            adminNote: "Auto-generated because the rider paid cash and the trip completed."
+          });
+        }
+      });
+    }
 
     return mapPlatformDue(due);
   },
@@ -1553,18 +1987,7 @@ export const store: Store = {
     const dues = await prisma.platformDue.findMany({
       where: { driverId },
       orderBy: [{ status: "asc" }, { dueAt: "asc" }],
-      include: {
-        driver: {
-          include: {
-            driverProfile: true
-          }
-        },
-        ride: {
-          include: {
-            rider: true
-          }
-        }
-      }
+      include: platformDueInclude
     });
 
     return dues.map(mapPlatformDue);
@@ -1575,18 +1998,7 @@ export const store: Store = {
 
     const dues = await prisma.platformDue.findMany({
       orderBy: [{ status: "asc" }, { dueAt: "asc" }],
-      include: {
-        driver: {
-          include: {
-            driverProfile: true
-          }
-        },
-        ride: {
-          include: {
-            rider: true
-          }
-        }
-      }
+      include: platformDueInclude
     });
 
     return dues.map(mapPlatformDue);
@@ -1602,18 +2014,7 @@ export const store: Store = {
         resolvedById: patch.resolvedById ?? null,
         paidAt: patch.status === "paid" ? new Date() : null
       },
-      include: {
-        driver: {
-          include: {
-            driverProfile: true
-          }
-        },
-        ride: {
-          include: {
-            rider: true
-          }
-        }
-      }
+      include: platformDueInclude
     });
 
     const hasOverdue = await prisma.platformDue.count({
@@ -1639,12 +2040,60 @@ export const store: Store = {
 
   async getPlatformPayoutSettings() {
     const settings = await ensurePayoutSettingsRecord();
-    return mapPlatformPayoutSettings(settings);
+    return settings ? mapPlatformPayoutSettings(settings) : null;
   },
 
   async updatePlatformPayoutSettings(input) {
+    const existing = await ensurePayoutSettingsRecord();
+    const settings = existing
+      ? await prisma.platformPayoutSettings.update({
+          where: { id: existing.id },
+          data: {
+            cashAppHandle: input.cashAppHandle ?? undefined,
+            zelleHandle: input.zelleHandle ?? undefined,
+            jimHandle: input.jimHandle ?? undefined,
+            cashInstructions: input.cashInstructions ?? undefined,
+            otherInstructions: input.otherInstructions ?? undefined
+          }
+        })
+      : await prisma.platformPayoutSettings.create({
+          data: {
+            cashAppHandle: input.cashAppHandle ?? null,
+            zelleHandle: input.zelleHandle ?? null,
+            jimHandle: input.jimHandle ?? null,
+            cashInstructions: input.cashInstructions ?? null,
+            otherInstructions: input.otherInstructions ?? null
+          }
+        });
+
+    return mapPlatformPayoutSettings(settings);
+  },
+
+  async listAdminUsers() {
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [{ role: DbRole.ADMIN }, { roles: { has: DbRole.ADMIN } }]
+      },
+      orderBy: {
+        name: "asc"
+      },
+      select: collectorSummarySelect
+    });
+
+    return users.map((user) => ({
+      ...user,
+      referralCode: user.referralCode ?? null
+    }));
+  },
+
+  async getCollectorPayoutSettings(adminId) {
+    const settings = await ensureCollectorPayoutSettingsRecord(adminId);
+    return mapPlatformPayoutSettings(settings);
+  },
+
+  async updateCollectorPayoutSettings(adminId, input) {
     const settings = await prisma.platformPayoutSettings.upsert({
-      where: { id: "platform" },
+      where: { adminId },
       update: {
         cashAppHandle: input.cashAppHandle ?? undefined,
         zelleHandle: input.zelleHandle ?? undefined,
@@ -1653,7 +2102,7 @@ export const store: Store = {
         otherInstructions: input.otherInstructions ?? undefined
       },
       create: {
-        id: "platform",
+        adminId,
         cashAppHandle: input.cashAppHandle ?? null,
         zelleHandle: input.zelleHandle ?? null,
         jimHandle: input.jimHandle ?? null,
@@ -1665,6 +2114,169 @@ export const store: Store = {
     return mapPlatformPayoutSettings(settings);
   },
 
+  async listDriverDueBatches(driverId) {
+    await markOverduePlatformDuesInternal();
+    return listDriverDueBatchesInternal(prisma, driverId);
+  },
+
+  async listAllDueBatches() {
+    await markOverduePlatformDuesInternal();
+
+    const batches = await prisma.platformDueBatch.findMany({
+      orderBy: [{ status: "asc" }, { generatedAt: "desc" }],
+      include: platformDueBatchInclude
+    });
+
+    return batches.map(mapPlatformDueBatch);
+  },
+
+  async getDriverDueSnapshot(driverId) {
+    await markOverduePlatformDuesInternal();
+    return buildDriverDueSnapshotInternal(prisma, driverId);
+  },
+
+  async listDriverDueSnapshots() {
+    await markOverduePlatformDuesInternal();
+
+    const drivers = await prisma.user.findMany({
+      where: {
+        OR: [{ role: DbRole.DRIVER }, { roles: { has: DbRole.DRIVER } }]
+      },
+      orderBy: {
+        name: "asc"
+      },
+      select: {
+        id: true
+      }
+    });
+
+    return Promise.all(drivers.map((driver) => buildDriverDueSnapshotInternal(prisma, driver.id)));
+  },
+
+  async createDueBatchForDriver(driverId, collectorAdminId, options) {
+    await markOverduePlatformDuesInternal();
+    return prisma.$transaction((tx) => createDueBatchForDriverInternal(tx, driverId, collectorAdminId, options));
+  },
+
+  async updateDueBatch(batchId, patch) {
+    const batch = await prisma.platformDueBatch.findUnique({
+      where: { id: batchId },
+      include: platformDueBatchInclude
+    });
+
+    if (!batch) {
+      throw new Error("Due batch not found");
+    }
+
+    const memoCapable: DuePaymentMethod[] = ["cashapp", "zelle", "jim"];
+    if (patch.status === "paid") {
+      if (patch.paymentMethod && memoCapable.includes(patch.paymentMethod) && !patch.observedTitle && !patch.observedNote) {
+        throw new Error("Memo-capable payments require the dues code in the title, note, or both.");
+      }
+
+      if ((patch.paymentMethod === "cash" || patch.paymentMethod === "other") && !patch.adminNote?.trim()) {
+        throw new Error("Cash and other payments require an admin note.");
+      }
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const nextStatus = toDbPlatformDueBatchStatus(patch.status);
+
+      await tx.platformDueBatch.update({
+        where: { id: batchId },
+        data: {
+          status: nextStatus,
+          paymentMethod:
+            patch.status === "open" || patch.status === "void"
+              ? null
+              : patch.paymentMethod
+                ? toDbDuePaymentMethod(patch.paymentMethod)
+                : null,
+          observedTitle: patch.observedTitle ?? null,
+          observedNote: patch.observedNote ?? null,
+          adminNote: patch.adminNote ?? null,
+          paidAt: patch.status === "paid" ? now : null,
+          dueAt: patch.status === "open" ? new Date(now.getTime() + 48 * 60 * 60 * 1000) : undefined
+        }
+      });
+
+      if (patch.status === "void") {
+        await tx.platformDue.updateMany({
+          where: { batchId },
+          data: {
+            batchId: null,
+            status: "PENDING",
+            paymentMethod: null,
+            note: null,
+            paidAt: null,
+            resolvedById: null
+          }
+        });
+      } else {
+        await tx.platformDue.updateMany({
+          where: { batchId },
+          data: {
+            status:
+              patch.status === "paid"
+                ? "PAID"
+                : patch.status === "waived"
+                  ? "WAIVED"
+                  : patch.status === "open"
+                    ? "PENDING"
+                    : "OVERDUE",
+            paymentMethod:
+              patch.status === "paid" && patch.paymentMethod ? toDbDuePaymentMethod(patch.paymentMethod) : null,
+            note: patch.adminNote ?? null,
+            paidAt: patch.status === "paid" ? now : null,
+            resolvedById: patch.status === "paid" || patch.status === "waived" ? patch.resolvedById ?? null : null
+          }
+        });
+      }
+
+      await releaseDriverBlockIfClear(tx, batch.driverId);
+
+      const refreshed = await tx.platformDueBatch.findUniqueOrThrow({
+        where: { id: batchId },
+        include: platformDueBatchInclude
+      });
+
+      return mapPlatformDueBatch(refreshed);
+    });
+  },
+
+  async reconcileDueBatch(input) {
+    const match = `${input.referenceText} ${input.observedTitle ?? ""} ${input.observedNote ?? ""}`.match(/#DUES\d{6}/i);
+    const referenceCode = match?.[0]?.toUpperCase();
+
+    if (!referenceCode) {
+      throw new Error("A valid dues reference like #DUES000001 is required.");
+    }
+
+    const batch = await prisma.platformDueBatch.findFirst({
+      where: {
+        referenceCode,
+        status: {
+          in: ["OPEN", "OVERDUE"]
+        }
+      },
+      select: { id: true }
+    });
+
+    if (!batch) {
+      throw new Error("Open dues batch not found for that reference.");
+    }
+
+    return store.updateDueBatch(batch.id, {
+      status: "paid",
+      paymentMethod: input.paymentMethod,
+      observedTitle: input.observedTitle ?? null,
+      observedNote: input.observedNote ?? null,
+      adminNote: input.adminNote ?? null,
+      resolvedById: input.resolvedById ?? null
+    });
+  },
+
   async markOverduePlatformDues(now) {
     return markOverduePlatformDuesInternal(now);
   },
@@ -1672,7 +2284,7 @@ export const store: Store = {
   async driverHasOverdueDues(driverId) {
     await markOverduePlatformDuesInternal();
 
-    const count = await prisma.platformDue.count({
+    const count = await prisma.platformDueBatch.count({
       where: {
         driverId,
         status: "OVERDUE"
@@ -1680,6 +2292,169 @@ export const store: Store = {
     });
 
     return count > 0;
+  },
+
+  async assignDriverCollector(driverId, collectorAdminId) {
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.driverProfile.update({
+        where: { userId: driverId },
+        data: {
+          collectorAdminId
+        }
+      });
+
+      await tx.platformDueBatch.updateMany({
+        where: {
+          driverId,
+          status: {
+            in: ["OPEN", "OVERDUE"]
+          }
+        },
+        data: {
+          collectorAdminId
+        }
+      });
+
+      return tx.user.findUniqueOrThrow({
+        where: { id: driverId },
+        include: userInclude
+      });
+    });
+
+    return mapDriverAccount(updated);
+  },
+
+  async createAdminInvite(inviterId, input, baseUrl) {
+    const email = input.email.toLowerCase();
+    const invite = await prisma.adminInvite.create({
+      data: {
+        inviterId,
+        email,
+        token: createCommunityAccessToken(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      },
+      include: {
+        inviter: {
+          select: collectorSummarySelect
+        },
+        acceptedBy: {
+          select: collectorSummarySelect
+        }
+      }
+    });
+
+    const now = new Date();
+    return {
+      id: invite.id,
+      email: invite.email,
+      token: invite.token,
+      inviteUrl: `${baseUrl}/admin/invite/${invite.token}`,
+      status: invite.revokedAt
+        ? "revoked"
+        : invite.acceptedAt
+          ? "accepted"
+          : invite.expiresAt < now
+            ? "expired"
+            : "pending",
+      inviter: toCollectorSummary(invite.inviter)!,
+      acceptedBy: toCollectorSummary(invite.acceptedBy),
+      expiresAt: invite.expiresAt.toISOString(),
+      acceptedAt: invite.acceptedAt?.toISOString() ?? null,
+      revokedAt: invite.revokedAt?.toISOString() ?? null,
+      createdAt: invite.createdAt.toISOString(),
+      updatedAt: invite.updatedAt.toISOString()
+    };
+  },
+
+  async listAdminInvites(inviterId, baseUrl = env.publicBaseUrl || env.clientOrigin) {
+    const invites = await prisma.adminInvite.findMany({
+      where: inviterId ? { inviterId } : undefined,
+      orderBy: {
+        createdAt: "desc"
+      },
+      include: {
+        inviter: {
+          select: collectorSummarySelect
+        },
+        acceptedBy: {
+          select: collectorSummarySelect
+        }
+      }
+    });
+
+    const now = new Date();
+    return invites.map((invite) => ({
+      id: invite.id,
+      email: invite.email,
+      token: invite.token,
+      inviteUrl: `${baseUrl}/admin/invite/${invite.token}`,
+      status: invite.revokedAt
+        ? "revoked"
+        : invite.acceptedAt
+          ? "accepted"
+          : invite.expiresAt < now
+            ? "expired"
+            : "pending",
+      inviter: toCollectorSummary(invite.inviter)!,
+      acceptedBy: toCollectorSummary(invite.acceptedBy),
+      expiresAt: invite.expiresAt.toISOString(),
+      acceptedAt: invite.acceptedAt?.toISOString() ?? null,
+      revokedAt: invite.revokedAt?.toISOString() ?? null,
+      createdAt: invite.createdAt.toISOString(),
+      updatedAt: invite.updatedAt.toISOString()
+    }));
+  },
+
+  async acceptAdminInvite(input) {
+    const invite = await prisma.adminInvite.findUnique({
+      where: { token: input.token }
+    });
+
+    if (!invite || invite.revokedAt || invite.acceptedAt || invite.expiresAt < new Date()) {
+      throw new Error("Admin invite is not available.");
+    }
+
+    if (invite.email.toLowerCase() !== input.email.toLowerCase()) {
+      throw new Error("Invite email does not match.");
+    }
+
+    const existing = await prisma.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      include: userInclude
+    });
+
+    if (existing) {
+      throw new Error("A user with that email already exists.");
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          role: DbRole.ADMIN,
+          roles: [DbRole.ADMIN],
+          name: input.name,
+          email: input.email.toLowerCase(),
+          passwordHash: input.passwordHash
+        },
+        include: userInclude
+      });
+
+      await ensureCollectorPayoutSettingsRecord(user.id, tx);
+      await tx.adminInvite.update({
+        where: { id: invite.id },
+        data: {
+          acceptedById: user.id,
+          acceptedAt: new Date()
+        }
+      });
+
+      return tx.user.findUniqueOrThrow({
+        where: { id: user.id },
+        include: userInclude
+      });
+    });
+
+    return asAuthIdentity(await ensureCommunityAccessToken(await ensureReferralCode(created)));
   },
 
   async recordLocation(input) {
@@ -1793,8 +2568,55 @@ export const store: Store = {
     return drivers.filter((driver) => driver.approvalStatus === "pending");
   },
 
+  async reviewDriverDocument(driverId, documentId, input) {
+    await getDriverUserOrThrow(driverId);
+    await getDriverDocumentOrThrow(prisma, driverId, documentId);
+
+    const status = toDbDriverDocumentStatus(input.status);
+    const updated = await prisma.driverOnboardingDocument.update({
+      where: { id: documentId },
+      data: {
+        status,
+        reviewNote: input.reviewNote ?? null,
+        reviewedAt: input.status === "pending" ? null : new Date(),
+        reviewedById: input.status === "pending" ? null : input.reviewedById
+      }
+    });
+
+    if (!(await driverDocumentsReadyForApproval(prisma, driverId))) {
+      await prisma.driverProfile.updateMany({
+        where: {
+          userId: driverId,
+          approvalStatus: "APPROVED"
+        },
+        data: {
+          approved: false,
+          approvalStatus: "PENDING",
+          available: false
+        }
+      });
+    }
+
+    return mapDriverOnboardingDocument(updated);
+  },
+
+  async getDriverDocumentFile(driverId, documentId) {
+    await getDriverUserOrThrow(driverId);
+    const document = await getDriverDocumentOrThrow(prisma, driverId, documentId);
+
+    return {
+      absolutePath: resolveStoredDriverDocumentPath(document.storagePath),
+      fileName: document.fileName,
+      mimeType: document.mimeType
+    };
+  },
+
   async updateDriver(driverId, patch) {
     await getDriverUserOrThrow(driverId);
+
+    if (patch.approvalStatus === "approved" && !(await driverDocumentsReadyForApproval(prisma, driverId))) {
+      throw new Error("Driver cannot be approved until insurance, registration, background check, and MVR documents are uploaded and approved");
+    }
 
     const updated = await prisma.user.update({
       where: { id: driverId },

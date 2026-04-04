@@ -64,15 +64,19 @@ export function AdminDashboardPage() {
   const rides = ridesQuery.data ?? [];
   const riderLeads = leadsQuery.data?.riderLeads ?? [];
   const driverInterests = leadsQuery.data?.driverInterests ?? [];
-  const dues = duesQuery.data?.dues ?? [];
+  const needsBatching = duesQuery.data?.needsBatching ?? [];
+  const openBatches = duesQuery.data?.openBatches ?? [];
+  const overdueBatches = duesQuery.data?.overdueBatches ?? [];
   const overdueDrivers = duesQuery.data?.overdueDrivers ?? [];
   const pendingApplications = driverApplicationsQuery.data ?? [];
   const activeCount = rides.filter((ride) =>
     ["requested", "offered", "accepted", "en_route", "arrived", "in_progress"].includes(ride.status)
   ).length;
   const scheduledCount = rides.filter((ride) => ride.status === "scheduled").length;
-  const pendingDues = dues.filter((due) => due.status === "pending" || due.status === "overdue");
-  const pendingDueTotal = pendingDues.reduce((total, due) => total + due.amount, 0);
+  const pendingDueTotal =
+    needsBatching.reduce((total, snapshot) => total + snapshot.collectibleUnbatchedTotal, 0) +
+    openBatches.reduce((total, batch) => total + batch.amount, 0) +
+    overdueBatches.reduce((total, batch) => total + batch.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -91,7 +95,7 @@ export function AdminDashboardPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Control notes</p>
             <div className="mt-4 space-y-3 text-sm leading-6 text-ops-muted">
               <p>{pendingApplications.length} pending driver applications are waiting on approval.</p>
-              <p>{pendingDues.length} open dues can affect driver availability and dispatch.</p>
+              <p>{openBatches.length + overdueBatches.length} open dues batches can affect driver availability and dispatch.</p>
               <p>{communityQuery.data?.proposals.length ?? 0} community proposals are live right now.</p>
             </div>
           </div>
@@ -104,7 +108,7 @@ export function AdminDashboardPage() {
         <MetricCard
           label="Pending dues"
           value={formatMoney(pendingDueTotal)}
-          meta={`${pendingDues.length} open finance items`}
+          meta={`${openBatches.length + overdueBatches.length} active batch references`}
           icon={CreditCard}
           tone="warning"
         />
@@ -136,7 +140,7 @@ export function AdminDashboardPage() {
               />
               <DataField
                 label="Platform dues"
-                value={`${pendingDues.length} open dues`}
+                value={`${needsBatching.length} ready to batch`}
                 subtle={`${overdueDrivers.length} drivers are currently overdue and blocked from new work.`}
               />
               <DataField

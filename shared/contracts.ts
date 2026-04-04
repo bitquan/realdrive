@@ -6,9 +6,12 @@ export const paymentMethodSchema = z.enum(["jim", "cashapp", "cash"]);
 export const paymentStatusSchema = z.enum(["pending", "collected", "waived"]);
 export const duePaymentMethodSchema = z.enum(["cashapp", "zelle", "jim", "cash", "other"]);
 export const platformDueStatusSchema = z.enum(["pending", "paid", "waived", "overdue"]);
+export const platformDueBatchStatusSchema = z.enum(["open", "paid", "waived", "overdue", "void"]);
 export const driverInterestStatusSchema = z.enum(["pending", "approved", "rejected"]);
 export const driverApprovalStatusSchema = z.enum(["pending", "approved", "rejected"]);
 export const driverPricingModeSchema = z.enum(["platform", "custom"]);
+export const driverDocumentTypeSchema = z.enum(["insurance", "registration", "background_check", "mvr"]);
+export const driverDocumentStatusSchema = z.enum(["pending", "approved", "rejected"]);
 export const dispatchModeSchema = z.enum(["local", "service_area", "nationwide"]);
 export const ridePricingSourceSchema = z.enum(["platform_market", "driver_custom", "admin_override"]);
 export const communityVoteChoiceSchema = z.enum(["yes", "no"]);
@@ -92,6 +95,62 @@ export const driverRateCardSchema = z.object({
   rules: z.array(driverRateRuleSchema)
 });
 
+export const driverDocumentUploadSchema = z.object({
+  type: driverDocumentTypeSchema,
+  fileName: z.string().min(1).max(180),
+  mimeType: z.string().min(3).max(120),
+  contentBase64: z.string().min(16).max(12_000_000)
+});
+
+export const driverDocumentUploadsSchema = z
+  .array(driverDocumentUploadSchema)
+  .length(4)
+  .superRefine((documents, ctx) => {
+    const uniqueTypes = new Set(documents.map((document) => document.type));
+
+    if (uniqueTypes.size !== documents.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Each required driver document can only be uploaded once."
+      });
+    }
+
+    for (const type of driverDocumentTypeSchema.options) {
+      if (!uniqueTypes.has(type)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Missing required driver document: ${type.replaceAll("_", " ")}.`
+        });
+      }
+    }
+  });
+
+export const driverOnboardingDocumentSchema = z.object({
+  id: z.string(),
+  driverId: z.string(),
+  type: driverDocumentTypeSchema,
+  status: driverDocumentStatusSchema,
+  fileName: z.string(),
+  mimeType: z.string(),
+  fileSizeBytes: z.number().int().nonnegative(),
+  reviewNote: z.string().nullable(),
+  reviewedAt: z.string().nullable(),
+  reviewedById: z.string().nullable(),
+  uploadedAt: z.string(),
+  updatedAt: z.string(),
+  downloadPath: z.string()
+});
+
+export const driverDocumentReviewSummarySchema = z.object({
+  requiredTypes: z.array(driverDocumentTypeSchema),
+  submittedTypes: z.array(driverDocumentTypeSchema),
+  approvedTypes: z.array(driverDocumentTypeSchema),
+  missingTypes: z.array(driverDocumentTypeSchema),
+  rejectedTypes: z.array(driverDocumentTypeSchema),
+  pendingCount: z.number().int().nonnegative(),
+  readyForApproval: z.boolean()
+});
+
 export const sessionUserSchema = z.object({
   id: z.string(),
   role: roleSchema,
@@ -109,6 +168,14 @@ export const sessionUserSchema = z.object({
   vehicle: vehicleSchema.nullable().optional()
 });
 
+export const collectorAdminSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  referralCode: z.string().nullable().optional()
+});
+
 export const driverAccountSchema = sessionUserSchema.extend({
   approvalStatus: driverApprovalStatusSchema,
   approved: z.boolean(),
@@ -118,6 +185,10 @@ export const driverAccountSchema = sessionUserSchema.extend({
   homeCity: z.string().nullable(),
   dispatchSettings: driverDispatchSettingsSchema,
   customRates: z.array(driverRateRuleSchema).optional(),
+  documents: z.array(driverOnboardingDocumentSchema),
+  documentReview: driverDocumentReviewSummarySchema,
+  collectorAdminId: z.string().nullable().optional(),
+  collectorAdmin: collectorAdminSummarySchema.nullable().optional(),
   createdAt: z.string().optional()
 });
 
@@ -250,6 +321,7 @@ export const driverInterestSchema = z.object({
 });
 
 export const platformPayoutSettingsSchema = z.object({
+  adminId: z.string().nullable().optional(),
   cashAppHandle: z.string().nullable(),
   zelleHandle: z.string().nullable(),
   jimHandle: z.string().nullable(),
@@ -272,6 +344,7 @@ export const platformDueRideSummarySchema = z.object({
   pickupAddress: z.string(),
   dropoffAddress: z.string(),
   completedAt: z.string().nullable(),
+  paymentMethod: paymentMethodSchema,
   subtotal: z.number().nonnegative(),
   customerTotal: z.number().nonnegative()
 });
@@ -280,8 +353,10 @@ export const platformDueSchema = z.object({
   id: z.string(),
   rideId: z.string(),
   driverId: z.string(),
+  batchId: z.string().nullable().optional(),
   amount: z.number().nonnegative(),
   status: platformDueStatusSchema,
+  collectibleAt: z.string(),
   dueAt: z.string(),
   paidAt: z.string().nullable(),
   paymentMethod: duePaymentMethodSchema.nullable(),
@@ -291,6 +366,39 @@ export const platformDueSchema = z.object({
   updatedAt: z.string(),
   driver: platformDueDriverSummarySchema,
   ride: platformDueRideSummarySchema
+});
+
+export const platformDueBatchSchema = z.object({
+  id: z.string(),
+  referenceCode: z.string(),
+  driverId: z.string(),
+  collectorAdminId: z.string().nullable(),
+  amount: z.number().nonnegative(),
+  status: platformDueBatchStatusSchema,
+  paymentMethod: duePaymentMethodSchema.nullable(),
+  observedTitle: z.string().nullable(),
+  observedNote: z.string().nullable(),
+  adminNote: z.string().nullable(),
+  generatedAt: z.string(),
+  dueAt: z.string(),
+  paidAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  driver: platformDueDriverSummarySchema,
+  collector: collectorAdminSummarySchema.nullable(),
+  dues: z.array(platformDueSchema)
+});
+
+export const driverDueSnapshotSchema = z.object({
+  driver: platformDueDriverSummarySchema,
+  collector: collectorAdminSummarySchema.nullable(),
+  collectibleUnbatchedTotal: z.number().nonnegative(),
+  collectibleUnbatchedCount: z.number().int().nonnegative(),
+  openBatchCount: z.number().int().nonnegative(),
+  openBatchTotal: z.number().nonnegative(),
+  overdueBatchCount: z.number().int().nonnegative(),
+  overdueBatchTotal: z.number().nonnegative(),
+  lastCompletedRideAt: z.string().nullable()
 });
 
 export const overdueDriverSummarySchema = z.object({
@@ -369,6 +477,11 @@ export const driverBootstrapInputSchema = z.object({
   vehicle: vehicleInputSchema
 });
 
+export const driverApplicationInputSchema = driverBootstrapInputSchema.extend({
+  documents: driverDocumentUploadsSchema,
+  collectorCode: z.string().min(4).max(40).optional()
+});
+
 export const adminSetupInputSchema = z
   .object({
     name: z.string().min(2),
@@ -387,14 +500,10 @@ export const adminSetupInputSchema = z
     }
   });
 
-export const driverSignupInputSchema = z.object({
+export const driverSignupInputSchema = driverApplicationInputSchema.extend({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8),
-  phone: z.string().min(8),
-  homeState: z.string().min(2).max(2),
-  homeCity: z.string().min(2),
-  vehicle: vehicleInputSchema
+  password: z.string().min(8)
 });
 
 export const driverLoginSchema = z.object({
@@ -477,6 +586,11 @@ export const adminUpdateDriverApprovalSchema = z.object({
   approvalStatus: driverApprovalStatusSchema
 });
 
+export const adminReviewDriverDocumentSchema = z.object({
+  status: driverDocumentStatusSchema,
+  reviewNote: z.string().max(500).nullable().optional()
+});
+
 export const adminUpdateDriverSchema = z.object({
   name: z.string().min(2).optional(),
   available: z.boolean().optional(),
@@ -498,12 +612,32 @@ export const updatePlatformRatesSchema = z.object({
 
 export const updatePricingRulesSchema = updatePlatformRatesSchema;
 
-export const createDriverRoleSchema = driverBootstrapInputSchema;
+export const createDriverRoleSchema = driverApplicationInputSchema;
 
 export const adminUpdatePlatformDueSchema = z.object({
   status: z.enum(["pending", "paid", "waived"]),
   paymentMethod: duePaymentMethodSchema.nullable().optional(),
   note: z.string().max(500).nullable().optional()
+});
+
+export const adminUpdatePlatformDueBatchSchema = z.object({
+  status: z.enum(["open", "paid", "waived", "void"]),
+  paymentMethod: duePaymentMethodSchema.nullable().optional(),
+  observedTitle: z.string().max(500).nullable().optional(),
+  observedNote: z.string().max(500).nullable().optional(),
+  adminNote: z.string().max(1000).nullable().optional()
+});
+
+export const adminReconcilePlatformDueBatchSchema = z.object({
+  referenceText: z.string().min(3),
+  paymentMethod: duePaymentMethodSchema,
+  observedTitle: z.string().max(500).nullable().optional(),
+  observedNote: z.string().max(500).nullable().optional(),
+  adminNote: z.string().max(1000).nullable().optional()
+});
+
+export const adminTransferDriverCollectorSchema = z.object({
+  collectorAdminId: z.string().nullable()
 });
 
 export const updatePlatformPayoutSettingsSchema = z.object({
@@ -555,6 +689,34 @@ export const adminSetupStatusResponseSchema = z.object({
   needsSetup: z.boolean()
 });
 
+export const adminInviteStatusSchema = z.enum(["pending", "accepted", "expired", "revoked"]);
+
+export const adminInviteSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  token: z.string(),
+  inviteUrl: z.string().url(),
+  status: adminInviteStatusSchema,
+  inviter: collectorAdminSummarySchema,
+  acceptedBy: collectorAdminSummarySchema.nullable(),
+  expiresAt: z.string(),
+  acceptedAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const createAdminInviteSchema = z.object({
+  email: z.string().email()
+});
+
+export const acceptAdminInviteSchema = z.object({
+  token: z.string().min(12),
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8)
+});
+
 export const rideQuoteResponseSchema = z.object({
   estimatedMiles: z.number().nonnegative(),
   estimatedMinutes: z.number().nonnegative(),
@@ -596,18 +758,31 @@ export const adminLeadsResponseSchema = z.object({
 });
 
 export const driverDuesResponseSchema = z.object({
-  outstanding: z.array(platformDueSchema),
-  history: z.array(platformDueSchema),
+  collectibleAccrued: z.array(platformDueSchema),
+  openBatches: z.array(platformDueBatchSchema),
+  overdueBatches: z.array(platformDueBatchSchema),
+  history: z.array(platformDueBatchSchema),
   payoutSettings: platformPayoutSettingsSchema.nullable(),
-  suspended: z.boolean(),
+  collector: collectorAdminSummarySchema.nullable(),
+  blocked: z.boolean(),
+  blockedReason: z.string().nullable(),
   overdueCount: z.number().int().nonnegative(),
   outstandingTotal: z.number().nonnegative()
 });
 
 export const adminDuesResponseSchema = z.object({
-  dues: z.array(platformDueSchema),
+  needsBatching: z.array(driverDueSnapshotSchema),
+  openBatches: z.array(platformDueBatchSchema),
+  overdueBatches: z.array(platformDueBatchSchema),
+  history: z.array(platformDueBatchSchema),
   payoutSettings: platformPayoutSettingsSchema.nullable(),
-  overdueDrivers: z.array(overdueDriverSummarySchema)
+  overdueDrivers: z.array(overdueDriverSummarySchema),
+  adminUsers: z.array(collectorAdminSummarySchema),
+  ownedByDefault: z.boolean()
+});
+
+export const adminInvitesResponseSchema = z.object({
+  invites: z.array(adminInviteSchema)
 });
 
 export const communityBoardResponseSchema = z.object({
@@ -633,9 +808,12 @@ export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
 export type DuePaymentMethod = z.infer<typeof duePaymentMethodSchema>;
 export type PlatformDueStatus = z.infer<typeof platformDueStatusSchema>;
+export type PlatformDueBatchStatus = z.infer<typeof platformDueBatchStatusSchema>;
 export type DriverInterestStatus = z.infer<typeof driverInterestStatusSchema>;
 export type DriverApprovalStatus = z.infer<typeof driverApprovalStatusSchema>;
 export type DriverPricingMode = z.infer<typeof driverPricingModeSchema>;
+export type DriverDocumentType = z.infer<typeof driverDocumentTypeSchema>;
+export type DriverDocumentStatus = z.infer<typeof driverDocumentStatusSchema>;
 export type DispatchMode = z.infer<typeof dispatchModeSchema>;
 export type RidePricingSource = z.infer<typeof ridePricingSourceSchema>;
 export type CommunityVoteChoice = z.infer<typeof communityVoteChoiceSchema>;
@@ -649,7 +827,11 @@ export type DriverDispatchSettings = z.infer<typeof driverDispatchSettingsSchema
 export type PricingRule = z.infer<typeof pricingRuleSchema>;
 export type DriverRateRule = z.infer<typeof driverRateRuleSchema>;
 export type DriverRateCard = z.infer<typeof driverRateCardSchema>;
+export type DriverDocumentUpload = z.infer<typeof driverDocumentUploadSchema>;
+export type DriverOnboardingDocument = z.infer<typeof driverOnboardingDocumentSchema>;
+export type DriverDocumentReviewSummary = z.infer<typeof driverDocumentReviewSummarySchema>;
 export type SessionUser = z.infer<typeof sessionUserSchema>;
+export type CollectorAdminSummary = z.infer<typeof collectorAdminSummarySchema>;
 export type DriverAccount = z.infer<typeof driverAccountSchema>;
 export type RidePricingSnapshot = z.infer<typeof ridePricingSnapshotSchema>;
 export type PaymentRecord = z.infer<typeof paymentRecordSchema>;
@@ -662,6 +844,8 @@ export type RiderLead = z.infer<typeof riderLeadSchema>;
 export type DriverInterest = z.infer<typeof driverInterestSchema>;
 export type PlatformPayoutSettings = z.infer<typeof platformPayoutSettingsSchema>;
 export type PlatformDue = z.infer<typeof platformDueSchema>;
+export type PlatformDueBatch = z.infer<typeof platformDueBatchSchema>;
+export type DriverDueSnapshot = z.infer<typeof driverDueSnapshotSchema>;
 export type OverdueDriverSummary = z.infer<typeof overdueDriverSummarySchema>;
 export type CommunityEligibility = z.infer<typeof communityEligibilitySchema>;
 export type CommunityAuthor = z.infer<typeof communityAuthorSchema>;
@@ -671,6 +855,7 @@ export type AuthOtpRequest = z.infer<typeof authOtpRequestSchema>;
 export type AuthOtpVerify = z.infer<typeof authOtpVerifySchema>;
 export type AdminLogin = z.infer<typeof adminLoginSchema>;
 export type DriverBootstrapInput = z.infer<typeof driverBootstrapInputSchema>;
+export type DriverApplicationInput = z.infer<typeof driverApplicationInputSchema>;
 export type AdminSetupInput = z.infer<typeof adminSetupInputSchema>;
 export type DriverSignupInput = z.infer<typeof driverSignupInputSchema>;
 export type DriverLoginInput = z.infer<typeof driverLoginSchema>;
@@ -685,11 +870,15 @@ export type DriverLocationInput = z.infer<typeof driverLocationSchema>;
 export type UpdateRideStatusInput = z.infer<typeof updateRideStatusSchema>;
 export type AdminUpdateRideInput = z.infer<typeof adminUpdateRideSchema>;
 export type AdminUpdateDriverApprovalInput = z.infer<typeof adminUpdateDriverApprovalSchema>;
+export type AdminReviewDriverDocumentInput = z.infer<typeof adminReviewDriverDocumentSchema>;
 export type AdminUpdateDriverInput = z.infer<typeof adminUpdateDriverSchema>;
 export type UpdatePlatformRatesInput = z.infer<typeof updatePlatformRatesSchema>;
 export type UpdatePricingRulesInput = z.infer<typeof updatePricingRulesSchema>;
 export type CreateDriverRoleInput = z.infer<typeof createDriverRoleSchema>;
 export type AdminUpdatePlatformDueInput = z.infer<typeof adminUpdatePlatformDueSchema>;
+export type AdminUpdatePlatformDueBatchInput = z.infer<typeof adminUpdatePlatformDueBatchSchema>;
+export type AdminReconcilePlatformDueBatchInput = z.infer<typeof adminReconcilePlatformDueBatchSchema>;
+export type AdminTransferDriverCollectorInput = z.infer<typeof adminTransferDriverCollectorSchema>;
 export type UpdatePlatformPayoutSettingsInput = z.infer<typeof updatePlatformPayoutSettingsSchema>;
 export type CommunityAccessExchangeInput = z.infer<typeof communityAccessExchangeSchema>;
 export type CreateCommunityProposalInput = z.infer<typeof createCommunityProposalSchema>;
@@ -698,6 +887,10 @@ export type CreateCommunityCommentInput = z.infer<typeof createCommunityCommentS
 export type AdminUpdateCommunityProposalInput = z.infer<typeof adminUpdateCommunityProposalSchema>;
 export type AdminUpdateCommunityCommentInput = z.infer<typeof adminUpdateCommunityCommentSchema>;
 export type RideQuoteResponse = z.infer<typeof rideQuoteResponseSchema>;
+export type AdminInviteStatus = z.infer<typeof adminInviteStatusSchema>;
+export type AdminInvite = z.infer<typeof adminInviteSchema>;
+export type CreateAdminInviteInput = z.infer<typeof createAdminInviteSchema>;
+export type AcceptAdminInviteInput = z.infer<typeof acceptAdminInviteSchema>;
 export type PublicRideResponse = z.infer<typeof publicRideResponseSchema>;
 export type PublicRideTrackingResponse = z.infer<typeof publicRideTrackingResponseSchema>;
 export type RiderLeadResponse = z.infer<typeof riderLeadResponseSchema>;
@@ -706,5 +899,6 @@ export type AdminLeadsResponse = z.infer<typeof adminLeadsResponseSchema>;
 export type AdminSetupStatusResponse = z.infer<typeof adminSetupStatusResponseSchema>;
 export type DriverDuesResponse = z.infer<typeof driverDuesResponseSchema>;
 export type AdminDuesResponse = z.infer<typeof adminDuesResponseSchema>;
+export type AdminInvitesResponse = z.infer<typeof adminInvitesResponseSchema>;
 export type CommunityBoardResponse = z.infer<typeof communityBoardResponseSchema>;
 export type CommunityCommentsResponse = z.infer<typeof communityCommentsResponseSchema>;

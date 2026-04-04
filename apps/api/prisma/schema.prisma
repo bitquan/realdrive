@@ -65,6 +65,14 @@ enum PlatformDueStatus {
   OVERDUE
 }
 
+enum PlatformDueBatchStatus {
+  OPEN
+  PAID
+  WAIVED
+  OVERDUE
+  VOID
+}
+
 enum RideOfferStatus {
   PENDING
   ACCEPTED
@@ -89,6 +97,19 @@ enum DriverPricingMode {
   CUSTOM
 }
 
+enum DriverOnboardingDocumentType {
+  INSURANCE
+  REGISTRATION
+  BACKGROUND_CHECK
+  MVR
+}
+
+enum DriverOnboardingDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum RidePricingSource {
   PLATFORM_MARKET
   DRIVER_CUSTOM
@@ -109,6 +130,7 @@ model User {
   updatedAt             DateTime            @updatedAt
   riderProfile          RiderProfile?
   driverProfile         DriverProfile?
+  driverDocuments       DriverOnboardingDocument[] @relation("DriverDocuments")
   riderRides            Ride[]              @relation("RiderRides")
   assignedRides         Ride[]              @relation("DriverRides")
   receivedOffers        RideOffer[]         @relation("DriverOffers")
@@ -120,6 +142,13 @@ model User {
   driverRateCards       DriverRateCard[]    @relation("DriverRateCards")
   platformDues          PlatformDue[]       @relation("PlatformDueDrivers")
   resolvedPlatformDues  PlatformDue[]       @relation("PlatformDueResolvers")
+  collectedDrivers      DriverProfile[]     @relation("DriverCollectors")
+  collectorPayoutSettings PlatformPayoutSettings[] @relation("CollectorPayoutSettings")
+  collectedDueBatches   PlatformDueBatch[]  @relation("PlatformDueBatchCollectors")
+  driverDueBatches      PlatformDueBatch[]  @relation("PlatformDueBatchDrivers")
+  sentAdminInvites      AdminInvite[]       @relation("AdminInviteSenders")
+  acceptedAdminInvites  AdminInvite[]       @relation("AdminInviteAcceptors")
+  reviewedDriverDocuments DriverOnboardingDocument[] @relation("DriverDocumentReviewers")
   communityProposals    CommunityProposal[] @relation("CommunityProposalAuthors")
   communityVotes        CommunityVote[]     @relation("CommunityVoteUsers")
   communityComments     CommunityComment[]  @relation("CommunityCommentAuthors")
@@ -135,7 +164,9 @@ model RiderProfile {
 model DriverProfile {
   id                         String               @id @default(cuid())
   userId                     String               @unique
+  collectorAdminId           String?
   user                       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectorAdmin             User?                @relation("DriverCollectors", fields: [collectorAdminId], references: [id], onDelete: SetNull)
   approved                   Boolean              @default(false)
   approvalStatus             DriverApprovalStatus @default(PENDING)
   available                  Boolean              @default(false)
@@ -300,12 +331,34 @@ model DriverInterest {
   updatedAt         DateTime             @updatedAt
 }
 
+model DriverOnboardingDocument {
+  id           String                         @id @default(cuid())
+  driverId     String
+  type         DriverOnboardingDocumentType
+  status       DriverOnboardingDocumentStatus @default(PENDING)
+  fileName     String
+  mimeType     String
+  fileSizeBytes Int
+  storagePath  String
+  reviewNote   String?
+  reviewedAt   DateTime?
+  reviewedById String?
+  createdAt    DateTime                       @default(now())
+  updatedAt    DateTime                       @updatedAt
+  driver       User                           @relation("DriverDocuments", fields: [driverId], references: [id], onDelete: Cascade)
+  reviewedBy   User?                          @relation("DriverDocumentReviewers", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([driverId, type])
+}
+
 model PlatformDue {
   id            String            @id @default(cuid())
   rideId        String            @unique
   driverId      String
+  batchId       String?
   amount        Decimal           @db.Decimal(10, 2)
   status        PlatformDueStatus @default(PENDING)
+  collectibleAt DateTime          @default(now())
   dueAt         DateTime
   paidAt        DateTime?
   paymentMethod DuePaymentMethod?
@@ -315,17 +368,58 @@ model PlatformDue {
   updatedAt     DateTime          @updatedAt
   ride          Ride              @relation(fields: [rideId], references: [id], onDelete: Cascade)
   driver        User              @relation("PlatformDueDrivers", fields: [driverId], references: [id], onDelete: Cascade)
+  batch         PlatformDueBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
   resolvedBy    User?             @relation("PlatformDueResolvers", fields: [resolvedById], references: [id], onDelete: SetNull)
 }
 
+model PlatformDueBatch {
+  id               String                 @id @default(cuid())
+  referenceCode    String                 @unique
+  driverId         String
+  collectorAdminId String?
+  amount           Decimal                @db.Decimal(10, 2)
+  status           PlatformDueBatchStatus @default(OPEN)
+  paymentMethod    DuePaymentMethod?
+  observedTitle    String?
+  observedNote     String?
+  adminNote        String?
+  generatedAt      DateTime               @default(now())
+  dueAt            DateTime
+  paidAt           DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  driver           User                   @relation("PlatformDueBatchDrivers", fields: [driverId], references: [id], onDelete: Cascade)
+  collectorAdmin   User?                  @relation("PlatformDueBatchCollectors", fields: [collectorAdminId], references: [id], onDelete: SetNull)
+  dues             PlatformDue[]
+}
+
 model PlatformPayoutSettings {
-  id               String   @id @default("platform")
+  id               String   @id @default(cuid())
+  adminId          String?  @unique
   cashAppHandle    String?
   zelleHandle      String?
   jimHandle        String?
   cashInstructions String?
   otherInstructions String?
   updatedAt        DateTime @updatedAt
+  admin            User?    @relation("CollectorPayoutSettings", fields: [adminId], references: [id], onDelete: SetNull)
+}
+
+model AdminInvite {
+  id           String   @id @default(cuid())
+  inviterId    String
+  acceptedById String?
+  email        String
+  token        String   @unique
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  inviter      User     @relation("AdminInviteSenders", fields: [inviterId], references: [id], onDelete: Cascade)
+  acceptedBy   User?    @relation("AdminInviteAcceptors", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([email])
 }
 
 model CommunityProposal {

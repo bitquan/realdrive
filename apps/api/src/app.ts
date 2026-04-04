@@ -1,3 +1,4 @@
+import { createReadStream } from "node:fs";
 import bcrypt from "bcryptjs";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
@@ -7,8 +8,13 @@ import { Server } from "socket.io";
 import type { SessionUser, ShareInfo } from "@shared/contracts";
 import { z } from "zod";
 import {
+  acceptAdminInviteSchema,
   adminLoginSchema,
+  adminReviewDriverDocumentSchema,
   adminSetupInputSchema,
+  adminReconcilePlatformDueBatchSchema,
+  adminTransferDriverCollectorSchema,
+  adminUpdatePlatformDueBatchSchema,
   adminUpdateCommunityCommentSchema,
   adminUpdateCommunityProposalSchema,
   adminUpdateDriverApprovalSchema,
@@ -22,6 +28,7 @@ import {
   createRideSchema,
   createCommunityCommentSchema,
   createCommunityProposalSchema,
+  createAdminInviteSchema,
   createDriverRoleSchema,
   driverDispatchSettingsUpdateSchema,
   driverInterestInputSchema,
@@ -97,7 +104,8 @@ function isOwnerDriver(user: SessionUser) {
 
 export function buildApp() {
   const app = Fastify({
-    logger: true
+    logger: true,
+    bodyLimit: 20 * 1024 * 1024
   });
 
   const maps = createMapsService(env.mapboxToken);
@@ -312,6 +320,36 @@ export function buildApp() {
     }
   });
 
+  app.post("/admin/invite/accept", async (request, reply) => {
+    const parsed = acceptAdminInviteSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+      const admin = await store.acceptAdminInvite({
+        ...parsed.data,
+        email: parsed.data.email.toLowerCase(),
+        passwordHash
+      });
+
+      await store.addAuditLog({
+        actorId: admin.id,
+        action: "admin.invite.accepted",
+        entityType: "user",
+        entityId: admin.id
+      });
+
+      return reply.status(201).send({
+        token: signToken(admin.id),
+        user: toSessionUser(admin)
+      });
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
   app.post("/auth/otp/request", async (request, reply) => {
     const parsed = authOtpRequestSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -379,7 +417,12 @@ export function buildApp() {
 
       return reply.status(201).send(driver);
     } catch (error) {
-      return reply.conflict((error as Error).message);
+      const message = error instanceof Error ? error.message : "Request failed";
+      if (message.includes("already exists")) {
+        return reply.conflict(message);
+      }
+
+      return sendKnownOperationalError(reply, error);
     }
   });
 
@@ -632,20 +675,24 @@ export function buildApp() {
       return reply.send(existing);
     }
 
-    const driver = await store.createDriverRole(user.id, {
-      ...parsed.data,
-      phone: normalizePhone(parsed.data.phone),
-      homeState: parsed.data.homeState.toUpperCase()
-    });
+    try {
+      const driver = await store.createDriverRole(user.id, {
+        ...parsed.data,
+        phone: normalizePhone(parsed.data.phone),
+        homeState: parsed.data.homeState.toUpperCase()
+      });
 
-    await store.addAuditLog({
-      actorId: user.id,
-      action: "driver.role.created",
-      entityType: "user",
-      entityId: user.id
-    });
+      await store.addAuditLog({
+        actorId: user.id,
+        action: "driver.role.created",
+        entityType: "user",
+        entityId: user.id
+      });
 
-    return reply.status(201).send(driver);
+      return reply.status(201).send(driver);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.post("/rides", { preHandler: requireRole("rider") }, async (request, reply) => {
@@ -740,18 +787,39 @@ export function buildApp() {
   });
 
   app.get("/driver/dues", { preHandler: requireRole("driver") }, async (request) => {
-    const dues = await store.listDriverDues(request.userContext.id);
-    const payoutSettings = await store.getPlatformPayoutSettings();
-    const outstanding = dues.filter((due) => due.status === "pending" || due.status === "overdue");
-    const history = dues.filter((due) => due.status === "paid" || due.status === "waived");
+    const [driver, dues, batches] = await Promise.all([
+      store.getDriverAccount(request.userContext.id),
+      store.listDriverDues(request.userContext.id),
+      store.listDriverDueBatches(request.userContext.id)
+    ]);
+    const collector = driver?.collectorAdmin ?? null;
+    const payoutSettings = collector ? await store.getCollectorPayoutSettings(collector.id) : null;
+    const collectibleAccrued = dues.filter((due) => due.status === "pending" && !due.batchId);
+    const openBatches = batches.filter((batch) => batch.status === "open");
+    const overdueBatches = batches.filter((batch) => batch.status === "overdue");
+    const history = batches.filter((batch) => ["paid", "waived", "void"].includes(batch.status));
+    const outstandingTotal = Number(
+      (
+        collectibleAccrued.reduce((total, due) => total + due.amount, 0) +
+        openBatches.reduce((total, batch) => total + batch.amount, 0) +
+        overdueBatches.reduce((total, batch) => total + batch.amount, 0)
+      ).toFixed(2)
+    );
 
     return {
-      outstanding,
+      collectibleAccrued,
+      openBatches,
+      overdueBatches,
       history,
       payoutSettings,
-      suspended: dues.some((due) => due.status === "overdue"),
-      overdueCount: dues.filter((due) => due.status === "overdue").length,
-      outstandingTotal: Number(outstanding.reduce((total, due) => total + due.amount, 0).toFixed(2))
+      collector,
+      blocked: overdueBatches.length > 0,
+      blockedReason:
+        overdueBatches.length > 0
+          ? "You have overdue completed-trip dues. Admin must reconcile the batch before dispatch access returns."
+          : null,
+      overdueCount: overdueBatches.length,
+      outstandingTotal
     };
   });
 
@@ -819,38 +887,99 @@ export function buildApp() {
     return store.listAdminRides();
   });
 
-  app.get("/admin/dues", { preHandler: requireRole("admin") }, async () => {
-    const dues = await store.listAllPlatformDues();
-    const payoutSettings = await store.getPlatformPayoutSettings();
-    const overdueDrivers = Object.values(
-      dues
-        .filter((due) => due.status === "overdue")
-        .reduce<Record<string, { driverId: string; name: string; email: string | null; phone: string | null; overdueAmount: number; overdueCount: number }>>(
-          (accumulator, due) => {
-            accumulator[due.driverId] ??= {
-              driverId: due.driverId,
-              name: due.driver.name,
-              email: due.driver.email,
-              phone: due.driver.phone,
-              overdueAmount: 0,
-              overdueCount: 0
-            };
-
-            accumulator[due.driverId].overdueAmount = Number(
-              (accumulator[due.driverId].overdueAmount + due.amount).toFixed(2)
-            );
-            accumulator[due.driverId].overdueCount += 1;
-            return accumulator;
-          },
-          {}
-        )
-    );
+  app.get("/admin/dues", { preHandler: requireRole("admin") }, async (request) => {
+    const [snapshots, batches, payoutSettings, adminUsers] = await Promise.all([
+      store.listDriverDueSnapshots(),
+      store.listAllDueBatches(),
+      store.getCollectorPayoutSettings(request.userContext.id),
+      store.listAdminUsers()
+    ]);
+    const overdueDrivers = snapshots
+      .filter((snapshot) => snapshot.overdueBatchCount > 0)
+      .map((snapshot) => ({
+        driverId: snapshot.driver.id,
+        name: snapshot.driver.name,
+        email: snapshot.driver.email,
+        phone: snapshot.driver.phone,
+        overdueAmount: snapshot.overdueBatchTotal,
+        overdueCount: snapshot.overdueBatchCount
+      }));
+    const openBatches = batches.filter((batch) => batch.status === "open");
+    const overdueBatches = batches.filter((batch) => batch.status === "overdue");
+    const history = batches.filter((batch) => ["paid", "waived", "void"].includes(batch.status));
 
     return {
-      dues,
+      needsBatching: snapshots,
+      openBatches,
+      overdueBatches,
+      history,
       payoutSettings,
-      overdueDrivers
+      overdueDrivers,
+      adminUsers,
+      ownedByDefault: true
     };
+  });
+
+  app.post("/admin/dues/generate/:driverId", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const driverId = (request.params as { driverId: string }).driverId;
+    const batch = await store.createDueBatchForDriver(driverId, request.userContext.id);
+
+    if (!batch) {
+      return reply.status(400).send({ message: "No collectible completed-trip dues are ready for batching." });
+    }
+
+    await store.addAuditLog({
+      actorId: request.userContext.id,
+      action: "platformDueBatch.generated",
+      entityType: "platformDueBatch",
+      entityId: batch.id
+    });
+
+    return reply.status(201).send(batch);
+  });
+
+  app.post("/admin/dues/reconcile", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminReconcilePlatformDueBatchSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const batch = await store.reconcileDueBatch({
+      ...parsed.data,
+      resolvedById: request.userContext.id
+    });
+
+    await store.addAuditLog({
+      actorId: request.userContext.id,
+      action: "platformDueBatch.reconciled",
+      entityType: "platformDueBatch",
+      entityId: batch.id,
+      metadata: parsed.data
+    });
+
+    return reply.send(batch);
+  });
+
+  app.patch("/admin/dues/batches/:id", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminUpdatePlatformDueBatchSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const batch = await store.updateDueBatch((request.params as { id: string }).id, {
+      ...parsed.data,
+      resolvedById: request.userContext.id
+    });
+
+    await store.addAuditLog({
+      actorId: request.userContext.id,
+      action: "platformDueBatch.updated",
+      entityType: "platformDueBatch",
+      entityId: batch.id,
+      metadata: parsed.data
+    });
+
+    return reply.send(batch);
   });
 
   app.patch("/admin/dues/:id", { preHandler: requireRole("admin") }, async (request, reply) => {
@@ -875,8 +1004,8 @@ export function buildApp() {
     return reply.send(due);
   });
 
-  app.get("/admin/platform-payout-settings", { preHandler: requireRole("admin") }, async () => {
-    return store.getPlatformPayoutSettings();
+  app.get("/admin/platform-payout-settings", { preHandler: requireRole("admin") }, async (request) => {
+    return store.getCollectorPayoutSettings(request.userContext.id);
   });
 
   app.put("/admin/platform-payout-settings", { preHandler: requireRole("admin") }, async (request, reply) => {
@@ -885,8 +1014,35 @@ export function buildApp() {
       return sendValidationError(reply, parsed.error.flatten());
     }
 
-    const settings = await store.updatePlatformPayoutSettings(parsed.data);
+    const settings = await store.updateCollectorPayoutSettings(request.userContext.id, parsed.data);
     return reply.send(settings);
+  });
+
+  app.get("/admin/invites", { preHandler: requireRole("admin") }, async (request) => {
+    return {
+      invites: await store.listAdminInvites(request.userContext.id, resolvePublicBaseUrl(request))
+    };
+  });
+
+  app.post("/admin/invites", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = createAdminInviteSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const invite = await store.createAdminInvite(request.userContext.id, parsed.data, resolvePublicBaseUrl(request));
+
+    await store.addAuditLog({
+      actorId: request.userContext.id,
+      action: "admin.invite.created",
+      entityType: "adminInvite",
+      entityId: invite.id,
+      metadata: {
+        email: invite.email
+      }
+    });
+
+    return reply.status(201).send(invite);
   });
 
   app.get("/admin/leads", { preHandler: requireRole("admin") }, async () => {
@@ -926,11 +1082,54 @@ export function buildApp() {
       return sendValidationError(reply, parsed.error.flatten());
     }
 
-    const driver = await store.updateDriver((request.params as { id: string }).id, {
-      approvalStatus: parsed.data.approvalStatus
-    });
-    io.emit("driver.availability.changed", driver);
-    return reply.send(driver);
+    try {
+      const driver = await store.updateDriver((request.params as { id: string }).id, {
+        approvalStatus: parsed.data.approvalStatus
+      });
+      io.emit("driver.availability.changed", driver);
+      return reply.send(driver);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  app.patch("/admin/drivers/:id/documents/:documentId", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminReviewDriverDocumentSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const params = request.params as { id: string; documentId: string };
+      const document = await store.reviewDriverDocument(params.id, params.documentId, {
+        ...parsed.data,
+        reviewedById: request.userContext.id
+      });
+
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "driver.document.reviewed",
+        entityType: "driverOnboardingDocument",
+        entityId: document.id,
+        metadata: parsed.data
+      });
+
+      return reply.send(document);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  app.get("/admin/drivers/:id/documents/:documentId/file", { preHandler: requireRole("admin") }, async (request, reply) => {
+    try {
+      const params = request.params as { id: string; documentId: string };
+      const file = await store.getDriverDocumentFile(params.id, params.documentId);
+      reply.header("Content-Disposition", `inline; filename=\"${file.fileName}\"`);
+      reply.type(file.mimeType);
+      return reply.send(createReadStream(file.absolutePath));
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.get("/admin/drivers", { preHandler: requireRole("admin") }, async () => {
@@ -943,9 +1142,27 @@ export function buildApp() {
       return sendValidationError(reply, parsed.error.flatten());
     }
 
-    const driver = await store.updateDriver((request.params as { id: string }).id, parsed.data);
-    io.emit("driver.availability.changed", driver);
-    return reply.send(driver);
+    try {
+      const driver = await store.updateDriver((request.params as { id: string }).id, parsed.data);
+      io.emit("driver.availability.changed", driver);
+      return reply.send(driver);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  app.patch("/admin/drivers/:id/collector", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminTransferDriverCollectorSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const driver = await store.assignDriverCollector((request.params as { id: string }).id, parsed.data.collectorAdminId);
+      return reply.send(driver);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.get("/admin/platform-rates", { preHandler: requireRole("admin") }, async () => {

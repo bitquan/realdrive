@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BookOpen,
   CarFront,
   CreditCard,
   LayoutDashboard,
@@ -102,6 +103,22 @@ const driverItems: ShellNavItem[] = [
   }
 ];
 
+function getDriverNavItem(user: SessionUser | null): ShellNavItem | null {
+  if (!userHasRole(user, "driver")) {
+    return null;
+  }
+
+  const approved = user?.approvalStatus === "approved";
+
+  return {
+    ...driverItems[0],
+    label: approved ? driverItems[0].label : "Onboarding",
+    shortLabel: approved ? driverItems[0].shortLabel : "Apply",
+    to: approved ? "/driver" : "/driver/signup",
+    matchPatterns: approved ? driverItems[0].matchPatterns : ["/driver/signup", "/drive-with-us", ...driverItems[0].matchPatterns]
+  };
+}
+
 const adminItems: ShellNavItem[] = [
   {
     id: "admin-overview",
@@ -141,6 +158,14 @@ const adminItems: ShellNavItem[] = [
     to: "/admin/share",
     icon: QrCode,
     matchPatterns: ["/admin/share"],
+    roles: ["admin"]
+  },
+  {
+    id: "admin-help",
+    label: "Guide",
+    to: "/admin/help",
+    icon: BookOpen,
+    matchPatterns: ["/admin/help"],
     roles: ["admin"]
   }
 ];
@@ -185,7 +210,24 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Admin",
       title: "Business share kit",
-      description: "Keep rider and driver launch QR assets aligned with the live public routes."
+      description: "Manage recruit links, partner admin invites, and launch assets without shipping fake share actions."
+    }
+  },
+  {
+    patterns: ["/admin/help"],
+    frame: {
+      eyebrow: "Admin",
+      title: "Collector guide",
+      description: "Keep dues collection, ownership transfer, and partner onboarding documented inside the live admin shell."
+    }
+  },
+  {
+    patterns: ["/admin/invite/:token"],
+    frame: {
+      eyebrow: "Admin invite",
+      title: "Accept workspace invite",
+      description: "Create your admin collector account from a live invite link.",
+      mobileHeaderMode: "minimal"
     }
   },
   {
@@ -304,7 +346,7 @@ export function getShellSections(user: SessionUser | null): ShellSection[] {
     sections.push({ id: "ride", label: "Ride", items: visibleRiderItems });
   }
 
-  const visibleDriverItems = driverItems.filter((item) => canRenderItem(item, user));
+  const visibleDriverItems = [getDriverNavItem(user)].filter((item): item is ShellNavItem => item !== null);
   if (visibleDriverItems.length) {
     sections.push({ id: "driver", label: "Driver", items: visibleDriverItems });
   }
@@ -323,10 +365,12 @@ export function getShellSections(user: SessionUser | null): ShellSection[] {
 }
 
 export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
+  const driverItem = getDriverNavItem(user);
+
   if (user?.role === "admin") {
     return [
       adminItems[0],
-      userHasRole(user, "driver") ? driverItems[0] : null,
+      driverItem,
       adminItems[1],
       adminItems[2],
       sharedItems[0]
@@ -336,7 +380,9 @@ export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
   }
 
   if (user?.role === "driver") {
-    return [driverItems[0], riderItems[0], sharedItems[0], riderItems[1]].filter((item) => canRenderItem(item, user));
+    return [driverItem, riderItems[0], sharedItems[0], riderItems[1]]
+      .filter((item): item is ShellNavItem => item !== null)
+      .filter((item) => canRenderItem(item, user));
   }
 
   return [riderItems[0], riderItems[1], sharedItems[0], riderItems[2]].filter((item) => canRenderItem(item, user));

@@ -23,6 +23,8 @@ const AdminDriversPage = lazy(() => import("@/pages/admin-drivers-page").then((m
 const AdminPricingPage = lazy(() => import("@/pages/admin-pricing-page").then((module) => ({ default: module.AdminPricingPage })));
 const AdminSharePage = lazy(() => import("@/pages/admin-share-page").then((module) => ({ default: module.AdminSharePage })));
 const AdminDuesPage = lazy(() => import("@/pages/admin-dues-page").then((module) => ({ default: module.AdminDuesPage })));
+const AdminHelpPage = lazy(() => import("@/pages/admin-help-page").then((module) => ({ default: module.AdminHelpPage })));
+const AdminInviteAcceptPage = lazy(() => import("@/pages/admin-invite-accept-page").then((module) => ({ default: module.AdminInviteAcceptPage })));
 const CommunityJoinPage = lazy(() => import("@/pages/community-join-page").then((module) => ({ default: module.CommunityJoinPage })));
 const CommunityPage = lazy(() => import("@/pages/community-page").then((module) => ({ default: module.CommunityPage })));
 const ShareRedirectPage = lazy(() => import("@/pages/share-redirect-page").then((module) => ({ default: module.ShareRedirectPage })));
@@ -56,6 +58,10 @@ function RequireRole({
 
   if (!user) {
     return <Navigate to={role === "driver" ? "/driver/login" : role === "admin" ? "/admin/login" : "/"} replace />;
+  }
+
+  if (role === "driver" && userHasRole(user, "driver") && user.approvalStatus !== "approved") {
+    return <Navigate to="/driver/signup" replace />;
   }
 
   if (!userHasRole(user, role)) {
@@ -117,6 +123,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             />
             <Route path="/driver/login" element={<PageLoader><DriverLoginPage /></PageLoader>} />
             <Route path="/admin/setup" element={<PageLoader><AdminSetupPage /></PageLoader>} />
+            <Route path="/admin/invite/:token" element={<PageLoader><AdminInviteAcceptPage /></PageLoader>} />
             <Route
               path="/driver"
               element={
@@ -163,6 +170,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminSharePage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/help"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminHelpPage /></PageLoader>
                 </RequireRole>
               }
             />

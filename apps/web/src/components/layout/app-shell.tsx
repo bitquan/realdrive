@@ -4,7 +4,7 @@ import type { Role } from "@shared/contracts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getMobileNavItems, getShellFrame, getShellSections, isNavItemActive, type ShellAction } from "@/lib/shell";
-import { cn, roleLabel } from "@/lib/utils";
+import { cn, roleLabel, userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
 const roleIcons: Record<Role, typeof Shield> = {
@@ -35,9 +35,21 @@ export function AppShell() {
   const CurrentRoleIcon = user ? roleIcons[user.role] : UserRound;
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
 
+  function roleDestination(role: Role) {
+    if (role === "admin") {
+      return "/admin";
+    }
+
+    if (role === "driver") {
+      return userHasRole(user, "driver") && user?.approvalStatus !== "approved" ? "/driver/signup" : "/driver";
+    }
+
+    return "/rider/rides";
+  }
+
   function goToRole(role: Role) {
     switchRole(role);
-    void navigate(role === "admin" ? "/admin" : role === "driver" ? "/driver" : "/rider/rides");
+    void navigate(roleDestination(role));
   }
 
   return (
@@ -204,7 +216,7 @@ export function AppShell() {
                       <select
                         className="h-11 rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text outline-none transition focus:border-ops-primary/45"
                         value={user.role}
-                        onChange={(event) => switchRole(event.target.value as Role)}
+                        onChange={(event) => goToRole(event.target.value as Role)}
                       >
                         {user.roles.map((role) => (
                           <option key={role} value={role}>

@@ -2,10 +2,13 @@ import {
   CommunityVoteChoice as DbCommunityVoteChoice,
   DriverApprovalStatus as DbDriverApprovalStatus,
   DriverInterestStatus as DbDriverInterestStatus,
+  DriverOnboardingDocumentStatus as DbDriverOnboardingDocumentStatus,
+  DriverOnboardingDocumentType as DbDriverOnboardingDocumentType,
   DriverPricingMode as DbDriverPricingMode,
   DuePaymentMethod as DbDuePaymentMethod,
   PaymentMethod as DbPaymentMethod,
   PaymentStatus as DbPaymentStatus,
+  PlatformDueBatchStatus as DbPlatformDueBatchStatus,
   PlatformDueStatus as DbPlatformDueStatus,
   Prisma,
   RideOfferStatus as DbRideOfferStatus,
@@ -17,8 +20,13 @@ import {
 import type {
   CommunityComment,
   CommunityProposal,
+  CollectorAdminSummary,
+  DriverDueSnapshot,
   DriverAccount,
   DriverDispatchSettings,
+  DriverDocumentStatus,
+  DriverDocumentType,
+  DriverOnboardingDocument,
   DriverInterest,
   DriverInterestStatus,
   DriverPricingMode,
@@ -28,6 +36,8 @@ import type {
   PaymentMethod,
   PaymentStatus,
   PlatformDue,
+  PlatformDueBatch,
+  PlatformDueBatchStatus,
   PlatformDueStatus,
   PlatformPayoutSettings,
   PricingRule,
@@ -75,6 +85,14 @@ const platformDueStatusMap = {
   overdue: DbPlatformDueStatus.OVERDUE
 } satisfies Record<PlatformDueStatus, DbPlatformDueStatus>;
 
+const platformDueBatchStatusMap = {
+  open: DbPlatformDueBatchStatus.OPEN,
+  paid: DbPlatformDueBatchStatus.PAID,
+  waived: DbPlatformDueBatchStatus.WAIVED,
+  overdue: DbPlatformDueBatchStatus.OVERDUE,
+  void: DbPlatformDueBatchStatus.VOID
+} satisfies Record<PlatformDueBatchStatus, DbPlatformDueBatchStatus>;
+
 const rideStatusMap = {
   draft: DbRideStatus.DRAFT,
   requested: DbRideStatus.REQUESTED,
@@ -118,6 +136,19 @@ const driverPricingModeMap = {
   platform: DbDriverPricingMode.PLATFORM,
   custom: DbDriverPricingMode.CUSTOM
 } satisfies Record<DriverPricingMode, DbDriverPricingMode>;
+
+const driverDocumentTypeMap = {
+  insurance: DbDriverOnboardingDocumentType.INSURANCE,
+  registration: DbDriverOnboardingDocumentType.REGISTRATION,
+  background_check: DbDriverOnboardingDocumentType.BACKGROUND_CHECK,
+  mvr: DbDriverOnboardingDocumentType.MVR
+} satisfies Record<DriverDocumentType, DbDriverOnboardingDocumentType>;
+
+const driverDocumentStatusMap = {
+  pending: DbDriverOnboardingDocumentStatus.PENDING,
+  approved: DbDriverOnboardingDocumentStatus.APPROVED,
+  rejected: DbDriverOnboardingDocumentStatus.REJECTED
+} satisfies Record<DriverDocumentStatus, DbDriverOnboardingDocumentStatus>;
 
 const ridePricingSourceMap = {
   platform_market: DbRidePricingSource.PLATFORM_MARKET,
@@ -178,6 +209,14 @@ export function fromDbPlatformDueStatus(status: DbPlatformDueStatus): PlatformDu
   return status.toLowerCase() as PlatformDueStatus;
 }
 
+export function toDbPlatformDueBatchStatus(status: PlatformDueBatchStatus): DbPlatformDueBatchStatus {
+  return platformDueBatchStatusMap[status];
+}
+
+export function fromDbPlatformDueBatchStatus(status: DbPlatformDueBatchStatus): PlatformDueBatchStatus {
+  return status.toLowerCase() as PlatformDueBatchStatus;
+}
+
 export function toDbRideStatus(status: RideStatus): DbRideStatus {
   return rideStatusMap[status];
 }
@@ -218,6 +257,22 @@ export function toDbDriverPricingMode(mode: DriverPricingMode): DbDriverPricingM
   return driverPricingModeMap[mode];
 }
 
+export function fromDbDriverDocumentType(type: DbDriverOnboardingDocumentType): DriverDocumentType {
+  return type.toLowerCase() as DriverDocumentType;
+}
+
+export function toDbDriverDocumentType(type: DriverDocumentType): DbDriverOnboardingDocumentType {
+  return driverDocumentTypeMap[type];
+}
+
+export function fromDbDriverDocumentStatus(status: DbDriverOnboardingDocumentStatus): DriverDocumentStatus {
+  return status.toLowerCase() as DriverDocumentStatus;
+}
+
+export function toDbDriverDocumentStatus(status: DriverDocumentStatus): DbDriverOnboardingDocumentStatus {
+  return driverDocumentStatusMap[status];
+}
+
 export function fromDbRidePricingSource(source: DbRidePricingSource): RidePricingSource {
   return source.toLowerCase() as RidePricingSource;
 }
@@ -256,6 +311,14 @@ type VehicleRecord = {
 };
 
 type DriverProfileRecord = {
+  collectorAdminId: string | null;
+  collectorAdmin?: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    referralCode: string | null;
+  } | null;
   approved: boolean;
   approvalStatus: DbDriverApprovalStatus;
   available: boolean;
@@ -283,6 +346,21 @@ type DriverRateCardRecord = {
   updatedAt: Date;
 };
 
+type DriverDocumentRecord = {
+  id: string;
+  driverId: string;
+  type: DbDriverOnboardingDocumentType;
+  status: DbDriverOnboardingDocumentStatus;
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  reviewNote: string | null;
+  reviewedAt: Date | null;
+  reviewedById: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 type UserWithDriver = {
   id: string;
   role: DbRole;
@@ -294,7 +372,32 @@ type UserWithDriver = {
   createdAt?: Date;
   driverProfile?: DriverProfileRecord | null;
   driverRateCards?: DriverRateCardRecord[];
+  driverDocuments?: DriverDocumentRecord[];
 };
+
+function mapCollectorAdminSummary(
+  user?:
+    | {
+        id: string;
+        name: string;
+        email: string | null;
+        phone: string | null;
+        referralCode?: string | null;
+      }
+    | null
+): CollectorAdminSummary | null {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    referralCode: user.referralCode ?? null
+  };
+}
 
 function mapVehicle(vehicle?: VehicleRecord | null) {
   if (!vehicle) {
@@ -323,6 +426,55 @@ export function mapDispatchSettings(profile: DriverProfileRecord): DriverDispatc
     serviceAreaEnabled: profile.serviceAreaDispatchEnabled,
     serviceAreaStates: profile.serviceAreaStates.map((state) => state.toUpperCase()),
     nationwideEnabled: profile.nationwideDispatchEnabled
+  };
+}
+
+const requiredDriverDocumentTypes: DriverDocumentType[] = [
+  "insurance",
+  "registration",
+  "background_check",
+  "mvr"
+];
+
+export function mapDriverOnboardingDocument(document: DriverDocumentRecord): DriverOnboardingDocument {
+  return {
+    id: document.id,
+    driverId: document.driverId,
+    type: fromDbDriverDocumentType(document.type),
+    status: fromDbDriverDocumentStatus(document.status),
+    fileName: document.fileName,
+    mimeType: document.mimeType,
+    fileSizeBytes: document.fileSizeBytes,
+    reviewNote: document.reviewNote,
+    reviewedAt: toIso(document.reviewedAt),
+    reviewedById: document.reviewedById,
+    uploadedAt: document.createdAt.toISOString(),
+    updatedAt: document.updatedAt.toISOString(),
+    downloadPath: `/admin/drivers/${document.driverId}/documents/${document.id}/file`
+  };
+}
+
+function mapDriverDocumentReviewSummary(documents: DriverOnboardingDocument[]) {
+  const submittedTypes = documents.map((document) => document.type);
+  const approvedTypes = documents
+    .filter((document) => document.status === "approved")
+    .map((document) => document.type);
+  const rejectedTypes = documents
+    .filter((document) => document.status === "rejected")
+    .map((document) => document.type);
+  const missingTypes = requiredDriverDocumentTypes.filter((type) => !submittedTypes.includes(type));
+  const pendingCount = documents.filter((document) => document.status === "pending").length;
+
+  return {
+    requiredTypes: requiredDriverDocumentTypes,
+    submittedTypes,
+    approvedTypes,
+    missingTypes,
+    rejectedTypes,
+    pendingCount,
+    readyForApproval:
+      missingTypes.length === 0 &&
+      requiredDriverDocumentTypes.every((type) => approvedTypes.includes(type))
   };
 }
 
@@ -426,6 +578,8 @@ export function mapDriverAccount(user: UserWithDriver): DriverAccount {
     throw new Error("Driver profile missing");
   }
 
+  const documents = (user.driverDocuments ?? []).map(mapDriverOnboardingDocument);
+
   return {
     ...mapSessionUser(user),
     approvalStatus: fromDbDriverApprovalStatus(user.driverProfile.approvalStatus),
@@ -436,6 +590,10 @@ export function mapDriverAccount(user: UserWithDriver): DriverAccount {
     homeCity: user.driverProfile.homeCity,
     dispatchSettings: mapDispatchSettings(user.driverProfile),
     customRates: (user.driverRateCards ?? []).map(mapDriverRateRule),
+    documents,
+    documentReview: mapDriverDocumentReviewSummary(documents),
+    collectorAdminId: user.driverProfile.collectorAdminId,
+    collectorAdmin: mapCollectorAdminSummary(user.driverProfile.collectorAdmin),
     createdAt: user.createdAt?.toISOString()
   };
 }
@@ -600,6 +758,7 @@ export function mapDriverInterest(interest: {
 }
 
 export function mapPlatformPayoutSettings(settings: {
+  adminId?: string | null;
   cashAppHandle: string | null;
   zelleHandle: string | null;
   jimHandle: string | null;
@@ -608,6 +767,7 @@ export function mapPlatformPayoutSettings(settings: {
   updatedAt: Date;
 }): PlatformPayoutSettings {
   return {
+    adminId: settings.adminId ?? null,
     cashAppHandle: settings.cashAppHandle,
     zelleHandle: settings.zelleHandle,
     jimHandle: settings.jimHandle,
@@ -637,8 +797,10 @@ export function mapPlatformDue(due: PlatformDueRecord): PlatformDue {
     id: due.id,
     rideId: due.rideId,
     driverId: due.driverId,
+    batchId: due.batchId,
     amount: Number(due.amount),
     status: fromDbPlatformDueStatus(due.status),
+    collectibleAt: due.collectibleAt.toISOString(),
     dueAt: due.dueAt.toISOString(),
     paidAt: toIso(due.paidAt),
     paymentMethod: due.paymentMethod ? fromDbDuePaymentMethod(due.paymentMethod) : null,
@@ -659,9 +821,103 @@ export function mapPlatformDue(due: PlatformDueRecord): PlatformDue {
       pickupAddress: due.ride.pickupAddress,
       dropoffAddress: due.ride.dropoffAddress,
       completedAt: toIso(due.ride.completedAt),
+      paymentMethod: fromDbPaymentMethod(due.ride.paymentMethod),
       subtotal: Number(due.ride.finalFare ?? due.ride.quotedFare),
       customerTotal: Number(due.ride.finalCustomerTotal ?? due.ride.estimatedCustomerTotal)
     }
+  };
+}
+
+type PlatformDueBatchRecord = Prisma.PlatformDueBatchGetPayload<{
+  include: {
+    driver: {
+      include: {
+        driverProfile: true;
+      };
+    };
+    collectorAdmin: true;
+    dues: {
+      include: {
+        driver: {
+          include: {
+            driverProfile: true;
+          };
+        };
+        ride: {
+          include: {
+            rider: true;
+          };
+        };
+      };
+      orderBy: {
+        createdAt: "asc";
+      };
+    };
+  };
+}>;
+
+export function mapPlatformDueBatch(batch: PlatformDueBatchRecord): PlatformDueBatch {
+  return {
+    id: batch.id,
+    referenceCode: batch.referenceCode,
+    driverId: batch.driverId,
+    collectorAdminId: batch.collectorAdminId,
+    amount: Number(batch.amount),
+    status: fromDbPlatformDueBatchStatus(batch.status),
+    paymentMethod: batch.paymentMethod ? fromDbDuePaymentMethod(batch.paymentMethod) : null,
+    observedTitle: batch.observedTitle,
+    observedNote: batch.observedNote,
+    adminNote: batch.adminNote,
+    generatedAt: batch.generatedAt.toISOString(),
+    dueAt: batch.dueAt.toISOString(),
+    paidAt: toIso(batch.paidAt),
+    createdAt: batch.createdAt.toISOString(),
+    updatedAt: batch.updatedAt.toISOString(),
+    driver: {
+      id: batch.driver.id,
+      name: batch.driver.name,
+      email: batch.driver.email,
+      phone: batch.driver.phone,
+      available: batch.driver.driverProfile?.available ?? false
+    },
+    collector: mapCollectorAdminSummary(batch.collectorAdmin),
+    dues: batch.dues.map(mapPlatformDue)
+  };
+}
+
+export function mapDriverDueSnapshot(input: {
+  driver: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    available: boolean;
+  };
+  collector?: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    referralCode?: string | null;
+  } | null;
+  collectibleUnbatchedTotal: number;
+  collectibleUnbatchedCount: number;
+  openBatchCount: number;
+  openBatchTotal: number;
+  overdueBatchCount: number;
+  overdueBatchTotal: number;
+  lastCompletedRideAt: Date | null;
+}): DriverDueSnapshot {
+  return {
+    driver: input.driver,
+    collector: mapCollectorAdminSummary(input.collector),
+    collectibleUnbatchedTotal: Number(input.collectibleUnbatchedTotal.toFixed(2)),
+    collectibleUnbatchedCount: input.collectibleUnbatchedCount,
+    openBatchCount: input.openBatchCount,
+    openBatchTotal: Number(input.openBatchTotal.toFixed(2)),
+    overdueBatchCount: input.overdueBatchCount,
+    overdueBatchTotal: Number(input.overdueBatchTotal.toFixed(2)),
+    lastCompletedRideAt: toIso(input.lastCompletedRideAt)
   };
 }
 

@@ -31,7 +31,8 @@ export function AdminSetupPage() {
 
   const statusQuery = useQuery({
     queryKey: ["admin-setup-status"],
-    queryFn: api.adminSetupStatus
+    queryFn: api.adminSetupStatus,
+    retry: false
   });
 
   const setupMutation = useMutation({
@@ -70,6 +71,11 @@ export function AdminSetupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {statusQuery.error ? (
+            <div className="rounded-3xl border border-ops-error/25 bg-ops-error/10 p-4 text-sm text-ops-error">
+              {statusQuery.error.message}
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="adminSetupName">Full name</Label>
             <Input

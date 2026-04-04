@@ -1,13 +1,21 @@
 import type {
+  AcceptAdminInviteInput,
+  AdminInvite,
   AdminSetupStatusResponse,
+  AdminTransferDriverCollectorInput,
+  AdminUpdatePlatformDueBatchInput,
+  AdminReviewDriverDocumentInput,
   CommunityComment,
   CommunityEligibility,
   CommunityProposal,
+  CreateAdminInviteInput,
   CreateCommunityCommentInput,
   CreateCommunityProposalInput,
   CreateDriverRoleInput,
+  DriverDueSnapshot,
   DriverAccount,
   DriverBootstrapInput,
+  DriverOnboardingDocument,
   DriverDispatchSettings,
   DriverInterest,
   DriverInterestInput,
@@ -18,6 +26,7 @@ import type {
   DuePaymentMethod,
   PaymentStatus,
   PlatformDue,
+  PlatformDueBatch,
   PlatformDueStatus,
   PlatformPayoutSettings,
   PricingRule,
@@ -98,21 +107,14 @@ export interface Store {
   findAdminByEmail(email: string): Promise<AuthIdentity | null>;
   findDriverByEmail(email: string): Promise<AuthIdentity | null>;
   createDriverRole(userId: string, input: CreateDriverRoleInput): Promise<DriverAccount>;
-  createDriverAccount(input: {
-    name: string;
-    email: string;
-    phone: string;
-    passwordHash: string;
-    homeState: string;
-    homeCity: string;
-    vehicle: {
-      makeModel: string;
-      plate: string;
-      color?: string;
-      rideType: RideType;
-      seats: number;
-    };
-  }): Promise<DriverAccount>;
+  createDriverAccount(
+    input: Omit<CreateDriverRoleInput, "documents"> & {
+      name: string;
+      email: string;
+      passwordHash: string;
+      documents: CreateDriverRoleInput["documents"];
+    }
+  ): Promise<DriverAccount>;
   getDriverAccount(driverId: string): Promise<DriverAccount | null>;
   updateDriverProfile(driverId: string, patch: DriverProfileUpdateInput): Promise<DriverAccount>;
   getDriverDispatchSettings(driverId: string): Promise<DriverDispatchSettings>;
@@ -172,6 +174,36 @@ export interface Store {
   updatePlatformPayoutSettings(input: Partial<PlatformPayoutSettings>): Promise<PlatformPayoutSettings>;
   markOverduePlatformDues(now?: Date): Promise<PlatformDue[]>;
   driverHasOverdueDues(driverId: string): Promise<boolean>;
+  listAdminUsers(): Promise<Array<{ id: string; name: string; email: string | null; phone: string | null; referralCode?: string | null }>>;
+  getCollectorPayoutSettings(adminId: string): Promise<PlatformPayoutSettings | null>;
+  updateCollectorPayoutSettings(adminId: string, input: Partial<PlatformPayoutSettings>): Promise<PlatformPayoutSettings>;
+  listDriverDueBatches(driverId: string): Promise<PlatformDueBatch[]>;
+  listAllDueBatches(): Promise<PlatformDueBatch[]>;
+  getDriverDueSnapshot(driverId: string): Promise<DriverDueSnapshot>;
+  listDriverDueSnapshots(): Promise<DriverDueSnapshot[]>;
+  createDueBatchForDriver(
+    driverId: string,
+    collectorAdminId?: string | null,
+    options?: { markOverdue?: boolean; adminNote?: string | null }
+  ): Promise<PlatformDueBatch | null>;
+  updateDueBatch(
+    batchId: string,
+    patch: AdminUpdatePlatformDueBatchInput & { resolvedById?: string | null }
+  ): Promise<PlatformDueBatch>;
+  reconcileDueBatch(
+    input: {
+      referenceText: string;
+      paymentMethod: DuePaymentMethod;
+      observedTitle?: string | null;
+      observedNote?: string | null;
+      adminNote?: string | null;
+      resolvedById?: string | null;
+    }
+  ): Promise<PlatformDueBatch>;
+  assignDriverCollector(driverId: string, collectorAdminId: string | null): Promise<DriverAccount>;
+  createAdminInvite(inviterId: string, input: CreateAdminInviteInput, baseUrl: string): Promise<AdminInvite>;
+  listAdminInvites(inviterId?: string | null, baseUrl?: string): Promise<AdminInvite[]>;
+  acceptAdminInvite(input: AcceptAdminInviteInput & { passwordHash: string }): Promise<AuthIdentity>;
   recordLocation(input: {
     rideId: string;
     driverId: string;
@@ -194,6 +226,15 @@ export interface Store {
   listAdminRides(): Promise<Ride[]>;
   listDrivers(): Promise<DriverAccount[]>;
   listDriverApplications(): Promise<DriverAccount[]>;
+  reviewDriverDocument(
+    driverId: string,
+    documentId: string,
+    input: AdminReviewDriverDocumentInput & { reviewedById: string }
+  ): Promise<DriverOnboardingDocument>;
+  getDriverDocumentFile(
+    driverId: string,
+    documentId: string
+  ): Promise<{ absolutePath: string; fileName: string; mimeType: string }>;
   updateDriver(
     driverId: string,
     patch: {

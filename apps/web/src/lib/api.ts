@@ -1,13 +1,19 @@
 import type {
+  AcceptAdminInviteInput,
+  AdminInvite,
+  AdminInvitesResponse,
   AdminDuesResponse,
   AdminLeadsResponse,
   AdminLogin,
+  AdminReconcilePlatformDueBatchInput,
+  AdminReviewDriverDocumentInput,
   AdminSetupInput,
   AdminSetupStatusResponse,
   AdminUpdateCommunityCommentInput,
   AdminUpdateCommunityProposalInput,
   AdminUpdateDriverApprovalInput,
   AdminUpdateDriverInput,
+  AdminUpdatePlatformDueBatchInput,
   AdminUpdatePlatformDueInput,
   AdminUpdateRideInput,
   AuthOtpRequest,
@@ -29,11 +35,13 @@ import type {
   DriverInterestInput,
   DriverLocationInput,
   DriverLoginInput,
+  DriverOnboardingDocument,
   DriverProfileUpdateInput,
   DriverRateCard,
   DriverRateCardUpdateInput,
   DriverSignupInput,
   PlatformDue,
+  PlatformDueBatch,
   PlatformPayoutSettings,
   PricingRule,
   PublicRideRequest,
@@ -45,6 +53,7 @@ import type {
   RiderLeadResponse,
   SessionUser,
   ShareInfo,
+  CreateAdminInviteInput,
   UpdatePlatformPayoutSettingsInput,
   UpdatePlatformRatesInput,
   UpdateRideStatusInput
@@ -81,10 +90,32 @@ export function saveStoredAuth(auth: StoredAuth | null) {
 }
 
 export async function apiFetch<T>(path: string, options?: RequestInit, token?: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options?.headers ?? {})
+      }
+    });
+  } catch {
+    throw new Error("API unavailable. Start the RealDrive API server and try again.");
+  }
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(payload?.message ?? "Request failed");
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function apiFetchBlob(path: string, options?: RequestInit, token?: string): Promise<Blob> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers ?? {})
     }
@@ -95,7 +126,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit, token?: s
     throw new Error(payload?.message ?? "Request failed");
   }
 
-  return response.json() as Promise<T>;
+  return response.blob();
 }
 
 export const api = {
@@ -134,6 +165,12 @@ export const api = {
   },
   loginDriver(input: DriverLoginInput) {
     return apiFetch<StoredAuth>("/driver/auth/login", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  acceptAdminInvite(input: AcceptAdminInviteInput) {
+    return apiFetch<StoredAuth>("/admin/invite/accept", {
       method: "POST",
       body: JSON.stringify(input)
     });
@@ -282,6 +319,23 @@ export const api = {
   listAdminDues(token: string) {
     return apiFetch<AdminDuesResponse>("/admin/dues", undefined, token);
   },
+  generateDueBatch(driverId: string, token: string) {
+    return apiFetch<PlatformDueBatch>(`/admin/dues/generate/${driverId}`, {
+      method: "POST"
+    }, token);
+  },
+  reconcileDueBatch(input: AdminReconcilePlatformDueBatchInput, token: string) {
+    return apiFetch<PlatformDueBatch>("/admin/dues/reconcile", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  updateDueBatch(batchId: string, input: AdminUpdatePlatformDueBatchInput, token: string) {
+    return apiFetch<PlatformDueBatch>(`/admin/dues/batches/${batchId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
   updateAdminDue(dueId: string, input: AdminUpdatePlatformDueInput, token: string) {
     return apiFetch<PlatformDue>(`/admin/dues/${dueId}`, {
       method: "PATCH",
@@ -306,12 +360,36 @@ export const api = {
       body: JSON.stringify(input)
     }, token);
   },
+  reviewDriverDocument(driverId: string, documentId: string, input: AdminReviewDriverDocumentInput, token: string) {
+    return apiFetch<DriverOnboardingDocument>(`/admin/drivers/${driverId}/documents/${documentId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  downloadDriverDocument(driverId: string, documentId: string, token: string) {
+    return apiFetchBlob(`/admin/drivers/${driverId}/documents/${documentId}/file`, undefined, token);
+  },
   listDrivers(token: string) {
     return apiFetch<DriverAccount[]>("/admin/drivers", undefined, token);
   },
   updateDriver(driverId: string, input: AdminUpdateDriverInput, token: string) {
     return apiFetch<DriverAccount>(`/admin/drivers/${driverId}`, {
       method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  updateDriverCollector(driverId: string, collectorAdminId: string | null, token: string) {
+    return apiFetch<DriverAccount>(`/admin/drivers/${driverId}/collector`, {
+      method: "PATCH",
+      body: JSON.stringify({ collectorAdminId })
+    }, token);
+  },
+  listAdminInvites(token: string) {
+    return apiFetch<AdminInvitesResponse>("/admin/invites", undefined, token);
+  },
+  createAdminInvite(input: CreateAdminInviteInput, token: string) {
+    return apiFetch<AdminInvite>("/admin/invites", {
+      method: "POST",
       body: JSON.stringify(input)
     }, token);
   },

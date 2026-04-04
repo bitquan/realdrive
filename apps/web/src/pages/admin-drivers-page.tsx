@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, ShieldCheck, ToggleLeft, Users } from "lucide-react";
-import type { DriverAccount } from "@shared/contracts";
+import type { DriverAccount, DriverDocumentStatus } from "@shared/contracts";
+import { Download, FileBadge2, Search, ShieldAlert, ShieldCheck, ToggleLeft, Users } from "lucide-react";
 import {
   DataField,
   EntityList,
@@ -16,7 +16,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
+import {
+  formatDriverDocumentFileSize,
+  formatDriverDocumentLabel
+} from "@/lib/driver-documents";
+import { formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+
+function documentStatusBadgeClass(status: DriverDocumentStatus) {
+  if (status === "approved") {
+    return "border-ops-success/30 bg-ops-success/12 text-ops-success";
+  }
+
+  if (status === "rejected") {
+    return "border-ops-error/30 bg-ops-error/12 text-ops-error";
+  }
+
+  return "border-ops-warning/30 bg-ops-warning/12 text-ops-warning";
+}
 
 function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
   const { token } = useAuth();
@@ -32,6 +49,11 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
     serviceAreaStates: driver.dispatchSettings.serviceAreaStates.join(", "),
     nationwideEnabled: driver.dispatchSettings.nationwideEnabled
   });
+  const [documentNotes, setDocumentNotes] = useState<Record<string, string>>(
+    Object.fromEntries(driver.documents.map((document) => [document.id, document.reviewNote ?? ""]))
+  );
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<string | null>(null);
 
   useEffect(() => {
     setForm({
@@ -45,7 +67,12 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
       serviceAreaStates: driver.dispatchSettings.serviceAreaStates.join(", "),
       nationwideEnabled: driver.dispatchSettings.nationwideEnabled
     });
+    setDocumentNotes(Object.fromEntries(driver.documents.map((document) => [document.id, document.reviewNote ?? ""])));
+    setDocumentError(null);
+    setDownloadingDocumentId(null);
   }, [driver]);
+
+  const invalidateDrivers = () => void queryClient.invalidateQueries({ queryKey: ["admin-drivers"] });
 
   const updateMutation = useMutation({
     mutationFn: () =>
@@ -69,19 +96,56 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
         },
         token!
       ),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["admin-drivers"] })
+    onSuccess: invalidateDrivers
   });
 
   const approvalMutation = useMutation({
     mutationFn: (approvalStatus: "approved" | "rejected" | "pending") =>
       api.updateDriverApproval(driver.id, { approvalStatus }, token!),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["admin-drivers"] })
+    onSuccess: invalidateDrivers
   });
 
   const availabilityMutation = useMutation({
     mutationFn: () => api.updateDriver(driver.id, { available: !driver.available }, token!),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["admin-drivers"] })
+    onSuccess: invalidateDrivers
   });
+
+  const reviewDocumentMutation = useMutation({
+    mutationFn: ({ documentId, status }: { documentId: string; status: DriverDocumentStatus }) =>
+      api.reviewDriverDocument(
+        driver.id,
+        documentId,
+        {
+          status,
+          reviewNote: documentNotes[documentId]?.trim() ? documentNotes[documentId].trim() : null
+        },
+        token!
+      ),
+    onSuccess: () => {
+      setDocumentError(null);
+      invalidateDrivers();
+    },
+    onError: (error) => {
+      setDocumentError(error instanceof Error ? error.message : "Unable to review that document");
+    }
+  });
+
+  const canApproveDriver = driver.documentReview.readyForApproval;
+
+  async function openDocument(documentId: string) {
+    try {
+      setDownloadingDocumentId(documentId);
+      setDocumentError(null);
+      const blob = await api.downloadDriverDocument(driver.id, documentId, token!);
+      const objectUrl = window.URL.createObjectURL(blob);
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : "Unable to open that document");
+    } finally {
+      setDownloadingDocumentId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -94,29 +158,38 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
               <Badge>{driver.available ? "available" : "offline"}</Badge>
               <Badge>{driver.pricingMode === "platform" ? "platform rates" : "custom rates"}</Badge>
             </div>
-            <p className="mt-2 text-sm text-ops-muted">{driver.email ?? "No email"} · {driver.phone ?? "No phone"}</p>
-            <p className="mt-1 text-sm text-ops-muted">{driver.vehicle?.makeModel ?? "No vehicle"} · {driver.vehicle?.plate ?? "No plate"}</p>
+            <p className="mt-2 text-sm text-ops-muted">
+              {driver.email ?? "No email"} · {driver.phone ?? "No phone"}
+            </p>
+            <p className="mt-1 text-sm text-ops-muted">
+              {driver.vehicle?.makeModel ?? "No vehicle"} · {driver.vehicle?.plate ?? "No plate"}
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {driver.approvalStatus !== "approved" ? (
-              <Button variant="outline" onClick={() => approvalMutation.mutate("approved")}>
-                Approve
-              </Button>
-            ) : null}
+            <Button
+              variant="outline"
+              disabled={!canApproveDriver || approvalMutation.isPending}
+              onClick={() => approvalMutation.mutate("approved")}
+            >
+              Approve
+            </Button>
             {driver.approvalStatus !== "rejected" ? (
-              <Button variant="ghost" onClick={() => approvalMutation.mutate("rejected")}>
+              <Button variant="ghost" disabled={approvalMutation.isPending} onClick={() => approvalMutation.mutate("rejected")}>
                 Reject
               </Button>
             ) : null}
-            <Button variant="outline" onClick={() => availabilityMutation.mutate()}>
+            <Button variant="outline" disabled={availabilityMutation.isPending} onClick={() => availabilityMutation.mutate()}>
               Toggle availability
             </Button>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <DataField label="Home market" value={driver.homeCity && driver.homeState ? `${driver.homeCity}, ${driver.homeState}` : "Not set"} />
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <DataField
+            label="Home market"
+            value={driver.homeCity && driver.homeState ? `${driver.homeCity}, ${driver.homeState}` : "Not set"}
+          />
           <DataField
             label="Dispatch footprint"
             value={driver.dispatchSettings.localEnabled ? `${driver.dispatchSettings.localRadiusMiles} mi local` : "Local off"}
@@ -128,8 +201,130 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
                   : "Service area off"
             }
           />
-          <DataField label="Created" value={driver.createdAt ? new Date(driver.createdAt).toLocaleDateString() : "Existing driver"} />
+          <DataField
+            label="Documents"
+            value={`${driver.documentReview.approvedTypes.length}/${driver.documentReview.requiredTypes.length} approved`}
+            subtle={
+              driver.documentReview.readyForApproval
+                ? "Document packet is ready for final approval"
+                : driver.documentReview.missingTypes.length
+                  ? `Missing: ${driver.documentReview.missingTypes.map(formatDriverDocumentLabel).join(", ")}`
+                  : `${driver.documentReview.pendingCount} still pending review`
+            }
+          />
+          <DataField
+            label="Created"
+            value={driver.createdAt ? new Date(driver.createdAt).toLocaleDateString() : "Existing driver"}
+          />
         </div>
+
+        {!canApproveDriver ? (
+          <div className="mt-5 rounded-[1.35rem] border border-ops-warning/30 bg-ops-warning/10 p-4 text-sm text-ops-warning">
+            Admin approval stays locked until insurance, registration, background check, and MVR are all approved.
+          </div>
+        ) : null}
+      </div>
+
+      <div className="rounded-[1.8rem] border border-ops-border-soft/90 bg-ops-surface/72 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-semibold tracking-[-0.02em] text-ops-text">Document review</p>
+            <p className="mt-1 text-sm text-ops-muted">
+              Review the uploaded compliance packet before sending this driver into the live dispatch app.
+            </p>
+          </div>
+          <div className="rounded-[1.1rem] border border-ops-border-soft/90 bg-ops-panel/60 px-4 py-3 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Ready state</p>
+            <p className="mt-1 font-semibold text-ops-text">
+              {driver.documentReview.readyForApproval ? "Ready for approval" : "Still blocked"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          {driver.documents.map((document) => (
+            <div key={document.id} className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/46 p-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-2xl border border-ops-border-soft bg-ops-surface/88 p-2.5 text-ops-primary">
+                      <FileBadge2 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-ops-text">{formatDriverDocumentLabel(document.type)}</p>
+                      <p className="mt-1 text-sm text-ops-muted">
+                        {document.fileName} · {formatDriverDocumentFileSize(document.fileSizeBytes)}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${documentStatusBadgeClass(document.status)}`}
+                    >
+                      {document.status}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <DataField label="Uploaded" value={formatDateTime(document.uploadedAt)} />
+                    <DataField
+                      label="Last review"
+                      value={document.reviewedAt ? formatDateTime(document.reviewedAt) : "Not reviewed yet"}
+                    />
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    <Label htmlFor={`document-note-${document.id}`}>Review note</Label>
+                    <textarea
+                      id={`document-note-${document.id}`}
+                      value={documentNotes[document.id] ?? ""}
+                      onChange={(event) =>
+                        setDocumentNotes((current) => ({
+                          ...current,
+                          [document.id]: event.target.value
+                        }))
+                      }
+                      rows={3}
+                      className="w-full rounded-[1.15rem] border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 py-3 text-sm text-ops-text outline-none transition focus:border-ops-primary/70"
+                      placeholder="Optional note for approval, rejection, or follow-up"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex w-full flex-col gap-2 lg:w-[220px]">
+                  <Button
+                    variant="outline"
+                    disabled={downloadingDocumentId === document.id}
+                    onClick={() => void openDocument(document.id)}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Open file
+                  </Button>
+                  <Button
+                    disabled={reviewDocumentMutation.isPending}
+                    onClick={() => reviewDocumentMutation.mutate({ documentId: document.id, status: "approved" })}
+                  >
+                    Approve document
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={reviewDocumentMutation.isPending}
+                    onClick={() => reviewDocumentMutation.mutate({ documentId: document.id, status: "rejected" })}
+                  >
+                    Reject document
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={reviewDocumentMutation.isPending}
+                    onClick={() => reviewDocumentMutation.mutate({ documentId: document.id, status: "pending" })}
+                  >
+                    Reset to pending
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {documentError ? <p className="mt-4 text-sm text-ops-error">{documentError}</p> : null}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -224,36 +419,45 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
       </div>
 
       {updateMutation.error ? <p className="text-sm text-ops-error">{updateMutation.error.message}</p> : null}
+      {approvalMutation.error ? <p className="text-sm text-ops-error">{approvalMutation.error.message}</p> : null}
+      {availabilityMutation.error ? <p className="text-sm text-ops-error">{availabilityMutation.error.message}</p> : null}
       <div className="flex flex-wrap gap-2.5">
-        <Button onClick={() => updateMutation.mutate()}>Save driver settings</Button>
+        <Button disabled={updateMutation.isPending} onClick={() => updateMutation.mutate()}>
+          Save driver settings
+        </Button>
       </div>
     </div>
   );
 }
 
 export function AdminDriversPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const driversQuery = useQuery({
     queryKey: ["admin-drivers"],
     queryFn: () => api.listDrivers(token!)
   });
   const [search, setSearch] = useState("");
+  const [scope, setScope] = useState<"owned" | "all">("owned");
   const [selectedDriverId, setSelectedDriverId] = useState("");
 
   const drivers = driversQuery.data ?? [];
   const filteredDrivers = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
-    if (!searchValue) {
-      return drivers;
-    }
+    return drivers.filter((driver) => {
+      if (scope === "owned" && driver.collectorAdminId !== user?.id) {
+        return false;
+      }
 
-    return drivers.filter((driver) =>
-      [driver.name, driver.email ?? "", driver.phone ?? "", driver.vehicle?.makeModel ?? "", driver.vehicle?.plate ?? ""]
+      if (!searchValue) {
+        return true;
+      }
+
+      return [driver.name, driver.email ?? "", driver.phone ?? "", driver.vehicle?.makeModel ?? "", driver.vehicle?.plate ?? "", driver.collectorAdmin?.name ?? ""]
         .join(" ")
         .toLowerCase()
-        .includes(searchValue)
-    );
-  }, [drivers, search]);
+        .includes(searchValue);
+    });
+  }, [drivers, scope, search, user?.id]);
 
   useEffect(() => {
     if (!filteredDrivers.length) {
@@ -271,35 +475,44 @@ export function AdminDriversPage() {
   const pendingCount = drivers.filter((driver) => driver.approvalStatus === "pending").length;
   const approvedCount = drivers.filter((driver) => driver.approvalStatus === "approved").length;
   const availableCount = drivers.filter((driver) => driver.available).length;
-  const rejectedCount = drivers.filter((driver) => driver.approvalStatus === "rejected").length;
+  const documentReadyCount = drivers.filter((driver) => driver.documentReview.readyForApproval).length;
 
   return (
     <div className="space-y-6">
       <SurfaceHeader
         eyebrow="Driver operations"
-        title="Keep the live driver network clean and searchable"
-        description="Approve real applicants, tune dispatch settings, and avoid hiding active capabilities behind the old stacked forms."
+        title="Keep the live driver network clean and reviewable"
+        description="Approve real applicants, review the required compliance packet, and keep dispatch settings tied to the live driver record."
         aside={
           <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Selection model</p>
             <p className="mt-4 text-sm leading-6 text-ops-muted">
-              The left column is now a real searchable queue. Every item on the page resolves to a live driver record and editable settings.
+              The left column defaults to drivers owned by you. Switch to all drivers when you need full oversight across
+              both collector admins.
             </p>
+            <div className="mt-4 flex gap-2">
+              <Button variant={scope === "owned" ? "default" : "outline"} onClick={() => setScope("owned")}>
+                Owned by me
+              </Button>
+              <Button variant={scope === "all" ? "default" : "outline"} onClick={() => setScope("all")}>
+                All drivers
+              </Button>
+            </div>
           </div>
         }
       />
 
       <MetricStrip>
-        <MetricCard label="Pending approval" value={pendingCount} meta="Applicants waiting for review" icon={ShieldCheck} tone="warning" />
-        <MetricCard label="Approved drivers" value={approvedCount} meta="Drivers currently allowed into the app" icon={Users} tone="primary" />
+        <MetricCard label="Pending approval" value={pendingCount} meta="Applicants waiting for final admin approval" icon={ShieldAlert} tone="warning" />
+        <MetricCard label="Docs ready" value={documentReadyCount} meta="Packets cleared for approval" icon={ShieldCheck} tone="primary" />
+        <MetricCard label="Approved drivers" value={approvedCount} meta="Drivers currently allowed into the app" icon={Users} tone="success" />
         <MetricCard label="Available now" value={availableCount} meta="Live network capacity" icon={ToggleLeft} tone="success" />
-        <MetricCard label="Rejected" value={rejectedCount} meta="Accounts held out of dispatch" icon={Users} />
       </MetricStrip>
 
       <div className="grid gap-6 xl:grid-cols-[0.44fr_0.56fr]">
         <PanelSection
           title="Driver queue"
-          description="Search by name, contact, or vehicle and open the live settings panel on the right."
+          description="Search by name, contact, or vehicle and open the live review panel on the right."
           contentClassName="space-y-4"
         >
           <div className="relative">
@@ -333,6 +546,12 @@ export function AdminDriversPage() {
                       <p className="mt-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
                         {driver.homeCity && driver.homeState ? `${driver.homeCity}, ${driver.homeState}` : "No market set"}
                       </p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
+                        Owner: {driver.collectorAdmin?.name ?? "Unassigned"}
+                      </p>
+                      <p className="mt-2 text-sm text-ops-muted">
+                        {driver.documentReview.approvedTypes.length}/{driver.documentReview.requiredTypes.length} docs approved
+                      </p>
                     </div>
                   </div>
                 </EntityListItem>
@@ -346,8 +565,12 @@ export function AdminDriversPage() {
         </PanelSection>
 
         <PanelSection
-          title={selectedDriver ? "Driver detail" : "Driver detail"}
-          description={selectedDriver ? "Edit real dispatch and pricing settings without leaving the queue." : "Select a driver from the queue to open their live settings."}
+          title="Driver detail"
+          description={
+            selectedDriver
+              ? "Review required documents, approve the application, and edit live dispatch settings without leaving the queue."
+              : "Select a driver from the queue to open their live settings."
+          }
         >
           {selectedDriver ? (
             <DriverEditorPanel driver={selectedDriver} />

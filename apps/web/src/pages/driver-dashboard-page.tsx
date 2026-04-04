@@ -246,10 +246,13 @@ export function DriverDashboardPage() {
     };
   }, [queryClient, token]);
 
-  const outstandingDues = duesQuery.data?.outstanding ?? [];
+  const collectibleAccrued = duesQuery.data?.collectibleAccrued ?? [];
+  const openBatches = duesQuery.data?.openBatches ?? [];
+  const overdueBatches = duesQuery.data?.overdueBatches ?? [];
   const dueHistory = duesQuery.data?.history ?? [];
   const payoutSettings = duesQuery.data?.payoutSettings;
-  const suspended = duesQuery.data?.suspended ?? false;
+  const collector = duesQuery.data?.collector;
+  const suspended = duesQuery.data?.blocked ?? false;
   const community = communityQuery.data;
 
   return (
@@ -300,7 +303,7 @@ export function DriverDashboardPage() {
       <MetricStrip>
         <MetricCard label="Incoming offers" value={offersQuery.data?.length ?? 0} meta="First accepted offer wins" icon={BellRing} />
         <MetricCard label="Active rides" value={activeRidesQuery.data?.length ?? 0} meta="Trips currently in your workflow" icon={CarFront} tone="primary" />
-        <MetricCard label="Outstanding dues" value={formatMoney(duesQuery.data?.outstandingTotal ?? 0)} meta="Manual 5% due balance" icon={CreditCard} tone="warning" />
+        <MetricCard label="Outstanding dues" value={formatMoney(duesQuery.data?.outstandingTotal ?? 0)} meta="Completed-trip dues and open batch balance" icon={CreditCard} tone="warning" />
         <MetricCard label="Community access" value={community?.eligibility.canVote ? "Full" : "Read"} meta="Posting and voting state" icon={MessageSquare} />
       </MetricStrip>
 
@@ -649,18 +652,18 @@ export function DriverDashboardPage() {
           <CardHeader>
             <CardTitle>Platform dues</CardTitle>
             <CardDescription>
-              Drivers keep the subtotal and send the 5% platform due manually within 48 hours of completed rides.
+              Only completed trips create collectible dues. Pay against the live batch code and use that code in the payment title, note, or both when the app allows it.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-4xl border border-ops-border-soft p-4">
-                <p className="text-sm text-ops-muted">Outstanding</p>
+                <p className="text-sm text-ops-muted">Collectible total</p>
                 <p className="mt-2 text-2xl font-extrabold">{formatMoney(duesQuery.data?.outstandingTotal ?? 0)}</p>
               </div>
               <div className="rounded-4xl border border-ops-border-soft p-4">
-                <p className="text-sm text-ops-muted">Overdue count</p>
-                <p className="mt-2 text-2xl font-extrabold">{duesQuery.data?.overdueCount ?? 0}</p>
+                <p className="text-sm text-ops-muted">Open batches</p>
+                <p className="mt-2 text-2xl font-extrabold">{openBatches.length + overdueBatches.length}</p>
               </div>
               <div className="rounded-4xl border border-ops-border-soft p-4">
                 <p className="text-sm text-ops-muted">Status</p>
@@ -671,6 +674,7 @@ export function DriverDashboardPage() {
             <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/55 p-4 text-sm text-ops-muted">
               <p className="font-semibold text-ops-text">Where to send dues</p>
               <div className="mt-3 grid gap-2">
+                <p>Collector: {collector?.name ?? "Unassigned"}</p>
                 <p>Cash App: {payoutSettings?.cashAppHandle || "Not set yet"}</p>
                 <p>Zelle: {payoutSettings?.zelleHandle || "Not set yet"}</p>
                 <p>Jim: {payoutSettings?.jimHandle || "Not set yet"}</p>
@@ -680,30 +684,51 @@ export function DriverDashboardPage() {
             </div>
 
             <div className="space-y-3">
-              <p className="font-semibold">Outstanding dues</p>
-              {outstandingDues.length ? (
-                outstandingDues.map((due) => (
-                  <div key={due.id} className="rounded-4xl border border-ops-border-soft p-4">
+              <p className="font-semibold">Current payable batches</p>
+              {[...overdueBatches, ...openBatches].length ? (
+                [...overdueBatches, ...openBatches].map((batch) => (
+                  <div key={batch.id} className="rounded-4xl border border-ops-border-soft p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold">{due.ride.pickupAddress}</p>
-                          <Badge>{due.status}</Badge>
+                          <p className="font-semibold">{batch.referenceCode}</p>
+                          <Badge>{batch.status}</Badge>
                         </div>
-                        <p className="text-sm text-ops-muted">{due.ride.dropoffAddress}</p>
-                        <p className="text-sm text-ops-muted/80">Due by {formatDateTime(due.dueAt)}</p>
+                        <p className="text-sm text-ops-muted">{batch.dues.length} completed trips in this batch</p>
+                        <p className="text-sm text-ops-muted/80">Due by {formatDateTime(batch.dueAt)}</p>
                       </div>
                       <div className="text-left md:text-right">
-                        <p className="font-semibold">{formatMoney(due.amount)}</p>
-                        <p className="text-sm text-ops-muted">Ride subtotal: {formatMoney(due.ride.subtotal)}</p>
-                        <p className="text-sm text-ops-muted/80">Customer paid: {formatMoney(due.ride.customerTotal)}</p>
+                        <p className="font-semibold">{formatMoney(batch.amount)}</p>
+                        <p className="text-sm text-ops-muted">Use {batch.referenceCode} in title, note, or both</p>
+                        <p className="text-sm text-ops-muted/80">
+                          {batch.paymentMethod ? `Last recorded method ${batch.paymentMethod}` : "Waiting for reconciliation"}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
-                  No outstanding dues right now.
+                  No open dues batches right now.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <p className="font-semibold">Completed-trip dues ready to collect</p>
+              {collectibleAccrued.length ? (
+                collectibleAccrued.map((due) => (
+                  <div key={due.id} className="flex items-center justify-between rounded-4xl border border-ops-border-soft p-4">
+                    <div>
+                      <p className="font-semibold">{due.ride.riderName}</p>
+                      <p className="text-sm text-ops-muted">{due.ride.pickupAddress}</p>
+                    </div>
+                    <p className="font-semibold">{formatMoney(due.amount)}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
+                  No unbatched completed-trip dues right now.
                 </div>
               )}
             </div>
@@ -711,13 +736,13 @@ export function DriverDashboardPage() {
             <div className="space-y-3">
               <p className="font-semibold">Recent due history</p>
               {dueHistory.length ? (
-                dueHistory.slice(0, 5).map((due) => (
-                  <div key={due.id} className="flex items-center justify-between rounded-4xl border border-ops-border-soft p-4">
+                dueHistory.slice(0, 5).map((batch) => (
+                  <div key={batch.id} className="flex items-center justify-between rounded-4xl border border-ops-border-soft p-4">
                     <div>
-                      <p className="font-semibold">{due.ride.riderName}</p>
-                      <p className="text-sm text-ops-muted">{due.status} · {formatDateTime(due.updatedAt)}</p>
+                      <p className="font-semibold">{batch.referenceCode}</p>
+                      <p className="text-sm text-ops-muted">{batch.status} · {formatDateTime(batch.updatedAt)}</p>
                     </div>
-                    <p className="font-semibold">{formatMoney(due.amount)}</p>
+                    <p className="font-semibold">{formatMoney(batch.amount)}</p>
                   </div>
                 ))
               ) : (

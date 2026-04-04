@@ -8,11 +8,13 @@ import {
   type PropsWithChildren
 } from "react";
 import type {
+  AcceptAdminInviteInput,
   AdminLogin,
   AdminSetupInput,
   AuthOtpRequest,
   AuthOtpVerify,
   CommunityAccessExchangeInput,
+  CreateDriverRoleInput,
   DriverLoginInput,
   Role,
   SessionUser
@@ -27,8 +29,10 @@ interface AuthContextValue {
   requestOtp: (input: AuthOtpRequest) => Promise<{ ok: true; devCode?: string }>;
   verifyOtp: (input: AuthOtpVerify) => Promise<void>;
   setupAdmin: (input: AdminSetupInput) => Promise<void>;
+  acceptAdminInvite: (input: AcceptAdminInviteInput) => Promise<void>;
   loginAdmin: (input: AdminLogin) => Promise<void>;
   loginDriver: (input: DriverLoginInput) => Promise<void>;
+  createDriverRole: (input: CreateDriverRoleInput) => Promise<void>;
   exchangeCommunityAccess: (input: CommunityAccessExchangeInput) => Promise<void>;
   switchRole: (role: Role) => void;
   logout: () => Promise<void>;
@@ -89,11 +93,35 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setupAdmin: async (input) => {
         commitSession(await api.setupAdmin(input), setSession);
       },
+      acceptAdminInvite: async (input) => {
+        commitSession(await api.acceptAdminInvite(input), setSession);
+      },
       loginAdmin: async (input) => {
         commitSession(await api.loginAdmin(input), setSession);
       },
       loginDriver: async (input) => {
         commitSession(await api.loginDriver(input), setSession);
+      },
+      createDriverRole: async (input) => {
+        if (!session?.token) {
+          throw new Error("You must be signed in to add a driver role");
+        }
+
+        await api.createDriverRole(input, session.token);
+        const refreshedUser = await api.me(session.token);
+        commitSession(
+          {
+            token: session.token,
+            user: {
+              ...refreshedUser,
+              role:
+                refreshedUser.roles.includes("driver") && refreshedUser.approvalStatus === "approved"
+                  ? "driver"
+                  : session.user.role
+            }
+          },
+          setSession
+        );
       },
       exchangeCommunityAccess: async (input) => {
         commitSession(await api.exchangeCommunityAccess(input), setSession);
