@@ -66,6 +66,7 @@ export function DriverLoginPage() {
             <Input
               id="driverEmail"
               type="email"
+              autoComplete="username"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="driver@example.com"
@@ -76,6 +77,7 @@ export function DriverLoginPage() {
             <Input
               id="driverPassword"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Password"

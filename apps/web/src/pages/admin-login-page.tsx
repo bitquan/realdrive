@@ -57,6 +57,7 @@ export function AdminLoginPage() {
             <Input
               id="adminEmail"
               type="email"
+              autoComplete="username"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
@@ -67,6 +68,7 @@ export function AdminLoginPage() {
             <Input
               id="adminPassword"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Password"
