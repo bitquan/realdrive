@@ -64,7 +64,7 @@ export function RideDetailsPage() {
   if (!rideQuery.data) {
     return (
       <Card>
-        <CardContent className="p-8 text-sm text-brand-ink/55">Loading ride details...</CardContent>
+        <CardContent className="p-8 text-sm text-ops-muted">Loading ride details...</CardContent>
       </Card>
     );
   }
@@ -73,10 +73,10 @@ export function RideDetailsPage() {
   const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+    <div className="grid gap-3.5 md:gap-5 lg:grid-cols-[1.25fr_0.75fr]">
       <DeferredLiveMap ride={ride} />
 
-      <div className="space-y-6">
+      <div className="space-y-3.5 md:space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Ride status</CardTitle>
@@ -85,49 +85,49 @@ export function RideDetailsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Badge>{ride.status.replaceAll("_", " ")}</Badge>
-              <p className="text-sm text-brand-ink/55">{formatMoney(customerTotal)}</p>
+              <p className="text-lg font-bold text-ops-text">{formatMoney(customerTotal)}</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Pickup</p>
+              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+                <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Pickup</p>
                 <p className="mt-2 font-semibold">{ride.pickup.address}</p>
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Dropoff</p>
+              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+                <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Dropoff</p>
                 <p className="mt-2 font-semibold">{ride.dropoff.address}</p>
               </div>
             </div>
             <div className="grid gap-3">
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-brand-ink/50">
+              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+                <div className="mb-2 flex items-center gap-2 text-ops-muted">
                   <User className="h-4 w-4" />
                   Driver
                 </div>
                 <p className="font-semibold">{ride.driver?.name ?? "Waiting for assignment"}</p>
-                <p className="text-sm text-brand-ink/55">{ride.driver?.vehicle?.makeModel ?? "Dispatching nearby drivers"}</p>
+                <p className="text-sm text-ops-muted">{ride.driver?.vehicle?.makeModel ?? "Dispatching nearby drivers"}</p>
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-brand-ink/50">
+              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+                <div className="mb-2 flex items-center gap-2 text-ops-muted">
                   <Clock3 className="h-4 w-4" />
                   Requested
                 </div>
                 <p className="font-semibold">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
-                <p className="text-sm text-brand-ink/55">
+                <p className="text-sm text-ops-muted">
                   {ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes
                 </p>
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <div className="mb-2 flex items-center gap-2 text-brand-ink/50">
+              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+                <div className="mb-2 flex items-center gap-2 text-ops-muted">
                   <CreditCard className="h-4 w-4" />
                   Payment
                 </div>
                 <p className="font-semibold">{ride.payment.method}</p>
-                <p className="text-sm text-brand-ink/55">Status: {ride.payment.status}</p>
-                <p className="text-sm text-brand-ink/45">All-in total: {formatMoney(customerTotal)}</p>
+                <p className="text-sm text-ops-muted">Status: {ride.payment.status}</p>
+                <p className="text-sm text-ops-muted/80">All-in total: {formatMoney(customerTotal)}</p>
               </div>
             </div>
             {ride.status !== "completed" && ride.status !== "canceled" ? (
-              <Button variant="outline" className="w-full" onClick={() => cancelMutation.mutate()}>
+              <Button variant="outline" className="w-full border-ops-destructive/35 text-ops-destructive hover:bg-ops-destructive/10" onClick={() => cancelMutation.mutate()}>
                 <Phone className="mr-2 h-4 w-4" />
                 Cancel ride
               </Button>
@@ -143,12 +143,12 @@ export function RideDetailsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-4xl border border-brand-ink/10 p-4 text-sm text-brand-ink/60">
+            <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/40 p-4 text-sm text-ops-muted">
               {communityQuery.data?.eligibility.reason ?? "You can open the community board from this rider account."}
             </div>
             <Link
               to="/community"
-              className="inline-flex w-full items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3b8fff]"
             >
               Open community board
             </Link>

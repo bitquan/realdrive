@@ -15,7 +15,7 @@ export function ShareRedirectPage() {
   }, [navigate, referralCode]);
 
   return (
-    <div className="rounded-4xl border border-brand-ink/10 bg-white p-8 text-sm text-brand-ink/55">
+    <div className="rounded-4xl border border-ops-border-soft bg-ops-surface p-8 text-sm text-ops-muted">
       Redirecting to the rider booking page...
     </div>
   );

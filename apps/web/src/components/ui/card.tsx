@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded-4xl border border-brand-ink/10 bg-white/95 shadow-soft backdrop-blur", className)}
+      className={cn("rounded-4xl border border-ops-border-soft/90 bg-gradient-to-b from-ops-surface to-[#0d1421] shadow-panel backdrop-blur", className)}
       {...props}
     />
   );
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("space-y-1 p-6 pb-3", className)} {...props} />;
+  return <div className={cn("space-y-1.5 p-5 pb-3 md:p-6 md:pb-3", className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
@@ -19,9 +19,9 @@ export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingEle
 }
 
 export function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-brand-ink/55", className)} {...props} />;
+  return <p className={cn("text-sm text-ops-muted", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-6 pt-3", className)} {...props} />;
+  return <div className={cn("p-5 pt-3 md:p-6 md:pt-3", className)} {...props} />;
 }

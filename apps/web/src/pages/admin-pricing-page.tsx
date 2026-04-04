@@ -78,7 +78,7 @@ export function AdminPricingPage() {
         <CardDescription>Configure state-based market pricing and keep `DEFAULT` as the fallback for unmatched pickups.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex flex-col gap-3 rounded-4xl border border-brand-ink/10 p-4 md:flex-row md:items-end">
+        <div className="flex flex-col gap-3 rounded-4xl border border-ops-border-soft p-4 md:flex-row md:items-end">
           <div className="flex-1 space-y-2">
             <Label>Add market key</Label>
             <Input
@@ -106,7 +106,7 @@ export function AdminPricingPage() {
         </div>
 
         {Object.entries(markets).map(([marketKey, rateForm]) => (
-          <div key={marketKey} className="rounded-4xl border border-brand-ink/10 p-4">
+          <div key={marketKey} className="rounded-4xl border border-ops-border-soft p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold">{marketKey}</h3>
               {marketKey !== "DEFAULT" ? (
@@ -127,7 +127,7 @@ export function AdminPricingPage() {
 
             <div className="space-y-4">
               {(Object.keys(rateForm) as RideType[]).map((rideType) => (
-                <div key={`${marketKey}-${rideType}`} className="rounded-4xl border border-brand-ink/10 p-4">
+                <div key={`${marketKey}-${rideType}`} className="rounded-4xl border border-ops-border-soft p-4">
                   <h4 className="mb-4 font-semibold capitalize">{rideType}</h4>
                   <div className="grid gap-4 md:grid-cols-4">
                     <div className="space-y-2">
@@ -197,7 +197,7 @@ export function AdminPricingPage() {
           </div>
         ))}
 
-        {updateMutation.error ? <p className="text-sm text-red-600">{updateMutation.error.message}</p> : null}
+        {updateMutation.error ? <p className="text-sm text-ops-error">{updateMutation.error.message}</p> : null}
         <Button onClick={() => updateMutation.mutate()}>Save platform rates</Button>
       </CardContent>
     </Card>

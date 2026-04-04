@@ -74,7 +74,7 @@ export function AdminLoginPage() {
               placeholder="Password"
             />
           </div>
-          {loginMutation.error ? <p className="text-sm text-red-600">{loginMutation.error.message}</p> : null}
+          {loginMutation.error ? <p className="text-sm text-ops-error">{loginMutation.error.message}</p> : null}
           <Button className="w-full" type="submit" disabled={loginMutation.isPending || !email || !password}>
             Sign in
           </Button>

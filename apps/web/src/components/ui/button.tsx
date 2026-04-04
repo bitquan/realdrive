@@ -9,9 +9,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const styles: Record<ButtonVariant, string> = {
-  default: "bg-brand-ink text-white hover:bg-black",
-  outline: "border border-brand-ink/15 bg-white text-brand-ink hover:bg-brand-sand/60",
-  ghost: "bg-transparent text-brand-ink hover:bg-brand-ink/5"
+  default: "border border-ops-primary/45 bg-ops-primary text-white shadow-glow hover:bg-[#3b8fff]",
+  outline: "border border-ops-border bg-gradient-to-b from-ops-panel/75 to-[#111a2a] text-ops-text hover:bg-ops-panel",
+  ghost: "bg-transparent text-ops-muted hover:bg-ops-surface hover:text-ops-text"
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -19,7 +19,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50",
         styles[variant],
         className
       )}

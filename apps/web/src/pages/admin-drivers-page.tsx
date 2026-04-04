@@ -75,7 +75,7 @@ function DriverEditor({ driver }: { driver: DriverAccount }) {
   });
 
   return (
-    <div className="rounded-4xl border border-brand-ink/10 p-4">
+    <div className="rounded-4xl border border-ops-border-soft bg-gradient-to-b from-ops-surface to-[#101928] p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -84,10 +84,10 @@ function DriverEditor({ driver }: { driver: DriverAccount }) {
             <Badge>{driver.available ? "available" : "offline"}</Badge>
             <Badge>{driver.pricingMode === "platform" ? "platform rates" : "custom rates"}</Badge>
           </div>
-          <p className="mt-1 text-sm text-brand-ink/55">
+          <p className="mt-1 text-sm text-ops-muted">
             {driver.email ?? "No email"} · {driver.phone ?? "No phone"}
           </p>
-          <p className="text-sm text-brand-ink/45">
+          <p className="text-sm text-ops-muted/80">
             {driver.vehicle?.makeModel ?? "No vehicle"} · {driver.vehicle?.plate ?? "No plate"}
           </p>
         </div>
@@ -131,7 +131,7 @@ function DriverEditor({ driver }: { driver: DriverAccount }) {
           <div className="space-y-2">
             <Label>Pricing mode</Label>
             <select
-              className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+              className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-sm text-ops-text"
               value={form.pricingMode}
               onChange={(event) =>
                 setForm((current) => ({
@@ -147,7 +147,7 @@ function DriverEditor({ driver }: { driver: DriverAccount }) {
         </div>
 
         <div className="space-y-4">
-          <label className="flex items-center justify-between rounded-4xl border border-brand-ink/10 p-4">
+          <label className="flex items-center justify-between rounded-3xl border border-ops-border-soft bg-ops-panel/45 p-3.5">
             <span className="font-semibold">Local dispatch</span>
             <input
               type="checkbox"
@@ -163,7 +163,7 @@ function DriverEditor({ driver }: { driver: DriverAccount }) {
               onChange={(event) => setForm((current) => ({ ...current, localRadiusMiles: event.target.value }))}
             />
           </div>
-          <label className="flex items-center justify-between rounded-4xl border border-brand-ink/10 p-4">
+          <label className="flex items-center justify-between rounded-3xl border border-ops-border-soft bg-ops-panel/45 p-3.5">
             <span className="font-semibold">Service-area dispatch</span>
             <input
               type="checkbox"
@@ -179,7 +179,7 @@ function DriverEditor({ driver }: { driver: DriverAccount }) {
               placeholder="VA, NY"
             />
           </div>
-          <label className="flex items-center justify-between rounded-4xl border border-brand-ink/10 p-4">
+          <label className="flex items-center justify-between rounded-3xl border border-ops-border-soft bg-ops-panel/45 p-3.5">
             <span className="font-semibold">Nationwide dispatch</span>
             <input
               type="checkbox"
@@ -190,7 +190,7 @@ function DriverEditor({ driver }: { driver: DriverAccount }) {
         </div>
       </div>
 
-      {updateMutation.error ? <p className="mt-3 text-sm text-red-600">{updateMutation.error.message}</p> : null}
+      {updateMutation.error ? <p className="mt-3 text-sm text-ops-error">{updateMutation.error.message}</p> : null}
       <div className="mt-4">
         <Button onClick={() => updateMutation.mutate()}>Save driver settings</Button>
       </div>
@@ -219,7 +219,7 @@ export function AdminDriversPage() {
           {pending.length ? (
             pending.map((driver) => <DriverEditor key={driver.id} driver={driver} />)
           ) : (
-            <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
               No pending driver applications right now.
             </div>
           )}

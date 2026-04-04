@@ -39,15 +39,15 @@ export function DriverInterestPage() {
         />
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5">
+          <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/60 p-5">
             <p className="font-semibold">Approval flow</p>
-            <p className="mt-2 text-sm text-brand-ink/60">
+            <p className="mt-2 text-sm text-ops-muted">
               Your account is created instantly, but dispatch remains locked until admin approval.
             </p>
           </div>
-          <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5">
+          <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/60 p-5">
             <p className="font-semibold">After approval</p>
-            <p className="mt-2 text-sm text-brand-ink/60">
+            <p className="mt-2 text-sm text-ops-muted">
               Set dispatch radius, choose service-area coverage, and manage your own rate preferences.
             </p>
           </div>
@@ -61,16 +61,16 @@ export function DriverInterestPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {signupMutation.isSuccess ? (
-            <div className="rounded-4xl border border-green-700/10 bg-green-50 p-5 text-green-700">
+            <div className="rounded-3xl border border-ops-success/25 bg-ops-success/10 p-5 text-ops-success">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="h-5 w-5" />
                 Driver account created
               </div>
-              <p className="mt-2 text-sm text-green-700/85">
+              <p className="mt-2 text-sm text-ops-success/85">
                 Your account is pending admin approval. Once approved, you can sign in from the driver app.
               </p>
               <p className="mt-3 text-sm">
-                <Link to="/driver/login" className="font-semibold text-green-800 underline underline-offset-2">
+                <Link to="/driver/login" className="font-semibold text-ops-success underline underline-offset-2">
                   Go to driver login
                 </Link>
               </p>
@@ -174,7 +174,7 @@ export function DriverInterestPage() {
               <Label htmlFor="vehicleRideType">Primary ride type</Label>
               <select
                 id="vehicleRideType"
-                className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+                className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-sm text-ops-text"
                 value={form.rideType}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -238,7 +238,7 @@ export function DriverInterestPage() {
           </Button>
 
           {signupMutation.error ? (
-            <p className="text-sm text-red-600">{signupMutation.error.message}</p>
+            <p className="text-sm text-ops-error">{signupMutation.error.message}</p>
           ) : null}
         </CardContent>
       </Card>

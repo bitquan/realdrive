@@ -45,14 +45,14 @@ function Stat({
   value: string;
 }) {
   return (
-    <div className="rounded-4xl border border-brand-ink/10 bg-white/90 p-4 shadow-soft">
-      <div className="flex items-center gap-3">
-        <div className="rounded-2xl bg-brand-ink/5 p-3">
-          <Icon className="h-5 w-5" />
+    <div className="min-w-[10.5rem] rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-surface to-[#101827] p-3.5 shadow-panel md:min-w-0">
+      <div className="flex items-center gap-2.5">
+        <div className="rounded-xl bg-ops-panel p-2.5 text-ops-primary">
+          <Icon className="h-4.5 w-4.5" />
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-brand-ink/45">{label}</p>
-          <p className="text-lg font-semibold">{value}</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">{label}</p>
+          <p className="text-base font-semibold">{value}</p>
         </div>
       </div>
     </div>
@@ -144,62 +144,67 @@ export function HomePage() {
     !bookingMutation.isPending;
 
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className="space-y-3 md:space-y-5">
       <PageHero
         eyebrow="Community-powered rideshare pilot"
         icon={Shield}
         title="Book your ride in under a minute and track everything from one live link."
         description="RealDrive keeps the rider flow simple: instant quote, guest checkout, live trip tracking, and personal share links for referral growth."
         aside={(
-          <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/60 p-4 text-sm shadow-soft md:p-5">
-            <p className="font-semibold">What riders get now</p>
-            <div className="mt-3 space-y-2 text-brand-ink/65">
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:p-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Rider operations snapshot</p>
+            <p className="mt-2 font-semibold text-ops-text">What riders get now</p>
+            <div className="mt-2.5 space-y-1.5 text-ops-muted">
               <p>Guest booking and live trip tracking.</p>
               <p>Upfront quote before booking confirmation.</p>
               <p>Personal rider share link after booking.</p>
             </div>
             {availableDriver ? (
-              <div className="mt-4 rounded-3xl border border-brand-ink/10 bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Next available driver</p>
-                <p className="mt-2 font-semibold">{availableDriver.name}</p>
-                <p className="text-sm text-brand-ink/55">{availableDriver.vehicle?.makeModel ?? "Vehicle ready"}</p>
+              <div className="mt-3 rounded-2xl border border-ops-border bg-ops-surface/90 p-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Next available driver</p>
+                <p className="mt-1.5 font-semibold">{availableDriver.name}</p>
+                <p className="text-sm text-ops-muted">{availableDriver.vehicle?.makeModel ?? "Vehicle ready"}</p>
               </div>
             ) : null}
           </div>
         )}
       />
 
-      <div className="-mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-        <a
-          href="#book"
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black sm:w-auto"
-        >
-          Start booking
-        </a>
-        <Link
-          to="/driver/signup"
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
-        >
-          Driver signup
-        </Link>
-        {userHasRole(user, "rider") ? (
-          <Link
-            to="/rider/rides"
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60 sm:w-auto"
+      <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-surface to-[#0d1421] p-2 shadow-panel">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:flex-wrap">
+          <a
+            href="#book"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3b8fff] sm:w-auto"
           >
-            My rides
-          </Link>
-        ) : null}
+            Start booking
+          </a>
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:gap-2">
+            <Link
+              to="/driver/signup"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+            >
+              Driver signup
+            </Link>
+            {userHasRole(user, "rider") ? (
+              <Link
+                to="/rider/rides"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+              >
+                My rides
+              </Link>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       {referredByQuery.data?.ownerName ? (
-        <div className="rounded-4xl border border-brand-copper/20 bg-brand-sand/50 p-4 text-sm text-brand-ink/70">
+        <div className="rounded-4xl border border-ops-primary/20 bg-ops-panel/70 p-4 text-sm text-ops-muted">
           You were referred by <span className="font-semibold">{referredByQuery.data.ownerName}</span>. Your booking
           or email signup will keep that referral attached.
         </div>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+      <div className="grid grid-flow-col auto-cols-[minmax(10.5rem,1fr)] gap-2 overflow-x-auto pb-1 md:grid-flow-row md:auto-cols-auto md:grid-cols-3 md:gap-3 md:overflow-visible md:pb-0">
         <Stat icon={Car} label="Driver network" value={availableDriver ? "Drivers online" : "On demand"} />
         <Stat
           icon={Clock3}
@@ -209,16 +214,16 @@ export function HomePage() {
         <Stat icon={MapPin} label="Route engine" value={quoteQuery.data?.routeProvider === "mapbox" ? "Mapbox live" : "Fallback ready"} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card id="book">
+      <div className="grid gap-3.5 lg:grid-cols-[1.3fr_0.7fr]">
+        <Card id="book" className="shadow-elevated">
           <CardHeader>
-            <CardTitle className="text-2xl">Book your ride</CardTitle>
+            <CardTitle className="text-2xl md:text-[2rem]">Book your ride</CardTitle>
             <CardDescription>
               Fast guest checkout for the pilot. You get a tracking link right away and your rider share link after booking.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-3">
+          <CardContent className="space-y-3.5 md:space-y-5">
+            <div className="grid gap-3 md:grid-cols-3 md:gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="riderName">Full name</Label>
                 <Input
@@ -239,7 +244,7 @@ export function HomePage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="riderEmail">Email for updates and your share link</Label>
               <Input
                 id="riderEmail"
@@ -250,7 +255,7 @@ export function HomePage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="pickupAddress">Pickup address</Label>
               <Input
                 id="pickupAddress"
@@ -260,7 +265,7 @@ export function HomePage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="dropoffAddress">Dropoff address</Label>
               <Input
                 id="dropoffAddress"
@@ -270,12 +275,12 @@ export function HomePage() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-4 md:gap-4">
               <div className="space-y-2">
                 <Label htmlFor="rideType">Ride type</Label>
                 <select
                   id="rideType"
-                  className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+                  className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-sm text-ops-text"
                   value={bookingForm.rideType}
                   onChange={(event) =>
                     setBookingForm((current) => ({
@@ -293,7 +298,7 @@ export function HomePage() {
                 <Label htmlFor="scheduleMode">Timing</Label>
                 <select
                   id="scheduleMode"
-                  className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+                  className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-sm text-ops-text"
                   value={bookingForm.scheduleMode}
                   onChange={(event) =>
                     setBookingForm((current) => ({
@@ -318,7 +323,7 @@ export function HomePage() {
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-2 md:grid-cols-3 md:gap-2.5">
               {paymentMethods.map(({ id, label, icon: Icon }) => {
                 const active = bookingForm.paymentMethod === id;
                 return (
@@ -331,17 +336,17 @@ export function HomePage() {
                         paymentMethod: id
                       }))
                     }
-                    className={`rounded-4xl border p-4 text-left transition ${
-                      active ? "border-brand-ink bg-brand-ink text-white" : "border-brand-ink/10 bg-white hover:bg-brand-sand/45"
+                    className={`rounded-3xl border p-3 text-left transition md:p-3.5 ${
+                      active ? "border-ops-primary/50 bg-ops-primary text-white" : "border-ops-border-soft bg-ops-panel/50 text-ops-text hover:bg-ops-panel"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`rounded-2xl p-3 ${active ? "bg-white/10" : "bg-brand-ink/5"}`}>
-                        <Icon className="h-5 w-5" />
+                      <div className={`rounded-xl p-2.5 md:rounded-2xl md:p-3 ${active ? "bg-ops-surface/10" : "bg-ops-surface"}`}>
+                        <Icon className="h-4.5 w-4.5 md:h-5 md:w-5" />
                       </div>
                       <div>
                         <p className="font-semibold">{label}</p>
-                        <p className={`text-xs ${active ? "text-white/75" : "text-brand-ink/55"}`}>Collected outside the app</p>
+                        <p className={`text-xs ${active ? "text-white/75" : "text-ops-muted"}`}>Collected outside the app</p>
                       </div>
                     </div>
                   </button>
@@ -349,13 +354,13 @@ export function HomePage() {
               })}
             </div>
 
-            <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/35 p-5">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#111a2a] p-4">
+              <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-sm text-brand-ink/55">Estimated all-in fare</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-ops-muted">Estimated all-in fare</p>
                   <p className="text-3xl font-extrabold">{formatMoney(quoteQuery.data?.estimatedCustomerTotal ?? 0)}</p>
                 </div>
-                <div className="text-sm text-brand-ink/60">
+                <div className="text-sm text-ops-muted">
                   {quoteQuery.data ? (
                     <p>
                       {quoteQuery.data.estimatedMiles} miles · {quoteQuery.data.estimatedMinutes} minutes · {quoteQuery.data.routeProvider}
@@ -367,9 +372,9 @@ export function HomePage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="grid gap-2 border-t border-ops-border-soft pt-3 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-3">
               <Button
-                className="h-11 flex-1"
+                className="h-11 w-full"
                 disabled={!canBook}
                 onClick={() =>
                   bookingMutation.mutate({
@@ -413,21 +418,21 @@ export function HomePage() {
             </div>
 
             {bookingMutation.error ? (
-              <p className="text-sm text-red-600">{bookingMutation.error.message}</p>
+              <p className="text-sm text-ops-error">{bookingMutation.error.message}</p>
             ) : null}
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card>
+        <div className="space-y-3 md:space-y-4">
+          <Card className="border-ops-border shadow-panel">
             <CardHeader>
-              <CardTitle>Trip estimate</CardTitle>
+              <CardTitle className="text-lg">Trip estimate</CardTitle>
               <CardDescription>Use pickup and dropoff to preview your all-in total before confirming.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-brand-ink/60">
-              <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/35 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/45">All-in fare</p>
-                <p className="mt-2 text-2xl font-extrabold text-brand-ink">
+            <CardContent className="space-y-3 text-sm text-ops-muted">
+              <div className="rounded-3xl border border-ops-border bg-gradient-to-b from-ops-panel/80 to-[#101827] p-4">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">All-in fare</p>
+                <p className="mt-2 text-2xl font-extrabold text-ops-text">
                   {formatMoney(quoteQuery.data?.estimatedCustomerTotal ?? 0)}
                 </p>
                 {quoteQuery.data ? (
@@ -438,26 +443,26 @@ export function HomePage() {
                   <p className="mt-2">Enter both addresses to load a live quote.</p>
                 )}
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <p className="font-semibold">Pilot payment model</p>
-                <p className="mt-1 text-brand-ink/55">Cash App, Jim, or cash are collected outside the app.</p>
+              <div className="rounded-3xl border border-ops-border-soft p-3.5">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Payment model</p>
+                <p className="mt-1 text-ops-muted">Cash App, Jim, or cash are collected outside the app.</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-ops-border-soft/70 bg-gradient-to-b from-[#0f1726] to-[#0d1420]">
             <CardHeader>
-              <CardTitle>Save your rider profile</CardTitle>
+              <CardTitle className="text-lg">Save your rider profile</CardTitle>
               <CardDescription>Not ready yet? Save your info and still get your personal rider share link.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {riderLeadMutation.isSuccess ? (
-                <div className="rounded-4xl border border-green-700/10 bg-green-50 p-4 text-sm text-green-700">
+                <div className="rounded-3xl border border-ops-success/25 bg-ops-success/10 p-4 text-sm text-ops-success">
                   <div className="flex items-center gap-2 font-semibold">
                     <CheckCircle2 className="h-4 w-4" />
                     You are on the rider list
                   </div>
-                  <p className="mt-2 text-green-700/85">You can start sharing your link right away.</p>
+                  <p className="mt-2 text-ops-success/85">You can start sharing your link right away.</p>
                 </div>
               ) : null}
               <div className="space-y-2">
@@ -503,36 +508,26 @@ export function HomePage() {
                 Save rider profile
               </Button>
               {riderLeadMutation.error ? (
-                <p className="text-sm text-red-600">{riderLeadMutation.error.message}</p>
+                <p className="text-sm text-ops-error">{riderLeadMutation.error.message}</p>
               ) : null}
             </CardContent>
           </Card>
-
-          {riderLeadMutation.data?.share ? (
-            <ShareQrCard
-              title="Your rider referral QR"
-              description="Share this from your phone or save the QR for tomorrow’s test."
-              shareUrl={riderLeadMutation.data.share.shareUrl}
-              referralCode={riderLeadMutation.data.share.referralCode}
-              fileName={`realdrive-rider-${riderLeadMutation.data.share.referralCode.toLowerCase()}`}
-            />
-          ) : null}
 
           <Card>
             <CardHeader>
               <CardTitle>Driver and admin access</CardTitle>
               <CardDescription>Use these for operations while the rider funnel stays public and booking-first.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-brand-ink/60">
+            <CardContent className="space-y-3 text-sm text-ops-muted">
               <p>Driver signup is live and requires admin approval before ride offers are unlocked.</p>
               <p>Admin controls dispatch approvals, pricing, dues, and payout instructions.</p>
               <p>Rider referrals are tracked through booking and lead capture links.</p>
               <p className="pt-2">
-                <Link to="/driver/login" className="font-semibold text-brand-copper hover:underline">
+                <Link to="/driver/login" className="font-semibold text-ops-primary hover:underline">
                   Approved driver login
                 </Link>
                 {" · "}
-                <Link to="/admin/login" className="font-semibold text-brand-copper hover:underline">
+                <Link to="/admin/login" className="font-semibold text-ops-primary hover:underline">
                   Admin login
                 </Link>
               </p>
@@ -545,27 +540,37 @@ export function HomePage() {
               <CardDescription>Keep the booking flow simple, then let riders and drivers share back into it.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
+              <div className="rounded-4xl border border-ops-border-soft p-4">
                 <p className="font-semibold">Rider path</p>
-                <p className="mt-1 text-sm text-brand-ink/55">Guest booking, tracking page, and personal rider QR.</p>
+                <p className="mt-1 text-sm text-ops-muted">Guest booking, tracking page, and personal rider QR.</p>
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
+              <div className="rounded-4xl border border-ops-border-soft p-4">
                 <p className="font-semibold">Driver path</p>
-                <p className="mt-1 text-sm text-brand-ink/55">Real signup plus admin approval before anyone can accept rides.</p>
+                <p className="mt-1 text-sm text-ops-muted">Real signup plus admin approval before anyone can accept rides.</p>
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
+              <div className="rounded-4xl border border-ops-border-soft p-4">
                 <p className="font-semibold">Referral path</p>
-                <p className="mt-1 text-sm text-brand-ink/55">Both riders and drivers can share links that point back to this rider flow.</p>
+                <p className="mt-1 text-sm text-ops-muted">Both riders and drivers can share links that point back to this rider flow.</p>
               </div>
               <Link
                 to="/driver/signup"
-                className="inline-flex w-full items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60"
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-ops-border bg-ops-surface px-4 py-2 text-sm font-semibold text-ops-text transition hover:bg-ops-panel/70"
               >
                 <Users className="mr-2 h-4 w-4" />
                 Open driver signup page
               </Link>
             </CardContent>
           </Card>
+
+          {riderLeadMutation.data?.share ? (
+            <ShareQrCard
+              title="Your rider referral QR"
+              description="Share this from your phone or save the QR for tomorrow’s test."
+              shareUrl={riderLeadMutation.data.share.shareUrl}
+              referralCode={riderLeadMutation.data.share.referralCode}
+              fileName={`realdrive-rider-${riderLeadMutation.data.share.referralCode.toLowerCase()}`}
+            />
+          ) : null}
         </div>
       </div>
     </div>

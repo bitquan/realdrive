@@ -267,12 +267,12 @@ export function DriverDashboardPage() {
                 <Badge>{profileQuery.data?.pricingMode === "custom" ? "custom rates" : "platform rates"}</Badge>
                 {suspended ? <Badge className="border-red-200 bg-red-50 text-red-700">dues overdue</Badge> : null}
               </div>
-              <p className="text-sm text-brand-ink/55">
+              <p className="text-sm text-ops-muted">
                 {profileQuery.data?.homeCity && profileQuery.data?.homeState
                   ? `${profileQuery.data.homeCity}, ${profileQuery.data.homeState}`
                   : profileQuery.data?.vehicle?.makeModel ?? "Vehicle pending"}
               </p>
-              <p className="text-sm text-brand-ink/45">
+              <p className="text-sm text-ops-muted/80">
                 {dispatchForm.localEnabled ? `Local ${dispatchForm.localRadiusMiles} mi` : "Local off"} ·{" "}
                 {dispatchForm.serviceAreaEnabled
                   ? `States ${dispatchForm.serviceAreaStates.join(", ") || serviceAreaText || "none"}`
@@ -300,25 +300,25 @@ export function DriverDashboardPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Incoming offers</p>
+            <p className="text-sm text-ops-muted">Incoming offers</p>
             <p className="mt-2 text-3xl font-extrabold">{offersQuery.data?.length ?? 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Active rides</p>
+            <p className="text-sm text-ops-muted">Active rides</p>
             <p className="mt-2 text-3xl font-extrabold">{activeRidesQuery.data?.length ?? 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Outstanding dues</p>
+            <p className="text-sm text-ops-muted">Outstanding dues</p>
             <p className="mt-2 text-3xl font-extrabold">{formatMoney(duesQuery.data?.outstandingTotal ?? 0)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Community access</p>
+            <p className="text-sm text-ops-muted">Community access</p>
             <p className="mt-2 text-3xl font-extrabold">{community?.eligibility.canVote ? "Full" : "Read"}</p>
           </CardContent>
         </Card>
@@ -373,7 +373,7 @@ export function DriverDashboardPage() {
               <div className="space-y-2">
                 <Label>Ride type</Label>
                 <select
-                  className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+                  className="h-11 w-full rounded-2xl border border-ops-border bg-ops-surface px-4 text-sm"
                   value={profileForm.rideType}
                   onChange={(event) =>
                     setProfileForm((current) => ({
@@ -398,7 +398,7 @@ export function DriverDashboardPage() {
                 />
               </div>
             </div>
-            {profileMutation.error ? <p className="text-sm text-red-600">{profileMutation.error.message}</p> : null}
+            {profileMutation.error ? <p className="text-sm text-ops-error">{profileMutation.error.message}</p> : null}
             <Button onClick={() => profileMutation.mutate()}>Save profile</Button>
           </CardContent>
         </Card>
@@ -409,10 +409,10 @@ export function DriverDashboardPage() {
             <CardDescription>Choose whether you want nearby rides, specific states, or nationwide visibility.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <label className="flex items-center justify-between gap-4 rounded-4xl border border-brand-ink/10 p-4">
+            <label className="flex items-center justify-between gap-4 rounded-4xl border border-ops-border-soft p-4">
               <div>
                 <p className="font-semibold">Local dispatch</p>
-                <p className="text-sm text-brand-ink/55">Receive rides inside your live-location radius.</p>
+                <p className="text-sm text-ops-muted">Receive rides inside your live-location radius.</p>
               </div>
               <input
                 type="checkbox"
@@ -435,10 +435,10 @@ export function DriverDashboardPage() {
                 }
               />
             </div>
-            <label className="flex items-center justify-between gap-4 rounded-4xl border border-brand-ink/10 p-4">
+            <label className="flex items-center justify-between gap-4 rounded-4xl border border-ops-border-soft p-4">
               <div>
                 <p className="font-semibold">Service-area dispatch</p>
-                <p className="text-sm text-brand-ink/55">Receive rides where the pickup state matches your approved markets.</p>
+                <p className="text-sm text-ops-muted">Receive rides where the pickup state matches your approved markets.</p>
               </div>
               <input
                 type="checkbox"
@@ -454,10 +454,10 @@ export function DriverDashboardPage() {
                 placeholder="VA, NY, NJ"
               />
             </div>
-            <label className="flex items-center justify-between gap-4 rounded-4xl border border-brand-ink/10 p-4">
+            <label className="flex items-center justify-between gap-4 rounded-4xl border border-ops-border-soft p-4">
               <div>
                 <p className="font-semibold">Nationwide dispatch</p>
-                <p className="text-sm text-brand-ink/55">Receive eligible ride offers from anywhere in the US.</p>
+                <p className="text-sm text-ops-muted">Receive eligible ride offers from anywhere in the US.</p>
               </div>
               <input
                 type="checkbox"
@@ -465,7 +465,7 @@ export function DriverDashboardPage() {
                 onChange={(event) => setDispatchForm((current) => ({ ...current, nationwideEnabled: event.target.checked }))}
               />
             </label>
-            {dispatchMutation.error ? <p className="text-sm text-red-600">{dispatchMutation.error.message}</p> : null}
+            {dispatchMutation.error ? <p className="text-sm text-ops-error">{dispatchMutation.error.message}</p> : null}
             <Button onClick={() => dispatchMutation.mutate()}>Save dispatch settings</Button>
           </CardContent>
         </Card>
@@ -484,27 +484,27 @@ export function DriverDashboardPage() {
             <button
               type="button"
               onClick={() => setRateMode("platform")}
-              className={`rounded-4xl border p-4 text-left ${rateMode === "platform" ? "border-brand-ink bg-brand-ink text-white" : "border-brand-ink/10 bg-white"}`}
+              className={`rounded-4xl border p-4 text-left ${rateMode === "platform" ? "border-ops-primary/45 bg-ops-primary text-white" : "border-ops-border-soft bg-ops-surface"}`}
             >
               <p className="font-semibold">Use platform market rates</p>
-              <p className={`mt-1 text-sm ${rateMode === "platform" ? "text-white/75" : "text-brand-ink/55"}`}>
+              <p className={`mt-1 text-sm ${rateMode === "platform" ? "text-white/75" : "text-ops-muted"}`}>
                 Riders keep the quoted all-in total when you accept.
               </p>
             </button>
             <button
               type="button"
               onClick={() => setRateMode("custom")}
-              className={`rounded-4xl border p-4 text-left ${rateMode === "custom" ? "border-brand-ink bg-brand-ink text-white" : "border-brand-ink/10 bg-white"}`}
+              className={`rounded-4xl border p-4 text-left ${rateMode === "custom" ? "border-ops-primary/45 bg-ops-primary text-white" : "border-ops-border-soft bg-ops-surface"}`}
             >
               <p className="font-semibold">Use custom driver rates</p>
-              <p className={`mt-1 text-sm ${rateMode === "custom" ? "text-white/75" : "text-brand-ink/55"}`}>
+              <p className={`mt-1 text-sm ${rateMode === "custom" ? "text-white/75" : "text-ops-muted"}`}>
                 The rider sees the platform estimate first, then your final accepted total takes over.
               </p>
             </button>
           </div>
 
           {(Object.keys(rateForm) as RideType[]).map((rideType) => (
-            <div key={rideType} className="rounded-4xl border border-brand-ink/10 p-4">
+            <div key={rideType} className="rounded-4xl border border-ops-border-soft p-4">
               <h3 className="mb-4 text-lg font-semibold capitalize">{rideType}</h3>
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
@@ -558,7 +558,7 @@ export function DriverDashboardPage() {
               </div>
             </div>
           ))}
-          {rateMutation.error ? <p className="text-sm text-red-600">{rateMutation.error.message}</p> : null}
+          {rateMutation.error ? <p className="text-sm text-ops-error">{rateMutation.error.message}</p> : null}
           <Button onClick={() => rateMutation.mutate()}>Save pricing</Button>
         </CardContent>
       </Card>
@@ -574,26 +574,26 @@ export function DriverDashboardPage() {
               const pricing = getRidePricing(ride);
 
               return (
-                <div key={ride.id} className="rounded-4xl border border-brand-ink/10 p-4">
+                <div key={ride.id} className="rounded-4xl border border-ops-border-soft p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold">{ride.pickup.address}</p>
-                      <p className="text-sm text-brand-ink/55">{ride.dropoff.address}</p>
+                      <p className="text-sm text-ops-muted">{ride.dropoff.address}</p>
                     </div>
                     <Badge>{ride.rideType}</Badge>
                   </div>
-                  <p className="mt-3 text-sm text-brand-ink/55">{ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes</p>
+                  <p className="mt-3 text-sm text-ops-muted">{ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes</p>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <div className="rounded-3xl border border-brand-ink/10 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Customer total</p>
+                    <div className="rounded-3xl border border-ops-border-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
                       <p className="mt-1 font-semibold">{formatMoney(pricing.customerTotal)}</p>
                     </div>
-                    <div className="rounded-3xl border border-brand-ink/10 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Your subtotal</p>
+                    <div className="rounded-3xl border border-ops-border-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Your subtotal</p>
                       <p className="mt-1 font-semibold">{formatMoney(pricing.subtotal)}</p>
                     </div>
-                    <div className="rounded-3xl border border-brand-ink/10 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Platform due</p>
+                    <div className="rounded-3xl border border-ops-border-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
                       <p className="mt-1 font-semibold">{formatMoney(pricing.platformDue)}</p>
                     </div>
                   </div>
@@ -609,7 +609,7 @@ export function DriverDashboardPage() {
               );
             })}
             {!offersQuery.data?.length ? (
-              <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-center text-sm text-brand-ink/55">
+              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-center text-sm text-ops-muted">
                 No ride offers right now.
               </div>
             ) : null}
@@ -629,26 +629,26 @@ export function DriverDashboardPage() {
                 <Link
                   key={ride.id}
                   to={`/driver/rides/${ride.id}`}
-                  className="block rounded-4xl border border-brand-ink/10 p-4 transition hover:bg-brand-sand/35"
+                  className="block rounded-4xl border border-ops-border-soft p-4 transition hover:bg-ops-panel/55"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-semibold">{ride.rider.name}</p>
-                      <p className="text-sm text-brand-ink/55">{ride.pickup.address}</p>
+                      <p className="text-sm text-ops-muted">{ride.pickup.address}</p>
                     </div>
                     <Badge>{ride.status.replaceAll("_", " ")}</Badge>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Customer total</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
                       <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.customerTotal)}</p>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Your subtotal</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Your subtotal</p>
                       <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.subtotal)}</p>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Platform due</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
                       <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.platformDue)}</p>
                     </div>
                   </div>
@@ -656,7 +656,7 @@ export function DriverDashboardPage() {
               );
             })}
             {!activeRidesQuery.data?.length ? (
-              <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-center text-sm text-brand-ink/55">
+              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-center text-sm text-ops-muted">
                 No active rides yet.
               </div>
             ) : null}
@@ -674,22 +674,22 @@ export function DriverDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <p className="text-sm text-brand-ink/55">Outstanding</p>
+              <div className="rounded-4xl border border-ops-border-soft p-4">
+                <p className="text-sm text-ops-muted">Outstanding</p>
                 <p className="mt-2 text-2xl font-extrabold">{formatMoney(duesQuery.data?.outstandingTotal ?? 0)}</p>
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <p className="text-sm text-brand-ink/55">Overdue count</p>
+              <div className="rounded-4xl border border-ops-border-soft p-4">
+                <p className="text-sm text-ops-muted">Overdue count</p>
                 <p className="mt-2 text-2xl font-extrabold">{duesQuery.data?.overdueCount ?? 0}</p>
               </div>
-              <div className="rounded-4xl border border-brand-ink/10 p-4">
-                <p className="text-sm text-brand-ink/55">Status</p>
+              <div className="rounded-4xl border border-ops-border-soft p-4">
+                <p className="text-sm text-ops-muted">Status</p>
                 <p className="mt-2 text-2xl font-extrabold">{suspended ? "Suspended" : "Clear"}</p>
               </div>
             </div>
 
-            <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/35 p-4 text-sm text-brand-ink/65">
-              <p className="font-semibold text-brand-ink">Where to send dues</p>
+            <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/55 p-4 text-sm text-ops-muted">
+              <p className="font-semibold text-ops-text">Where to send dues</p>
               <div className="mt-3 grid gap-2">
                 <p>Cash App: {payoutSettings?.cashAppHandle || "Not set yet"}</p>
                 <p>Zelle: {payoutSettings?.zelleHandle || "Not set yet"}</p>
@@ -703,26 +703,26 @@ export function DriverDashboardPage() {
               <p className="font-semibold">Outstanding dues</p>
               {outstandingDues.length ? (
                 outstandingDues.map((due) => (
-                  <div key={due.id} className="rounded-4xl border border-brand-ink/10 p-4">
+                  <div key={due.id} className="rounded-4xl border border-ops-border-soft p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-semibold">{due.ride.pickupAddress}</p>
                           <Badge>{due.status}</Badge>
                         </div>
-                        <p className="text-sm text-brand-ink/55">{due.ride.dropoffAddress}</p>
-                        <p className="text-sm text-brand-ink/45">Due by {formatDateTime(due.dueAt)}</p>
+                        <p className="text-sm text-ops-muted">{due.ride.dropoffAddress}</p>
+                        <p className="text-sm text-ops-muted/80">Due by {formatDateTime(due.dueAt)}</p>
                       </div>
                       <div className="text-left md:text-right">
                         <p className="font-semibold">{formatMoney(due.amount)}</p>
-                        <p className="text-sm text-brand-ink/55">Ride subtotal: {formatMoney(due.ride.subtotal)}</p>
-                        <p className="text-sm text-brand-ink/45">Customer paid: {formatMoney(due.ride.customerTotal)}</p>
+                        <p className="text-sm text-ops-muted">Ride subtotal: {formatMoney(due.ride.subtotal)}</p>
+                        <p className="text-sm text-ops-muted/80">Customer paid: {formatMoney(due.ride.customerTotal)}</p>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+                <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                   No outstanding dues right now.
                 </div>
               )}
@@ -732,16 +732,16 @@ export function DriverDashboardPage() {
               <p className="font-semibold">Recent due history</p>
               {dueHistory.length ? (
                 dueHistory.slice(0, 5).map((due) => (
-                  <div key={due.id} className="flex items-center justify-between rounded-4xl border border-brand-ink/10 p-4">
+                  <div key={due.id} className="flex items-center justify-between rounded-4xl border border-ops-border-soft p-4">
                     <div>
                       <p className="font-semibold">{due.ride.riderName}</p>
-                      <p className="text-sm text-brand-ink/55">{due.status} · {formatDateTime(due.updatedAt)}</p>
+                      <p className="text-sm text-ops-muted">{due.status} · {formatDateTime(due.updatedAt)}</p>
                     </div>
                     <p className="font-semibold">{formatMoney(due.amount)}</p>
                   </div>
                 ))
               ) : (
-                <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+                <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                   Paid or waived dues will appear here.
                 </div>
               )}
@@ -759,33 +759,33 @@ export function DriverDashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-4xl border border-brand-ink/10 bg-white p-4">
+              <div className="rounded-4xl border border-ops-border-soft bg-ops-surface p-4">
                 <p className="font-semibold">Your access</p>
-                <p className="mt-2 text-sm text-brand-ink/60">
+                <p className="mt-2 text-sm text-ops-muted">
                   {community?.eligibility.reason ?? "You have full community access."}
                 </p>
               </div>
               {community?.proposals.slice(0, 3).map((proposal) => (
-                <div key={proposal.id} className="rounded-4xl border border-brand-ink/10 p-4">
+                <div key={proposal.id} className="rounded-4xl border border-ops-border-soft p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold">{proposal.title}</p>
                     {proposal.pinned ? <Badge>pinned</Badge> : null}
-                    {proposal.closed ? <Badge className="bg-brand-ink/5">closed</Badge> : null}
+                    {proposal.closed ? <Badge className="bg-ops-surface">closed</Badge> : null}
                   </div>
-                  <p className="mt-2 text-sm text-brand-ink/60">{proposal.body}</p>
-                  <p className="mt-3 text-xs uppercase tracking-[0.2em] text-brand-ink/40">
+                  <p className="mt-2 text-sm text-ops-muted">{proposal.body}</p>
+                  <p className="mt-3 text-xs uppercase tracking-[0.2em] text-ops-muted">
                     {proposal.yesVotes} yes · {proposal.noVotes} no · {proposal.commentCount} comments
                   </p>
                 </div>
               ))}
               {!community?.proposals.length ? (
-                <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+                <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                   No proposals yet. You can start the first one from the community board.
                 </div>
               ) : null}
               <Link
                 to="/community"
-                className="inline-flex items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+                className="inline-flex items-center justify-center rounded-2xl border border-ops-primary/40 bg-ops-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3b8fff]"
               >
                 Open community board
               </Link>

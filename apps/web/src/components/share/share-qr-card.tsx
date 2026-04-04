@@ -30,8 +30,8 @@ export function ShareQrCard({
       margin: 1,
       width: 280,
       color: {
-        dark: "#10231a",
-        light: "#ffffff"
+        dark: "#0f1623",
+        light: "#f7fbff"
       }
     }).then((result: string) => {
       if (active) {
@@ -50,8 +50,8 @@ export function ShareQrCard({
       margin: 1,
       width: 280,
       color: {
-        dark: "#10231a",
-        light: "#ffffff"
+        dark: "#0f1623",
+        light: "#f7fbff"
       }
     });
     const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
@@ -84,26 +84,26 @@ export function ShareQrCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-center rounded-[2rem] border border-brand-ink/10 bg-brand-sand/40 p-5">
+        <div className="flex justify-center rounded-[2rem] border border-ops-border-soft bg-ops-panel p-5">
           {pngUrl ? (
-            <img src={pngUrl} alt={`${title} QR code`} className="h-56 w-56 rounded-2xl bg-white p-3 shadow-soft" />
+            <img src={pngUrl} alt={`${title} QR code`} className="h-56 w-56 rounded-2xl bg-[#f7fbff] p-3 shadow-soft" />
           ) : (
-            <div className="flex h-56 w-56 items-center justify-center rounded-2xl bg-white text-sm text-brand-ink/45">
+            <div className="flex h-56 w-56 items-center justify-center rounded-2xl bg-ops-surface text-sm text-ops-muted">
               Generating QR...
             </div>
           )}
         </div>
 
         {referralCode ? (
-          <div className="rounded-3xl border border-brand-ink/10 bg-white p-4">
-            <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Referral code</p>
-            <p className="mt-2 text-lg font-semibold">{referralCode}</p>
+          <div className="rounded-3xl border border-ops-border-soft bg-ops-surface p-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Referral code</p>
+            <p className="mt-2 text-lg font-semibold text-ops-text">{referralCode}</p>
           </div>
         ) : null}
 
-        <div className="rounded-3xl border border-brand-ink/10 bg-white p-4">
-          <p className="text-xs uppercase tracking-[0.22em] text-brand-ink/40">Share link</p>
-          <p className="mt-2 break-all text-sm text-brand-ink/65">{shareUrl}</p>
+        <div className="rounded-3xl border border-ops-border-soft bg-ops-surface p-4">
+          <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Share link</p>
+          <p className="mt-2 break-all text-sm text-ops-text/80">{shareUrl}</p>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">

@@ -3,19 +3,23 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family: "Sora", ui-sans-serif, system-ui;
   background:
-    radial-gradient(circle at top left, rgba(184, 97, 59, 0.16), transparent 30%),
-    radial-gradient(circle at top right, rgba(107, 124, 85, 0.15), transparent 35%),
-    linear-gradient(180deg, #fcfaf6 0%, #eef1ed 100%);
-  color: #121110;
+    radial-gradient(circle at top left, rgba(47, 129, 247, 0.14), transparent 35%),
+    radial-gradient(circle at 85% 0%, rgba(20, 34, 55, 0.5), transparent 42%),
+    linear-gradient(180deg, #090d14 0%, #070b12 100%);
+  color: #e5ecf6;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #080b12;
+  color: #e5ecf6;
+  letter-spacing: 0.008em;
+  line-height: 1.42;
 }
 
 #root {
@@ -24,4 +28,8 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+a {
+  color: inherit;
 }

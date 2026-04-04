@@ -25,15 +25,15 @@ export function RideHistoryPage() {
           <Link
             key={ride.id}
             to={`/rider/rides/${ride.id}`}
-            className="flex items-center justify-between rounded-4xl border border-brand-ink/10 p-4 transition hover:bg-brand-sand/40"
+            className="flex items-center justify-between rounded-4xl border border-ops-border-soft bg-ops-panel/40 p-4 transition hover:bg-ops-panel"
           >
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <p className="font-semibold">{ride.pickup.address}</p>
-                <ChevronRight className="h-4 w-4 text-brand-ink/35" />
+                <ChevronRight className="h-4 w-4 text-ops-muted/80" />
                 <p className="font-semibold">{ride.dropoff.address}</p>
               </div>
-              <div className="flex items-center gap-2 text-sm text-brand-ink/55">
+              <div className="flex items-center gap-2 text-sm text-ops-muted">
                 <CalendarClock className="h-4 w-4" />
                 {formatDateTime(ride.scheduledFor ?? ride.requestedAt)}
               </div>
@@ -45,7 +45,7 @@ export function RideHistoryPage() {
           </Link>
         ))}
         {!ridesQuery.data?.length ? (
-          <div className="rounded-4xl border border-dashed border-brand-ink/15 p-8 text-center text-sm text-brand-ink/55">
+          <div className="rounded-4xl border border-dashed border-ops-border p-8 text-center text-sm text-ops-muted">
             No rides yet. Book your first trip from the rider home page.
           </div>
         ) : null}

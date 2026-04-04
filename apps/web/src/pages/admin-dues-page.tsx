@@ -47,7 +47,7 @@ function DueEditor({
   });
 
   return (
-    <div className="rounded-4xl border border-brand-ink/10 p-4">
+    <div className="rounded-4xl border border-ops-border-soft p-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -56,15 +56,15 @@ function DueEditor({
               {due.status}
             </Badge>
           </div>
-          <p className="text-sm text-brand-ink/55">{due.driver.email ?? due.driver.phone ?? "No contact set"}</p>
-          <p className="text-sm text-brand-ink/55">{due.ride.pickupAddress}</p>
-          <p className="text-sm text-brand-ink/55">{due.ride.dropoffAddress}</p>
-          <p className="text-sm text-brand-ink/45">Due by {formatDateTime(due.dueAt)}</p>
+          <p className="text-sm text-ops-muted">{due.driver.email ?? due.driver.phone ?? "No contact set"}</p>
+          <p className="text-sm text-ops-muted">{due.ride.pickupAddress}</p>
+          <p className="text-sm text-ops-muted">{due.ride.dropoffAddress}</p>
+          <p className="text-sm text-ops-muted/80">Due by {formatDateTime(due.dueAt)}</p>
         </div>
         <div className="text-left md:text-right">
           <p className="font-semibold">{formatMoney(due.amount)}</p>
-          <p className="text-sm text-brand-ink/55">Driver subtotal: {formatMoney(due.ride.subtotal)}</p>
-          <p className="text-sm text-brand-ink/45">Customer total: {formatMoney(due.ride.customerTotal)}</p>
+          <p className="text-sm text-ops-muted">Driver subtotal: {formatMoney(due.ride.subtotal)}</p>
+          <p className="text-sm text-ops-muted/80">Customer total: {formatMoney(due.ride.customerTotal)}</p>
         </div>
       </div>
 
@@ -72,7 +72,7 @@ function DueEditor({
         <div className="space-y-2">
           <Label>Status</Label>
           <select
-            className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+            className="h-11 w-full rounded-2xl border border-ops-border bg-ops-surface px-4 text-sm"
             value={status}
             onChange={(event) => setStatus(event.target.value as "pending" | "paid" | "waived")}
           >
@@ -84,7 +84,7 @@ function DueEditor({
         <div className="space-y-2">
           <Label>Payment method</Label>
           <select
-            className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+            className="h-11 w-full rounded-2xl border border-ops-border bg-ops-surface px-4 text-sm"
             value={paymentMethod}
             onChange={(event) => setPaymentMethod(event.target.value as DuePaymentMethod)}
           >
@@ -106,7 +106,7 @@ function DueEditor({
         </div>
       </div>
 
-      {mutation.error ? <p className="mt-3 text-sm text-red-600">{mutation.error.message}</p> : null}
+      {mutation.error ? <p className="mt-3 text-sm text-ops-error">{mutation.error.message}</p> : null}
     </div>
   );
 }
@@ -168,25 +168,25 @@ export function AdminDuesPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Outstanding dues</p>
+            <p className="text-sm text-ops-muted">Outstanding dues</p>
             <p className="mt-2 text-3xl font-extrabold">{formatMoney(outstandingTotal)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Open dues</p>
+            <p className="text-sm text-ops-muted">Open dues</p>
             <p className="mt-2 text-3xl font-extrabold">{outstanding.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Overdue drivers</p>
+            <p className="text-sm text-ops-muted">Overdue drivers</p>
             <p className="mt-2 text-3xl font-extrabold">{overdueDrivers.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Resolved dues</p>
+            <p className="text-sm text-ops-muted">Resolved dues</p>
             <p className="mt-2 text-3xl font-extrabold">{history.length}</p>
           </CardContent>
         </Card>
@@ -238,7 +238,7 @@ export function AdminDuesPage() {
               placeholder="Anything drivers should know about manual dues payment"
             />
           </div>
-          {payoutMutation.error ? <p className="text-sm text-red-600 md:col-span-2">{payoutMutation.error.message}</p> : null}
+          {payoutMutation.error ? <p className="text-sm text-ops-error md:col-span-2">{payoutMutation.error.message}</p> : null}
           <div className="md:col-span-2">
             <Button onClick={() => payoutMutation.mutate()}>Save payout settings</Button>
           </div>
@@ -253,19 +253,19 @@ export function AdminDuesPage() {
         <CardContent className="space-y-4">
           {overdueDrivers.length ? (
             overdueDrivers.map((driver) => (
-              <div key={driver.driverId} className="rounded-4xl border border-brand-ink/10 p-4">
+              <div key={driver.driverId} className="rounded-4xl border border-ops-border-soft p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-semibold">{driver.name}</p>
-                    <p className="text-sm text-brand-ink/55">{driver.email ?? driver.phone ?? "No contact set"}</p>
+                    <p className="text-sm text-ops-muted">{driver.email ?? driver.phone ?? "No contact set"}</p>
                   </div>
                   <Badge className="border-red-200 bg-red-50 text-red-700">{driver.overdueCount} overdue</Badge>
                 </div>
-                <p className="mt-3 text-sm text-brand-ink/60">Overdue amount: {formatMoney(driver.overdueAmount)}</p>
+                <p className="mt-3 text-sm text-ops-muted">Overdue amount: {formatMoney(driver.overdueAmount)}</p>
               </div>
             ))
           ) : (
-            <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
               No overdue drivers right now.
             </div>
           )}
@@ -281,7 +281,7 @@ export function AdminDuesPage() {
           {outstanding.length ? (
             outstanding.map((due) => <DueEditor key={due.id} due={due} token={token!} />)
           ) : (
-            <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
               No outstanding dues right now.
             </div>
           )}
@@ -296,15 +296,15 @@ export function AdminDuesPage() {
         <CardContent className="space-y-4">
           {history.length ? (
             history.map((due) => (
-              <div key={due.id} className="rounded-4xl border border-brand-ink/10 p-4">
+              <div key={due.id} className="rounded-4xl border border-ops-border-soft p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{due.driver.name}</p>
                       <Badge>{due.status}</Badge>
                     </div>
-                    <p className="text-sm text-brand-ink/55">{due.ride.riderName}</p>
-                    <p className="text-sm text-brand-ink/45">
+                    <p className="text-sm text-ops-muted">{due.ride.riderName}</p>
+                    <p className="text-sm text-ops-muted/80">
                       {due.paymentMethod ? `Method: ${due.paymentMethod}` : "No payment method recorded"} · Updated{" "}
                       {formatDateTime(due.updatedAt)}
                     </p>
@@ -314,7 +314,7 @@ export function AdminDuesPage() {
               </div>
             ))
           ) : (
-            <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
               Paid or waived dues will appear here.
             </div>
           )}

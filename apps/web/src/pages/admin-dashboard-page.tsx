@@ -67,102 +67,102 @@ export function AdminDashboardPage() {
   const pendingDueTotal = pendingDues.reduce((total, due) => total + due.amount, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Active rides</p>
-            <p className="mt-2 text-3xl font-extrabold">{activeCount}</p>
+    <div className="space-y-3.5 md:space-y-6">
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-3 xl:grid-cols-6">
+        <Card className="bg-gradient-to-b from-ops-surface to-[#101928]">
+          <CardContent className="p-3.5 md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Active rides</p>
+            <p className="mt-2 text-2xl font-extrabold md:text-3xl">{activeCount}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Scheduled rides</p>
-            <p className="mt-2 text-3xl font-extrabold">{scheduledCount}</p>
+        <Card className="bg-gradient-to-b from-ops-surface to-[#101928]">
+          <CardContent className="p-3.5 md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Scheduled rides</p>
+            <p className="mt-2 text-2xl font-extrabold md:text-3xl">{scheduledCount}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Pending dues</p>
-            <p className="mt-2 text-3xl font-extrabold">{formatMoney(pendingDueTotal)}</p>
+        <Card className="bg-gradient-to-b from-ops-surface to-[#101928]">
+          <CardContent className="p-3.5 md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Pending dues</p>
+            <p className="mt-2 text-2xl font-extrabold md:text-3xl">{formatMoney(pendingDueTotal)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Overdue drivers</p>
-            <p className="mt-2 text-3xl font-extrabold">{overdueDrivers.length}</p>
+        <Card className="bg-gradient-to-b from-ops-surface to-[#101928]">
+          <CardContent className="p-3.5 md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Overdue drivers</p>
+            <p className="mt-2 text-2xl font-extrabold md:text-3xl">{overdueDrivers.length}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Driver applications</p>
-            <p className="mt-2 text-3xl font-extrabold">{pendingApplications.length}</p>
+        <Card className="bg-gradient-to-b from-ops-surface to-[#101928]">
+          <CardContent className="p-3.5 md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Driver applications</p>
+            <p className="mt-2 text-2xl font-extrabold md:text-3xl">{pendingApplications.length}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-brand-ink/55">Rider leads</p>
-            <p className="mt-2 text-3xl font-extrabold">{riderLeads.length}</p>
+        <Card className="bg-gradient-to-b from-ops-surface to-[#101928]">
+          <CardContent className="p-3.5 md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Rider leads</p>
+            <p className="mt-2 text-2xl font-extrabold md:text-3xl">{riderLeads.length}</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-4 md:gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
             <CardTitle>Operations snapshot</CardTitle>
             <CardDescription>Keep rider growth, driver onboarding, and platform dues moving together.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-4xl border border-brand-ink/10 p-4">
+            <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/65 to-[#121a29] p-4">
               <p className="font-semibold">Lead review</p>
-              <p className="mt-2 text-sm text-brand-ink/60">
+              <p className="mt-2 text-sm text-ops-muted">
                 {riderLeads.length} rider leads and {driverInterests.length} driver interest submissions are waiting in
                 the admin queue.
               </p>
             </div>
-            <div className="rounded-4xl border border-brand-ink/10 p-4">
+            <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/65 to-[#121a29] p-4">
               <p className="font-semibold">Platform dues</p>
-              <p className="mt-2 text-sm text-brand-ink/60">
+              <p className="mt-2 text-sm text-ops-muted">
                 {pendingDues.length} dues are open across approved drivers, including {overdueDrivers.length} overdue
                 driver accounts.
               </p>
             </div>
-            <div className="rounded-4xl border border-brand-ink/10 p-4">
+            <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/65 to-[#121a29] p-4">
               <p className="font-semibold">Community board</p>
-              <p className="mt-2 text-sm text-brand-ink/60">
+              <p className="mt-2 text-sm text-ops-muted">
                 {communityQuery.data?.proposals.length ?? 0} proposals are live on the board. Drivers can already vote
                 and comment.
               </p>
             </div>
-            <div className="rounded-4xl border border-brand-ink/10 p-4">
+            <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/65 to-[#121a29] p-4">
               <p className="font-semibold">Business QR kit</p>
-              <p className="mt-2 text-sm text-brand-ink/60">
+              <p className="mt-2 text-sm text-ops-muted">
                 Keep the rider and driver launch QR codes updated if your public URL changes.
               </p>
             </div>
             <div className="md:col-span-2 flex flex-wrap gap-3">
               <Link
                 to="/admin/drivers"
-                className="inline-flex items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60"
+                className="inline-flex items-center justify-center rounded-2xl border border-ops-border bg-ops-surface px-4 py-2 text-sm font-semibold text-ops-text transition hover:bg-ops-panel/70"
               >
                 Review drivers
               </Link>
               <Link
                 to="/admin/dues"
-                className="inline-flex items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60"
+                className="inline-flex items-center justify-center rounded-2xl border border-ops-border bg-ops-surface px-4 py-2 text-sm font-semibold text-ops-text transition hover:bg-ops-panel/70"
               >
                 Manage dues
               </Link>
               <Link
                 to="/admin/share"
-                className="inline-flex items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60"
+                className="inline-flex items-center justify-center rounded-2xl border border-ops-border bg-ops-surface px-4 py-2 text-sm font-semibold text-ops-text transition hover:bg-ops-panel/70"
               >
                 Business QR kit
               </Link>
               <Link
                 to="/community"
-                className="inline-flex items-center justify-center rounded-2xl bg-brand-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+                className="inline-flex items-center justify-center rounded-2xl border border-ops-primary/40 bg-ops-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3b8fff]"
               >
                 Open community board
               </Link>
@@ -178,19 +178,19 @@ export function AdminDashboardPage() {
           <CardContent className="space-y-4">
             {overdueDrivers.length ? (
               overdueDrivers.map((driver) => (
-                <div key={driver.driverId} className="rounded-4xl border border-brand-ink/10 p-4">
+                <div key={driver.driverId} className="rounded-4xl border border-ops-border-soft p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold">{driver.name}</p>
-                      <p className="text-sm text-brand-ink/55">{driver.email ?? driver.phone ?? "No contact set"}</p>
+                      <p className="text-sm text-ops-muted">{driver.email ?? driver.phone ?? "No contact set"}</p>
                     </div>
-                    <Badge className="border-red-200 bg-red-50 text-red-700">{driver.overdueCount} overdue</Badge>
+                    <Badge className="border-ops-destructive/35 bg-ops-destructive/15 text-ops-destructive">{driver.overdueCount} overdue</Badge>
                   </div>
-                  <p className="mt-3 text-sm text-brand-ink/60">Outstanding overdue amount: {formatMoney(driver.overdueAmount)}</p>
+                  <p className="mt-3 text-sm text-ops-muted">Outstanding overdue amount: {formatMoney(driver.overdueAmount)}</p>
                 </div>
               ))
             ) : (
-              <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                 No drivers are overdue right now.
               </div>
             )}
@@ -207,16 +207,16 @@ export function AdminDashboardPage() {
           <div className="space-y-3">
             <p className="font-semibold">Rider leads</p>
             {riderLeads.slice(0, 5).map((lead) => (
-              <div key={lead.id} className="rounded-4xl border border-brand-ink/10 p-4">
+              <div key={lead.id} className="rounded-4xl border border-ops-border-soft p-4">
                 <p className="font-semibold">{lead.name}</p>
-                <p className="text-sm text-brand-ink/55">{lead.email}</p>
-                <p className="text-sm text-brand-ink/45">
+                <p className="text-sm text-ops-muted">{lead.email}</p>
+                <p className="text-sm text-ops-muted/80">
                   {lead.phone ?? "No phone"}{lead.referredByCode ? ` · referred by ${lead.referredByCode}` : ""}
                 </p>
               </div>
             ))}
             {!riderLeads.length ? (
-              <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                 No rider leads yet.
               </div>
             ) : null}
@@ -225,17 +225,17 @@ export function AdminDashboardPage() {
           <div className="space-y-3">
             <p className="font-semibold">Driver interest</p>
             {driverInterests.slice(0, 5).map((interest) => (
-              <div key={interest.id} className="rounded-4xl border border-brand-ink/10 p-4">
+              <div key={interest.id} className="rounded-4xl border border-ops-border-soft p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-semibold">{interest.name}</p>
                   <Badge>{interest.status}</Badge>
                 </div>
-                <p className="text-sm text-brand-ink/55">{interest.email}</p>
-                <p className="text-sm text-brand-ink/45">{interest.serviceArea} · {interest.vehicleInfo}</p>
+                <p className="text-sm text-ops-muted">{interest.email}</p>
+                <p className="text-sm text-ops-muted/80">{interest.serviceArea} · {interest.vehicleInfo}</p>
               </div>
             ))}
             {!driverInterests.length ? (
-              <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                 No driver interest submissions yet.
               </div>
             ) : null}
@@ -250,20 +250,20 @@ export function AdminDashboardPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {communityQuery.data?.proposals.slice(0, 4).map((proposal) => (
-            <div key={proposal.id} className="rounded-4xl border border-brand-ink/10 p-4">
+            <div key={proposal.id} className="rounded-4xl border border-ops-border-soft p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-semibold">{proposal.title}</p>
                 {proposal.pinned ? <Badge>pinned</Badge> : null}
-                {proposal.closed ? <Badge className="bg-brand-ink/5">closed</Badge> : null}
+                {proposal.closed ? <Badge className="bg-ops-surface">closed</Badge> : null}
               </div>
-              <p className="mt-2 text-sm text-brand-ink/60">{proposal.body}</p>
-              <p className="mt-3 text-xs uppercase tracking-[0.2em] text-brand-ink/40">
+              <p className="mt-2 text-sm text-ops-muted">{proposal.body}</p>
+              <p className="mt-3 text-xs uppercase tracking-[0.2em] text-ops-muted">
                 {proposal.yesVotes} yes · {proposal.noVotes} no · {proposal.commentCount} comments
               </p>
             </div>
           ))}
           {!communityQuery.data?.proposals.length ? (
-            <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
               No community proposals have been posted yet.
             </div>
           ) : null}
@@ -282,26 +282,26 @@ export function AdminDashboardPage() {
             const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
 
             return (
-              <div key={ride.id} className="rounded-4xl border border-brand-ink/10 p-4">
+              <div key={ride.id} className="rounded-4xl border border-ops-border-soft p-4">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{ride.rider.name}</p>
                       <Badge>{ride.status.replaceAll("_", " ")}</Badge>
-                      {ride.driver ? <Badge className="bg-brand-ink/5">{ride.driver.name}</Badge> : null}
+                      {ride.driver ? <Badge className="bg-ops-surface">{ride.driver.name}</Badge> : null}
                     </div>
-                    <p className="text-sm text-brand-ink/55">{ride.pickup.address}</p>
-                    <p className="text-sm text-brand-ink/55">{ride.dropoff.address}</p>
-                    <p className="text-sm text-brand-ink/45">
+                    <p className="text-sm text-ops-muted">{ride.pickup.address}</p>
+                    <p className="text-sm text-ops-muted">{ride.dropoff.address}</p>
+                    <p className="text-sm text-ops-muted/80">
                       Scheduled/requested: {formatDateTime(ride.scheduledFor ?? ride.requestedAt)}
                     </p>
                   </div>
                   <div className="space-y-3 text-left md:text-right">
                     <p className="font-semibold">{formatMoney(customerTotal)}</p>
-                    <p className="text-sm text-brand-ink/55">Customer total</p>
-                    <p className="text-sm text-brand-ink/55">Driver subtotal: {formatMoney(subtotal)}</p>
-                    <p className="text-sm text-brand-ink/55">Platform due: {formatMoney(due)}</p>
-                    <p className="text-sm text-brand-ink/45">Payment: {ride.payment.method} · {ride.payment.status}</p>
+                    <p className="text-sm text-ops-muted">Customer total</p>
+                    <p className="text-sm text-ops-muted">Driver subtotal: {formatMoney(subtotal)}</p>
+                    <p className="text-sm text-ops-muted">Platform due: {formatMoney(due)}</p>
+                    <p className="text-sm text-ops-muted/80">Payment: {ride.payment.method} · {ride.payment.status}</p>
                     <div className="flex flex-col gap-2 md:items-end">
                       {ride.payment.status !== "collected" ? (
                         <Button
@@ -336,7 +336,7 @@ export function AdminDashboardPage() {
             );
           })}
           {!rides.length ? (
-            <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
               No rides are in the system yet.
             </div>
           ) : null}

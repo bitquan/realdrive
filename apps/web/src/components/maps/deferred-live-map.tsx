@@ -11,7 +11,7 @@ function MapPlaceholder() {
         <CardTitle>Live trip map</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[360px] animate-pulse rounded-3xl border border-brand-ink/10 bg-brand-mist/65" />
+        <div className="h-[360px] animate-pulse rounded-3xl border border-ops-border-soft bg-ops-panel/80" />
       </CardContent>
     </Card>
   );

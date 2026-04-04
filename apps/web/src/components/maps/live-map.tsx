@@ -23,22 +23,22 @@ export function LiveMap({ ride }: { ride: Ride }) {
           <CardTitle>Live trip map</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-3xl border border-dashed border-brand-ink/15 bg-brand-mist p-6 text-sm text-brand-ink/60">
+          <div className="rounded-3xl border border-dashed border-ops-border bg-ops-panel p-6 text-sm text-ops-muted">
             Mapbox is not configured in this environment. Ride coordinates are still live and stored for dispatch.
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-brand-ink/40">Pickup</p>
-                <p className="mt-2 font-semibold">{ride.pickup.address}</p>
+              <div className="rounded-2xl border border-ops-border-soft bg-ops-surface p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-ops-muted">Pickup</p>
+                <p className="mt-2 font-semibold text-ops-text">{ride.pickup.address}</p>
               </div>
-              <div className="rounded-2xl bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-brand-ink/40">Driver</p>
-                <p className="mt-2 font-semibold">
+              <div className="rounded-2xl border border-ops-border-soft bg-ops-surface p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-ops-muted">Driver</p>
+                <p className="mt-2 font-semibold text-ops-text">
                   {ride.latestLocation ? `${ride.latestLocation.lat.toFixed(4)}, ${ride.latestLocation.lng.toFixed(4)}` : "Awaiting driver location"}
                 </p>
               </div>
-              <div className="rounded-2xl bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-brand-ink/40">Dropoff</p>
-                <p className="mt-2 font-semibold">{ride.dropoff.address}</p>
+              <div className="rounded-2xl border border-ops-border-soft bg-ops-surface p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-ops-muted">Dropoff</p>
+                <p className="mt-2 font-semibold text-ops-text">{ride.dropoff.address}</p>
               </div>
             </div>
           </div>
@@ -60,22 +60,22 @@ export function LiveMap({ ride }: { ride: Ride }) {
               zoom: 11
             }}
             style={{ width: "100%", height: 360 }}
-            mapStyle="mapbox://styles/mapbox/streets-v12"
+            mapStyle="mapbox://styles/mapbox/dark-v11"
             mapboxAccessToken={MAPBOX_TOKEN}
           >
             <Marker longitude={ride.pickup.lng} latitude={ride.pickup.lat}>
-              <div className="rounded-full bg-brand-copper p-2 text-white shadow-lg">
+              <div className="rounded-full bg-ops-primary p-2 text-white shadow-lg">
                 <MapPin className="h-4 w-4" />
               </div>
             </Marker>
             <Marker longitude={ride.dropoff.lng} latitude={ride.dropoff.lat}>
-              <div className="rounded-full bg-brand-moss p-2 text-white shadow-lg">
+              <div className="rounded-full bg-ops-success p-2 text-white shadow-lg">
                 <MapPin className="h-4 w-4" />
               </div>
             </Marker>
             {ride.latestLocation ? (
               <Marker longitude={ride.latestLocation.lng} latitude={ride.latestLocation.lat}>
-                <div className="rounded-full bg-brand-ink p-2 text-white shadow-lg">
+                <div className="rounded-full bg-ops-text p-2 text-ops-bg shadow-lg">
                   <Navigation className="h-4 w-4" />
                 </div>
               </Marker>

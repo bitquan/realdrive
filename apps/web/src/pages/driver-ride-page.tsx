@@ -87,7 +87,7 @@ export function DriverRidePage() {
   if (!rideQuery.data) {
     return (
       <Card>
-        <CardContent className="p-8 text-sm text-brand-ink/55">Loading ride...</CardContent>
+        <CardContent className="p-8 text-sm text-ops-muted">Loading ride...</CardContent>
       </Card>
     );
   }
@@ -100,38 +100,38 @@ export function DriverRidePage() {
   const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+    <div className="grid gap-3.5 md:gap-5 lg:grid-cols-[1.25fr_0.75fr]">
       <DeferredLiveMap ride={ride} />
-      <Card>
+      <Card className="shadow-elevated">
         <CardHeader>
           <CardTitle>Trip workflow</CardTitle>
           <CardDescription>Move the ride through the trip lifecycle and keep location updates flowing.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3.5 md:space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-lg font-semibold">{ride.rider.name}</p>
+            <p className="text-xl font-bold">{ride.rider.name}</p>
             <Badge>{ride.status.replaceAll("_", " ")}</Badge>
           </div>
-          <div className="rounded-4xl border border-brand-ink/10 p-4">
-            <p className="text-sm text-brand-ink/55">Pickup</p>
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Pickup</p>
             <p className="font-semibold">{ride.pickup.address}</p>
           </div>
-          <div className="rounded-4xl border border-brand-ink/10 p-4">
-            <p className="text-sm text-brand-ink/55">Dropoff</p>
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Dropoff</p>
             <p className="font-semibold">{ride.dropoff.address}</p>
           </div>
-          <div className="rounded-4xl border border-brand-ink/10 p-4">
-            <p className="text-sm text-brand-ink/55">Customer total</p>
-            <p className="font-semibold">{formatMoney(customerTotal)}</p>
-            <p className="mt-2 text-sm text-brand-ink/55">Driver subtotal: {formatMoney(subtotal)}</p>
-            <p className="text-sm text-brand-ink/55">Platform due: {formatMoney(platformDue)}</p>
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
+            <p className="text-2xl font-extrabold">{formatMoney(customerTotal)}</p>
+            <p className="mt-2 text-sm text-ops-muted">Driver subtotal: {formatMoney(subtotal)}</p>
+            <p className="text-sm text-ops-muted">Platform due: {formatMoney(platformDue)}</p>
           </div>
           {nextStatus ? (
             <Button className="w-full" onClick={() => statusMutation.mutate(nextStatus)}>
               Mark as {nextStatus.replaceAll("_", " ")}
             </Button>
           ) : (
-            <div className="rounded-4xl border border-dashed border-brand-ink/15 p-4 text-sm text-brand-ink/55">
+            <div className="rounded-4xl border border-dashed border-ops-border p-4 text-sm text-ops-muted">
               This ride has reached the end of the driver workflow.
             </div>
           )}

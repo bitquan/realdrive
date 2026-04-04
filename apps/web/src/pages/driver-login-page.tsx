@@ -36,19 +36,19 @@ export function DriverLoginPage() {
 
   return (
     <div className="grid gap-5 md:gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
+      <section className="rounded-[2rem] border border-ops-border-soft bg-ops-surface/95 p-5 shadow-soft md:p-8">
         <PageHero
           title="Driver sign in"
           description="Approved drivers use email and password to access live offers, active rides, dues status, and dispatch settings."
           className="border-0 bg-transparent p-0 shadow-none"
         />
 
-        <div className="mt-4 rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-5 text-sm text-brand-ink/65">
-          <p className="font-semibold text-brand-ink">No account yet?</p>
+        <div className="mt-4 rounded-4xl border border-ops-border-soft bg-ops-panel/60 p-5 text-sm text-ops-muted">
+          <p className="font-semibold text-ops-text">No account yet?</p>
           <p className="mt-2">
             New driver accounts begin in pending status and unlock after admin approval.
           </p>
-          <Link to="/driver/signup" className="mt-3 inline-flex font-semibold text-brand-copper hover:underline">
+          <Link to="/driver/signup" className="mt-3 inline-flex font-semibold text-ops-primary hover:underline">
             Apply to drive
           </Link>
         </div>
@@ -83,13 +83,13 @@ export function DriverLoginPage() {
               placeholder="Password"
             />
           </div>
-          {loginMutation.error ? <p className="text-sm text-red-600">{loginMutation.error.message}</p> : null}
+          {loginMutation.error ? <p className="text-sm text-ops-error">{loginMutation.error.message}</p> : null}
           <Button className="w-full" type="submit" disabled={loginMutation.isPending || !email || !password}>
             Sign in
           </Button>
-          <p className="text-sm text-brand-ink/60">
+          <p className="text-sm text-ops-muted">
             Need an account?{" "}
-            <Link to="/driver/signup" className="font-semibold text-brand-copper hover:underline">
+            <Link to="/driver/signup" className="font-semibold text-ops-primary hover:underline">
               Apply to drive
             </Link>
           </p>

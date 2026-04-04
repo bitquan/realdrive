@@ -109,10 +109,10 @@ export function AdminSetupPage() {
               placeholder="Repeat password"
             />
           </div>
-          <label className="flex items-center justify-between gap-4 rounded-4xl border border-brand-ink/10 p-4">
+          <label className="flex items-center justify-between gap-4 rounded-4xl border border-ops-border-soft p-4">
             <div>
               <p className="font-semibold">Also create my driver profile</p>
-              <p className="text-sm text-brand-ink/55">
+              <p className="text-sm text-ops-muted">
                 Recommended if you want this first account to switch between admin and driver.
               </p>
             </div>
@@ -128,7 +128,7 @@ export function AdminSetupPage() {
             />
           </label>
           {form.createDriverProfile ? (
-            <div className="space-y-4 rounded-4xl border border-brand-ink/10 bg-brand-sand/35 p-4">
+            <div className="space-y-4 rounded-4xl border border-ops-border-soft bg-ops-panel/55 p-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="adminSetupPhone">Driver phone</Label>
@@ -208,7 +208,7 @@ export function AdminSetupPage() {
                 <Label htmlFor="adminSetupRideType">Primary ride type</Label>
                 <select
                   id="adminSetupRideType"
-                  className="h-11 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 text-sm"
+                  className="h-11 w-full rounded-2xl border border-ops-border bg-ops-surface px-4 text-sm"
                   value={form.rideType}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -224,11 +224,11 @@ export function AdminSetupPage() {
               </div>
             </div>
           ) : null}
-          {!passwordsMatch ? <p className="text-sm text-red-600">Passwords do not match.</p> : null}
+          {!passwordsMatch ? <p className="text-sm text-ops-error">Passwords do not match.</p> : null}
           {!driverProfileComplete ? (
-            <p className="text-sm text-red-600">Complete the driver fields or turn off driver bootstrap.</p>
+            <p className="text-sm text-ops-error">Complete the driver fields or turn off driver bootstrap.</p>
           ) : null}
-          {setupMutation.error ? <p className="text-sm text-red-600">{setupMutation.error.message}</p> : null}
+          {setupMutation.error ? <p className="text-sm text-ops-error">{setupMutation.error.message}</p> : null}
           <Button
             className="w-full"
             disabled={

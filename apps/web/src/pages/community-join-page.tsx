@@ -38,16 +38,16 @@ export function CommunityJoinPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {exchangeMutation.isPending || !started ? (
-            <p className="text-sm text-brand-ink/60">Checking your community access token now...</p>
+            <p className="text-sm text-ops-muted">Checking your community access token now...</p>
           ) : null}
           {exchangeMutation.error ? (
             <>
-              <p className="text-sm text-red-600">{exchangeMutation.error.message}</p>
+              <p className="text-sm text-ops-error">{exchangeMutation.error.message}</p>
               <div className="flex gap-3">
                 <Button onClick={() => exchangeMutation.mutate({ token })}>Try again</Button>
                 <Link
                   to="/"
-                  className="inline-flex items-center justify-center rounded-2xl border border-brand-ink/15 bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-sand/60"
+                  className="inline-flex items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-text transition hover:bg-ops-surface"
                 >
                   Back home
                 </Link>

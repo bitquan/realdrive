@@ -110,9 +110,9 @@ export function CommunityPage() {
         title="RealDrive community board"
         description="One board, simple yes-or-no voting, flat comments, and a clear path for drivers and experienced riders to guide what gets built next."
         aside={(
-          <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/40 p-4 text-sm">
+          <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/60 p-4 text-sm">
             <p className="font-semibold">{user ? `${user.name} · ${roleLabel(user.role)}` : "Community access"}</p>
-            <p className="mt-2 text-brand-ink/60">{summary}</p>
+            <p className="mt-2 text-ops-muted">{summary}</p>
           </div>
         )}
       />
@@ -140,13 +140,13 @@ export function CommunityPage() {
                 <Label htmlFor="proposalBody">Details</Label>
                 <textarea
                   id="proposalBody"
-                  className="min-h-32 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand-ink/35"
+                  className="min-h-32 w-full rounded-2xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-4 py-3 text-sm text-ops-text outline-none transition focus:border-ops-primary/40"
                   value={proposalForm.body}
                   onChange={(event) => setProposalForm((current) => ({ ...current, body: event.target.value }))}
                   placeholder="Explain the problem, why it matters, and what should happen next."
                 />
               </div>
-              {createProposalMutation.error ? <p className="text-sm text-red-600">{createProposalMutation.error.message}</p> : null}
+              {createProposalMutation.error ? <p className="text-sm text-ops-error">{createProposalMutation.error.message}</p> : null}
               <Button
                 disabled={createProposalMutation.isPending || proposalForm.title.length < 4 || proposalForm.body.length < 10}
                 onClick={() => createProposalMutation.mutate()}
@@ -155,7 +155,7 @@ export function CommunityPage() {
               </Button>
             </>
           ) : (
-            <div className="rounded-4xl border border-brand-ink/10 bg-brand-sand/35 p-4 text-sm text-brand-ink/60">
+            <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/55 p-4 text-sm text-ops-muted">
               {summary}
             </div>
           )}
@@ -176,8 +176,8 @@ export function CommunityPage() {
                 onClick={() => setSelectedProposalId(proposal.id)}
                 className={`w-full rounded-4xl border p-4 text-left transition ${
                   proposal.id === selectedProposalId
-                    ? "border-brand-ink bg-brand-sand/45"
-                    : "border-brand-ink/10 bg-white hover:bg-brand-sand/25"
+                    ? "border-ops-primary/35 bg-ops-panel/70"
+                    : "border-ops-border-soft bg-ops-surface hover:bg-ops-panel/65"
                 }`}
               >
                 <div className="flex flex-wrap items-center gap-2">
@@ -185,14 +185,14 @@ export function CommunityPage() {
                   {proposal.pinned ? <Badge>pinned</Badge> : null}
                   {proposal.closed ? <Badge>closed</Badge> : null}
                 </div>
-                <p className="mt-2 line-clamp-3 text-sm text-brand-ink/60">{proposal.body}</p>
-                <p className="mt-3 text-xs uppercase tracking-[0.2em] text-brand-ink/40">
+                <p className="mt-2 line-clamp-3 text-sm text-ops-muted">{proposal.body}</p>
+                <p className="mt-3 text-xs uppercase tracking-[0.2em] text-ops-muted">
                   {proposal.author.name} · {proposal.yesVotes} yes · {proposal.noVotes} no · {proposal.commentCount} comments
                 </p>
               </button>
             ))}
             {!proposals.length ? (
-              <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                 No proposals yet. The first approved driver or eligible rider can start the board.
               </div>
             ) : null}
@@ -211,24 +211,24 @@ export function CommunityPage() {
           <CardContent className="space-y-6">
             {selectedProposal ? (
               <>
-                <div className="rounded-4xl border border-brand-ink/10 p-4">
+                <div className="rounded-4xl border border-ops-border-soft p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     {selectedProposal.pinned ? <Badge>pinned</Badge> : null}
                     {selectedProposal.closed ? <Badge>closed</Badge> : null}
                     {selectedProposal.viewerVote ? <Badge>you voted {selectedProposal.viewerVote}</Badge> : null}
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-brand-ink/70">{selectedProposal.body}</p>
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ops-muted">{selectedProposal.body}</p>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <div className="rounded-3xl border border-brand-ink/10 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Yes votes</p>
+                    <div className="rounded-3xl border border-ops-border-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Yes votes</p>
                       <p className="mt-1 font-semibold">{selectedProposal.yesVotes}</p>
                     </div>
-                    <div className="rounded-3xl border border-brand-ink/10 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">No votes</p>
+                    <div className="rounded-3xl border border-ops-border-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">No votes</p>
                       <p className="mt-1 font-semibold">{selectedProposal.noVotes}</p>
                     </div>
-                    <div className="rounded-3xl border border-brand-ink/10 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-brand-ink/40">Comments</p>
+                    <div className="rounded-3xl border border-ops-border-soft p-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Comments</p>
                       <p className="mt-1 font-semibold">{selectedProposal.commentCount}</p>
                     </div>
                   </div>
@@ -273,10 +273,10 @@ export function CommunityPage() {
                   ) : null}
                 </div>
                 {!eligibility?.canVote && eligibility?.reason ? (
-                  <p className="text-sm text-brand-ink/55">{eligibility.reason}</p>
+                  <p className="text-sm text-ops-muted">{eligibility.reason}</p>
                 ) : null}
-                {voteMutation.error ? <p className="text-sm text-red-600">{voteMutation.error.message}</p> : null}
-                {updateProposalMutation.error ? <p className="text-sm text-red-600">{updateProposalMutation.error.message}</p> : null}
+                {voteMutation.error ? <p className="text-sm text-ops-error">{voteMutation.error.message}</p> : null}
+                {updateProposalMutation.error ? <p className="text-sm text-ops-error">{updateProposalMutation.error.message}</p> : null}
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-3">
@@ -284,11 +284,11 @@ export function CommunityPage() {
                     {selectedProposal.closed ? <Badge>comments locked</Badge> : null}
                   </div>
                   {comments.map((comment) => (
-                    <div key={comment.id} className="rounded-4xl border border-brand-ink/10 p-4">
+                    <div key={comment.id} className="rounded-4xl border border-ops-border-soft p-4">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
                           <p className="font-semibold">{comment.author.name}</p>
-                          <p className="text-sm text-brand-ink/45">
+                          <p className="text-sm text-ops-muted/80">
                             {roleLabel(comment.author.role)} · {formatDateTime(comment.createdAt)}
                           </p>
                         </div>
@@ -298,11 +298,11 @@ export function CommunityPage() {
                           </Button>
                         ) : null}
                       </div>
-                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-brand-ink/70">{comment.body}</p>
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ops-muted">{comment.body}</p>
                     </div>
                   ))}
                   {!comments.length ? (
-                    <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+                    <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                       No comments yet on this proposal.
                     </div>
                   ) : null}
@@ -312,19 +312,19 @@ export function CommunityPage() {
                   <Label htmlFor="communityComment">Add a comment</Label>
                   <textarea
                     id="communityComment"
-                    className="min-h-28 w-full rounded-2xl border border-brand-ink/15 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand-ink/35"
+                    className="min-h-28 w-full rounded-2xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-4 py-3 text-sm text-ops-text outline-none transition focus:border-ops-primary/40"
                     value={commentBody}
                     onChange={(event) => setCommentBody(event.target.value)}
                     placeholder="Keep it simple and focused on what should improve next."
                     disabled={!eligibility?.canComment || selectedProposal.closed}
                   />
                   {!eligibility?.canComment && eligibility?.reason ? (
-                    <p className="text-sm text-brand-ink/55">{eligibility.reason}</p>
+                    <p className="text-sm text-ops-muted">{eligibility.reason}</p>
                   ) : null}
                   {selectedProposal.closed ? (
-                    <p className="text-sm text-brand-ink/55">Comments are closed on this proposal.</p>
+                    <p className="text-sm text-ops-muted">Comments are closed on this proposal.</p>
                   ) : null}
-                  {commentMutation.error ? <p className="text-sm text-red-600">{commentMutation.error.message}</p> : null}
+                  {commentMutation.error ? <p className="text-sm text-ops-error">{commentMutation.error.message}</p> : null}
                   <Button
                     disabled={!eligibility?.canComment || selectedProposal.closed || commentBody.trim().length < 1 || commentMutation.isPending}
                     onClick={() => commentMutation.mutate()}
@@ -334,7 +334,7 @@ export function CommunityPage() {
                 </div>
               </>
             ) : (
-              <div className="rounded-4xl border border-dashed border-brand-ink/15 p-6 text-sm text-brand-ink/55">
+              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                 Choose a proposal to open it here.
               </div>
             )}

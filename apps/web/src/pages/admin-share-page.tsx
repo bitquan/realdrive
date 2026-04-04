@@ -41,7 +41,7 @@ export function AdminSharePage() {
           <CardTitle>Launch notes</CardTitle>
           <CardDescription>Use the rider QR for rider growth and the driver QR when you are ready to recruit approved helpers.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-brand-ink/60">
+        <CardContent className="space-y-2 text-sm text-ops-muted">
           <p>The rider QR is the main acquisition asset for this pilot.</p>
           <p>The driver QR creates a real pending driver account that still requires admin approval.</p>
           <p>If your public base URL changes, regenerate or re-download these QR images from this page.</p>
