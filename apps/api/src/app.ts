@@ -118,6 +118,19 @@ export function buildApp() {
     }
   });
 
+  app.get("/", async () => {
+    return {
+      ok: true,
+      service: "realdrive-api"
+    };
+  });
+
+  app.get("/health", async () => {
+    return {
+      ok: true
+    };
+  });
+
   const rideService = createRideService({
     store,
     maps,
