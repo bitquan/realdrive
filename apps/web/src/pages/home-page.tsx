@@ -45,7 +45,7 @@ function Stat({
   value: string;
 }) {
   return (
-    <div className="min-w-[10.5rem] rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-surface to-[#101827] p-3.5 shadow-panel md:min-w-0">
+    <div className="min-w-0 rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-surface to-[#101827] p-3.5 shadow-panel">
       <div className="flex items-center gap-2.5">
         <div className="rounded-xl bg-ops-panel p-2.5 text-ops-primary">
           <Icon className="h-4.5 w-4.5" />
@@ -204,7 +204,7 @@ export function HomePage() {
         </div>
       ) : null}
 
-      <div className="grid grid-flow-col auto-cols-[minmax(10.5rem,1fr)] gap-2 overflow-x-auto pb-1 md:grid-flow-row md:auto-cols-auto md:grid-cols-3 md:gap-3 md:overflow-visible md:pb-0">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3">
         <Stat icon={Car} label="Driver network" value={availableDriver ? "Drivers online" : "On demand"} />
         <Stat
           icon={Clock3}
