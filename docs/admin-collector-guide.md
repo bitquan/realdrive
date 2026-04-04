@@ -47,7 +47,7 @@
 2. Create an admin invite for your partner's email.
 3. Send the invite link.
 4. Your partner creates their own admin account from that link.
-5. After signup, they manage their own payout settings, recruit link, and dues queue.
+5. After signup, they manage their own dues instructions, recruit link, and dues queue.
 
 ## Daily collector checklist
 
@@ -55,4 +55,4 @@
 2. Generate dues codes for drivers ready to pay.
 3. Reconcile payments from title/note evidence.
 4. Watch `Overdue batches` and clear blocked drivers quickly.
-5. Confirm payout settings are current for your own collector profile.
+5. Confirm dues instructions are current for your own collector profile.

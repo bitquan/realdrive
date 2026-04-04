@@ -134,7 +134,7 @@ export function AdminTeamPage() {
             <CardHeader>
               <CardTitle>Create trusted operator invite</CardTitle>
               <CardDescription>
-                Invited partner admins skip driver document review, get their own collector payout settings, and recruit drivers into their own dues queue by default.
+                Invited partner admins skip driver document review, get their own collector dues instructions, and recruit drivers into their own dues queue by default.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

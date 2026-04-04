@@ -461,7 +461,7 @@ export function AdminDuesPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-6">
-          <PanelSection title="Collector payout settings" description="Drivers see these instructions from their assigned collector admin.">
+          <PanelSection title="Collector dues instructions" description="Drivers see these remittance instructions from their assigned collector admin. They do not change rider trip payment.">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Cash App handle</Label>
@@ -486,7 +486,7 @@ export function AdminDuesPage() {
             </div>
             <div className="mt-5">
               <Button disabled={payoutMutation.isPending} onClick={() => payoutMutation.mutate()}>
-                Save payout settings
+                Save dues instructions
               </Button>
             </div>
             {payoutMutation.error ? <p className="mt-3 text-sm text-ops-error">{payoutMutation.error.message}</p> : null}

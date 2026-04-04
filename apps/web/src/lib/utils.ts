@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { Role, SessionUser } from "@shared/contracts";
+import type { PaymentMethod, Role, SessionUser } from "@shared/contracts";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -22,6 +22,18 @@ export function formatDateTime(value: string | null) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+export function formatPaymentMethod(method: PaymentMethod) {
+  if (method === "cashapp") {
+    return "Cash App";
+  }
+
+  if (method === "jim") {
+    return "Jim";
+  }
+
+  return "Cash";
 }
 
 export function roleHome(role: Role) {

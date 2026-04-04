@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DriverAccount, DriverDocumentStatus } from "@shared/contracts";
 import { Download, FileBadge2, Search, ShieldAlert, ShieldCheck, ToggleLeft, Users } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {
   DataField,
   EntityList,
@@ -432,15 +433,33 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
 
 export function AdminDriversPage() {
   const { token, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const driversQuery = useQuery({
     queryKey: ["admin-drivers"],
     queryFn: () => api.listDrivers(token!)
   });
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<"owned" | "all">("owned");
-  const [selectedDriverId, setSelectedDriverId] = useState("");
+  const [selectedDriverId, setSelectedDriverId] = useState(() => searchParams.get("driverId") ?? "");
 
   const drivers = driversQuery.data ?? [];
+  const requestedDriverId = searchParams.get("driverId");
+
+  useEffect(() => {
+    if (!requestedDriverId) {
+      return;
+    }
+
+    const requestedDriver = drivers.find((driver) => driver.id === requestedDriverId);
+    if (!requestedDriver) {
+      return;
+    }
+
+    if (scope === "owned" && requestedDriver.collectorAdminId !== user?.id) {
+      setScope("all");
+    }
+  }, [drivers, requestedDriverId, scope, user?.id]);
+
   const filteredDrivers = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
     return drivers.filter((driver) => {
@@ -460,6 +479,11 @@ export function AdminDriversPage() {
   }, [drivers, scope, search, user?.id]);
 
   useEffect(() => {
+    if (requestedDriverId && filteredDrivers.some((driver) => driver.id === requestedDriverId) && requestedDriverId !== selectedDriverId) {
+      setSelectedDriverId(requestedDriverId);
+      return;
+    }
+
     if (!filteredDrivers.length) {
       setSelectedDriverId("");
       return;

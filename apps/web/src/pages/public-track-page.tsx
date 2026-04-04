@@ -12,7 +12,7 @@ import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
-import { formatDateTime, formatMoney } from "@/lib/utils";
+import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 
 export function PublicTrackPage() {
   const { token = "" } = useParams();
@@ -74,7 +74,7 @@ export function PublicTrackPage() {
               value={ride.driver?.name ?? "Waiting for assignment"}
               subtle={ride.driver?.vehicle?.makeModel ?? "Dispatch is working on your trip"}
             />
-            <DataField label="Payment" value={ride.payment.method} subtle={`Status: ${ride.payment.status}`} />
+            <DataField label="Trip payment" value={formatPaymentMethod(ride.payment.method)} subtle={`Status: ${ride.payment.status}`} />
           </div>
 
           <div className="grid gap-3">
@@ -107,10 +107,10 @@ export function PublicTrackPage() {
             <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
               <div className="mb-2 flex items-center gap-2 text-ops-muted">
                 <CreditCard className="h-4 w-4" />
-                Payment note
+                Trip payment
               </div>
-              <p className="font-semibold text-ops-text">{ride.payment.method}</p>
-              <p className="mt-1 text-sm text-ops-muted">Collected outside the app · {ride.payment.status}</p>
+              <p className="font-semibold text-ops-text">{formatPaymentMethod(ride.payment.method)}</p>
+              <p className="mt-1 text-sm text-ops-muted">Selected during booking · {ride.payment.status}</p>
             </div>
           </div>
         </MapPanel>

@@ -132,6 +132,14 @@ const adminItems: ShellNavItem[] = [
     roles: ["admin"]
   },
   {
+    id: "admin-dispatch",
+    label: "Dispatch",
+    to: "/admin/dispatch",
+    icon: Route,
+    matchPatterns: ["/admin/dispatch"],
+    roles: ["admin"]
+  },
+  {
     id: "admin-team",
     label: "Team",
     to: "/admin/team",
@@ -183,12 +191,26 @@ const adminItems: ShellNavItem[] = [
 
 const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
   {
+    patterns: ["/admin/dispatch"],
+    frame: {
+      eyebrow: "Admin",
+      title: "Dispatch workspace",
+      description: "Watch active and scheduled ride routes from one ride-first workspace. V1 dispatch is ride-first and does not add a new idle-driver live-location API.",
+      mapMode: "ambient",
+      actions: [
+        { label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" },
+        { label: "Drivers", to: "/admin/drivers", icon: Users, variant: "secondary" }
+      ]
+    }
+  },
+  {
     patterns: ["/admin"],
     frame: {
       eyebrow: "Admin",
       title: "Operations overview",
-      description: "Monitor queues, drivers, dues, leads, and ride operations from one control surface.",
-      mapMode: "ambient"
+      description: "Monitor queues, drivers, dues, leads, dispatch, and ride operations from one control surface.",
+      mapMode: "ambient",
+      actions: [{ label: "Dispatch", to: "/admin/dispatch", icon: Route, variant: "primary" }]
     }
   },
   {
@@ -410,11 +432,11 @@ export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
 
   if (user?.role === "admin") {
     return [
-      adminItems[0],
-      adminItems[1],
-      adminItems[2],
-      adminItems[3],
-      sharedItems[0]
+      adminItems.find((item) => item.id === "admin-overview"),
+      adminItems.find((item) => item.id === "admin-dispatch"),
+      adminItems.find((item) => item.id === "admin-drivers"),
+      adminItems.find((item) => item.id === "admin-dues"),
+      adminItems.find((item) => item.id === "admin-team")
     ]
       .filter((item): item is ShellNavItem => item !== null)
       .filter((item) => canRenderItem(item, user));

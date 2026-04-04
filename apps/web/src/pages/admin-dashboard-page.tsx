@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { formatDateTime, formatMoney } from "@/lib/utils";
+import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
 export function AdminDashboardPage() {
@@ -85,7 +85,8 @@ export function AdminDashboardPage() {
         title="Run the live RealDrive operation from one shell"
         description="Keep drivers approved, dues clear, community activity visible, and every live ride tied to a real action instead of a mock-only control."
         actions={[
-          { label: "Review drivers", to: "/admin/drivers", icon: Users, variant: "primary" },
+          { label: "Dispatch", to: "/admin/dispatch", icon: Route, variant: "primary" },
+          { label: "Review drivers", to: "/admin/drivers", icon: Users, variant: "secondary" },
           { label: "Manage dues", to: "/admin/dues", icon: CreditCard, variant: "secondary" },
           { label: "Team", to: "/admin/team", icon: ShieldCheck, variant: "secondary" },
           { label: "Share kit", to: "/admin/share", icon: QrCode, variant: "secondary" },
@@ -213,12 +214,20 @@ export function AdminDashboardPage() {
           title="Ride operations"
           description="Review dispatch, customer totals, driver payout math, and payment collection from one queue."
           actions={
-            <Link
-              to="/admin/drivers"
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
-            >
-              Driver settings
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/admin/dispatch"
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-primary/45 bg-ops-primary px-4 text-sm font-semibold text-white transition hover:bg-[#6887ff]"
+              >
+                Dispatch workspace
+              </Link>
+              <Link
+                to="/admin/drivers"
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+              >
+                Driver settings
+              </Link>
+            </div>
           }
         >
           <EntityList>
@@ -251,7 +260,11 @@ export function AdminDashboardPage() {
                           <DataField label="Customer total" value={formatMoney(customerTotal)} className="sm:col-span-3" />
                           <DataField label="Driver subtotal" value={formatMoney(subtotal)} />
                           <DataField label="Platform due" value={formatMoney(due)} />
-                          <DataField label="Payment" value={ride.payment.status} subtle={ride.payment.method} />
+                          <DataField
+                            label="Trip payment"
+                            value={formatPaymentMethod(ride.payment.method)}
+                            subtle={`Status: ${ride.payment.status}`}
+                          />
                         </div>
 
                         <div className="flex flex-wrap gap-2.5">

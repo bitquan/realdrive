@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
-import { formatDateTime, formatMoney } from "@/lib/utils";
+import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
 export function RideDetailsPage() {
@@ -121,8 +121,8 @@ export function RideDetailsPage() {
               subtle={ride.driver?.vehicle?.makeModel ?? "Dispatching nearby drivers"}
             />
             <DataField
-              label="Payment"
-              value={ride.payment.method}
+              label="Trip payment"
+              value={formatPaymentMethod(ride.payment.method)}
               subtle={`Status: ${ride.payment.status}`}
             />
           </div>
@@ -155,11 +155,11 @@ export function RideDetailsPage() {
             <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
               <div className="mb-2 flex items-center gap-2 text-ops-muted">
                 <CreditCard className="h-4 w-4" />
-                Payment note
+                Trip payment
               </div>
-              <p className="font-semibold text-ops-text">{ride.payment.method}</p>
+              <p className="font-semibold text-ops-text">{formatPaymentMethod(ride.payment.method)}</p>
               <p className="mt-1 text-sm text-ops-muted">
-                Collected outside the app · {ride.payment.status}
+                Selected during booking · {ride.payment.status}
               </p>
             </div>
           </div>

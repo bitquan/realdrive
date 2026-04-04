@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
-import { formatDateTime, formatMoney } from "@/lib/utils";
+import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
 const emptyRateForm = {
@@ -579,6 +579,11 @@ export function DriverDashboardPage() {
                       <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
                       <p className="mt-1 font-semibold">{formatMoney(pricing.platformDue)}</p>
                     </div>
+                    <div className="rounded-3xl border border-ops-border-soft p-3 md:col-span-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Trip payment</p>
+                      <p className="mt-1 font-semibold">{formatPaymentMethod(ride.payment.method)}</p>
+                      <p className="mt-1 text-sm text-ops-muted">Chosen by the rider during booking · status {ride.payment.status}</p>
+                    </div>
                   </div>
                   <div className="mt-4 flex gap-3">
                     <Button className="flex-1" disabled={suspended} onClick={() => acceptMutation.mutate(ride.id)}>
@@ -621,7 +626,7 @@ export function DriverDashboardPage() {
                     </div>
                     <Badge>{ride.status.replaceAll("_", " ")}</Badge>
                   </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <div className="mt-4 grid gap-3 md:grid-cols-4">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
                       <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.customerTotal)}</p>
@@ -633,6 +638,11 @@ export function DriverDashboardPage() {
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
                       <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.platformDue)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Trip payment</p>
+                      <p className="mt-1 text-sm font-semibold">{formatPaymentMethod(ride.payment.method)}</p>
+                      <p className="mt-1 text-xs text-ops-muted">Status {ride.payment.status}</p>
                     </div>
                   </div>
                 </Link>
@@ -672,7 +682,10 @@ export function DriverDashboardPage() {
             </div>
 
             <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/55 p-4 text-sm text-ops-muted">
-              <p className="font-semibold text-ops-text">Where to send dues</p>
+              <p className="font-semibold text-ops-text">Collector dues instructions</p>
+              <p className="mt-2 text-sm leading-6 text-ops-muted">
+                Trip payment method comes from the rider booking choice. These instructions are only for platform dues batches.
+              </p>
               <div className="mt-3 grid gap-2">
                 <p>Collector: {collector?.name ?? "Unassigned"}</p>
                 <p>Cash App: {payoutSettings?.cashAppHandle || "Not set yet"}</p>

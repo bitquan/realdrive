@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
 const nextStatusOrder = {
@@ -164,10 +164,15 @@ export function DriverRidePage() {
             <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
               <div className="mb-2 flex items-center gap-2 text-ops-muted">
                 <CreditCard className="h-4 w-4" />
-                Payout snapshot
+                Trip payment
               </div>
-              <p className="font-semibold text-ops-text">{formatMoney(customerTotal)}</p>
-              <p className="mt-1 text-sm text-ops-muted">Driver subtotal {formatMoney(subtotal)} · platform due {formatMoney(platformDue)}</p>
+              <p className="font-semibold text-ops-text">{formatPaymentMethod(ride.payment.method)}</p>
+              <p className="mt-1 text-sm text-ops-muted">
+                Chosen by the rider during booking · status {ride.payment.status}
+              </p>
+              <p className="mt-2 text-sm text-ops-muted/80">
+                Customer total {formatMoney(customerTotal)} · driver subtotal {formatMoney(subtotal)} · platform due {formatMoney(platformDue)}
+              </p>
             </div>
           </div>
         </MapPanel>
