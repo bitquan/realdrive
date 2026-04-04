@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CreditCard, MessageSquare, QrCode, Route, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, CreditCard, MessageSquare, QrCode, Route, ShieldCheck, UserPlus, Users } from "lucide-react";
 import type { RideStatus } from "@shared/contracts";
 import {
   DataField,
@@ -87,6 +87,7 @@ export function AdminDashboardPage() {
         actions={[
           { label: "Review drivers", to: "/admin/drivers", icon: Users, variant: "primary" },
           { label: "Manage dues", to: "/admin/dues", icon: CreditCard, variant: "secondary" },
+          { label: "Team", to: "/admin/team", icon: ShieldCheck, variant: "secondary" },
           { label: "Share kit", to: "/admin/share", icon: QrCode, variant: "secondary" },
           { label: "Community board", to: "/community", icon: MessageSquare, variant: "ghost" }
         ]}

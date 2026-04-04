@@ -30,7 +30,7 @@ const faqSections = [
   {
     title: "Inviting another admin",
     body:
-      "Create an admin invite from the share kit, send the link to your partner, and they can create their own full admin account. After that, they manage their own recruit links, dues queue, and payout instructions."
+      "Create a trusted operator invite from Team, send the link to your partner, and they create one account with Admin, Driver, and Rider access right away. After that, they manage their own recruit links, dues queue, and payout instructions."
   }
 ];
 
@@ -47,7 +47,7 @@ export function AdminHelpPage() {
         <MetricCard label="Completed trips only" value="Yes" meta="No incomplete ride ever generates collectible dues" icon={ShieldCheck} tone="success" />
         <MetricCard label="Reference format" value="#DUES000001" meta="Drivers should use it in title, note, or both" icon={CreditCard} />
         <MetricCard label="Recruit links" value="Owned" meta="Each admin can recruit directly into their own queue" icon={Link2} />
-        <MetricCard label="Partner admins" value="Invite" meta="Create full admin access from the share kit" icon={Users} />
+        <MetricCard label="Partner admins" value="Team" meta="Create trusted operator access from the Team tab" icon={Users} />
       </MetricStrip>
 
       <PanelSection

@@ -8,6 +8,7 @@ import {
   QrCode,
   Route,
   Settings2,
+  ShieldCheck,
   UserRound,
   Users
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { roleLabel, userHasRole } from "@/lib/utils";
 
 export type ShellActionVariant = "primary" | "secondary" | "ghost";
 export type ShellLayout = "standard" | "immersive";
+export type ShellMapMode = "ambient" | "immersive" | "off";
 
 export interface ShellAction {
   label: string;
@@ -48,6 +50,7 @@ export interface ShellFrame {
   eyebrow: string;
   description: string;
   layout?: ShellLayout;
+  mapMode?: ShellMapMode;
   actions?: ShellAction[];
   mobileHeaderMode?: "compact" | "minimal";
 }
@@ -129,6 +132,14 @@ const adminItems: ShellNavItem[] = [
     roles: ["admin"]
   },
   {
+    id: "admin-team",
+    label: "Team",
+    to: "/admin/team",
+    icon: ShieldCheck,
+    matchPatterns: ["/admin/team"],
+    roles: ["admin"]
+  },
+  {
     id: "admin-drivers",
     label: "Drivers",
     to: "/admin/drivers",
@@ -176,7 +187,18 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Admin",
       title: "Operations overview",
-      description: "Monitor queues, drivers, dues, leads, and ride operations from one control surface."
+      description: "Monitor queues, drivers, dues, leads, and ride operations from one control surface.",
+      mapMode: "ambient"
+    }
+  },
+  {
+    patterns: ["/admin/team"],
+    frame: {
+      eyebrow: "Admin",
+      title: "Team operations",
+      description: "Invite trusted partner operators, watch workspace access, and keep admin management visible in the main shell.",
+      mapMode: "ambient",
+      actions: [{ label: "Share kit", to: "/admin/share", icon: QrCode, variant: "secondary" }]
     }
   },
   {
@@ -185,6 +207,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Admin",
       title: "Driver operations",
       description: "Review applications, update driver settings, and keep availability aligned with the live network.",
+      mapMode: "ambient",
       actions: [{ label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" }]
     }
   },
@@ -194,6 +217,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Admin",
       title: "Platform dues",
       description: "Clear overdue accounts, adjust manual payouts, and maintain the driver finance queue.",
+      mapMode: "ambient",
       actions: [{ label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" }]
     }
   },
@@ -202,7 +226,8 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Admin",
       title: "Platform pricing",
-      description: "Tune market rate cards without inventing new products or flows."
+      description: "Tune market rate cards without inventing new products or flows.",
+      mapMode: "ambient"
     }
   },
   {
@@ -210,7 +235,9 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Admin",
       title: "Business share kit",
-      description: "Manage recruit links, partner admin invites, and launch assets without shipping fake share actions."
+      description: "Manage recruit links, QR assets, and launch links without mixing in team-management work.",
+      mapMode: "ambient",
+      actions: [{ label: "Team", to: "/admin/team", icon: ShieldCheck, variant: "secondary" }]
     }
   },
   {
@@ -218,7 +245,8 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Admin",
       title: "Collector guide",
-      description: "Keep dues collection, ownership transfer, and partner onboarding documented inside the live admin shell."
+      description: "Keep dues collection, ownership transfer, and partner onboarding documented inside the live admin shell.",
+      mapMode: "ambient"
     }
   },
   {
@@ -227,6 +255,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Admin invite",
       title: "Accept workspace invite",
       description: "Create your admin collector account from a live invite link.",
+      mapMode: "off",
       mobileHeaderMode: "minimal"
     }
   },
@@ -235,7 +264,8 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Driver",
       title: "Driver dashboard",
-      description: "Manage availability, pricing, dispatch settings, active rides, dues, and community access."
+      description: "Manage availability, pricing, dispatch settings, active rides, dues, and community access.",
+      mapMode: "ambient"
     }
   },
   {
@@ -245,6 +275,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       title: "Active ride",
       description: "Advance the live trip workflow, keep location updates moving, and watch payout details.",
       layout: "immersive",
+      mapMode: "immersive",
       actions: [{ label: "Dashboard", to: "/driver", icon: Route, variant: "secondary" }]
     }
   },
@@ -254,6 +285,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Rider",
       title: "My rides",
       description: "Open active, scheduled, and completed trips from one rider history view.",
+      mapMode: "ambient",
       actions: [{ label: "Book ride", to: "/", icon: CarFront, variant: "primary" }]
     }
   },
@@ -264,6 +296,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       title: "Ride detail",
       description: "Track progress, payment, and rider follow-up actions from the live trip panel.",
       layout: "immersive",
+      mapMode: "immersive",
       actions: [{ label: "My rides", to: "/rider/rides", icon: UserRound, variant: "secondary" }]
     }
   },
@@ -273,7 +306,8 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Tracking",
       title: "Live trip tracking",
       description: "Follow status, route progress, and rider follow-up tools without signing in.",
-      layout: "immersive"
+      layout: "immersive",
+      mapMode: "immersive"
     }
   },
   {
@@ -282,6 +316,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Community",
       title: "Community board",
       description: "Read, post, vote, and moderate proposals inside the same ops language as the rest of the app.",
+      mapMode: "ambient",
       mobileHeaderMode: "minimal"
     }
   },
@@ -291,6 +326,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Driver",
       title: "Drive with RealDrive",
       description: "Apply with the real onboarding flow and keep approvals tied to the live admin review queue.",
+      mapMode: "off",
       mobileHeaderMode: "minimal"
     }
   },
@@ -300,6 +336,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Driver",
       title: "Driver access",
       description: "Approved drivers sign in here to manage live offers, rides, and dues.",
+      mapMode: "off",
       mobileHeaderMode: "minimal"
     }
   },
@@ -308,7 +345,8 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Admin",
       title: "Admin access",
-      description: "Create or enter the real operations account that controls dispatch, dues, pricing, and share assets."
+      description: "Create or enter the real operations account that controls dispatch, dues, pricing, and share assets.",
+      mapMode: "off"
     }
   },
   {
@@ -316,7 +354,8 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Community",
       title: "Community access",
-      description: "Exchange rider access safely and land inside the real shared community board."
+      description: "Exchange rider access safely and land inside the real shared community board.",
+      mapMode: "off"
     }
   },
   {
@@ -324,7 +363,8 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     frame: {
       eyebrow: "Share",
       title: "Referral redirect",
-      description: "Send shared traffic back into the live rider booking flow."
+      description: "Send shared traffic back into the live rider booking flow.",
+      mapMode: "off"
     }
   },
   {
@@ -333,6 +373,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Ride",
       title: "Book a ride",
       description: "Quote, book, track, and share from the same live rider surface.",
+      mapMode: "off",
       mobileHeaderMode: "minimal"
     }
   }
@@ -370,9 +411,9 @@ export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
   if (user?.role === "admin") {
     return [
       adminItems[0],
-      driverItem,
       adminItems[1],
       adminItems[2],
+      adminItems[3],
       sharedItems[0]
     ]
       .filter((item): item is ShellNavItem => item !== null)
@@ -400,7 +441,8 @@ export function getShellFrame(pathname: string, user: SessionUser | null): Shell
   return {
     eyebrow: user ? roleLabel(user.role) : "RealDrive",
     title: "RealDrive Control Center",
-    description: "Use the live routes that exist today. No dead buttons, no fake modules, and no stale shell actions."
+    description: "Use the live routes that exist today. No dead buttons, no fake modules, and no stale shell actions.",
+    mapMode: user ? "ambient" : "off"
   };
 }
 

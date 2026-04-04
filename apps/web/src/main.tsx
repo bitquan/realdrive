@@ -19,6 +19,7 @@ const DriverRidePage = lazy(() => import("@/pages/driver-ride-page").then((modul
 const AdminLoginPage = lazy(() => import("@/pages/admin-login-page").then((module) => ({ default: module.AdminLoginPage })));
 const AdminSetupPage = lazy(() => import("@/pages/admin-setup-page").then((module) => ({ default: module.AdminSetupPage })));
 const AdminDashboardPage = lazy(() => import("@/pages/admin-dashboard-page").then((module) => ({ default: module.AdminDashboardPage })));
+const AdminTeamPage = lazy(() => import("@/pages/admin-team-page").then((module) => ({ default: module.AdminTeamPage })));
 const AdminDriversPage = lazy(() => import("@/pages/admin-drivers-page").then((module) => ({ default: module.AdminDriversPage })));
 const AdminPricingPage = lazy(() => import("@/pages/admin-pricing-page").then((module) => ({ default: module.AdminPricingPage })));
 const AdminSharePage = lazy(() => import("@/pages/admin-share-page").then((module) => ({ default: module.AdminSharePage })));
@@ -146,6 +147,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDashboardPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/team"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminTeamPage /></PageLoader>
                 </RequireRole>
               }
             />

@@ -2,6 +2,7 @@ import type {
   AcceptAdminInviteInput,
   AdminInvite,
   AdminInvitesResponse,
+  AdminTeamResponse,
   AdminDuesResponse,
   AdminLeadsResponse,
   AdminLogin,
@@ -387,10 +388,18 @@ export const api = {
   listAdminInvites(token: string) {
     return apiFetch<AdminInvitesResponse>("/admin/invites", undefined, token);
   },
+  getAdminTeam(token: string) {
+    return apiFetch<AdminTeamResponse>("/admin/team", undefined, token);
+  },
   createAdminInvite(input: CreateAdminInviteInput, token: string) {
     return apiFetch<AdminInvite>("/admin/invites", {
       method: "POST",
       body: JSON.stringify(input)
+    }, token);
+  },
+  revokeAdminInvite(inviteId: string, token: string) {
+    return apiFetch<AdminInvite>(`/admin/invites/${inviteId}/revoke`, {
+      method: "POST"
     }, token);
   },
   listPlatformRates(token: string) {

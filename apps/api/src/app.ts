@@ -1024,6 +1024,18 @@ export function buildApp() {
     };
   });
 
+  app.get("/admin/team", { preHandler: requireRole("admin") }, async (request) => {
+    const [admins, invites] = await Promise.all([
+      store.listAdminTeamUsers(),
+      store.listAdminInvites(null, resolvePublicBaseUrl(request))
+    ]);
+
+    return {
+      admins,
+      invites
+    };
+  });
+
   app.post("/admin/invites", { preHandler: requireRole("admin") }, async (request, reply) => {
     const parsed = createAdminInviteSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -1043,6 +1055,23 @@ export function buildApp() {
     });
 
     return reply.status(201).send(invite);
+  });
+
+  app.post("/admin/invites/:id/revoke", { preHandler: requireRole("admin") }, async (request, reply) => {
+    try {
+      const invite = await store.revokeAdminInvite((request.params as { id: string }).id, request.userContext.id, resolvePublicBaseUrl(request));
+
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "admin.invite.revoked",
+        entityType: "adminInvite",
+        entityId: invite.id
+      });
+
+      return reply.send(invite);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.get("/admin/leads", { preHandler: requireRole("admin") }, async () => {

@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { CarFront, LogOut, Route, Shield, UserRound } from "lucide-react";
 import type { Role } from "@shared/contracts";
+import { AmbientShellMap } from "@/components/layout/ambient-shell-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getMobileNavItems, getShellFrame, getShellSections, isNavItemActive, type ShellAction } from "@/lib/shell";
@@ -53,8 +54,9 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-ops-bg text-ops-text">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1760px]">
+    <div className="relative min-h-screen overflow-x-hidden bg-ops-bg text-ops-text">
+      {frame.mapMode === "ambient" ? <AmbientShellMap /> : null}
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1760px]">
         <aside className="hidden min-h-screen w-[292px] shrink-0 border-r border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))] px-5 py-6 lg:flex lg:flex-col">
           <Link
             to="/"
@@ -148,7 +150,7 @@ export function AppShell() {
                 </Link>
 
                 <div className="flex shrink-0 items-center gap-2">
-                  {user && user.roles.length <= 1 ? (
+                  {user ? (
                     <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
                       {roleLabel(user.role)}
                     </Badge>

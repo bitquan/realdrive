@@ -785,6 +785,11 @@ export const adminInvitesResponseSchema = z.object({
   invites: z.array(adminInviteSchema)
 });
 
+export const adminTeamResponseSchema = z.object({
+  admins: z.array(sessionUserSchema),
+  invites: z.array(adminInviteSchema)
+});
+
 export const communityBoardResponseSchema = z.object({
   proposals: z.array(communityProposalSchema),
   eligibility: communityEligibilitySchema
@@ -900,5 +905,6 @@ export type AdminSetupStatusResponse = z.infer<typeof adminSetupStatusResponseSc
 export type DriverDuesResponse = z.infer<typeof driverDuesResponseSchema>;
 export type AdminDuesResponse = z.infer<typeof adminDuesResponseSchema>;
 export type AdminInvitesResponse = z.infer<typeof adminInvitesResponseSchema>;
+export type AdminTeamResponse = z.infer<typeof adminTeamResponseSchema>;
 export type CommunityBoardResponse = z.infer<typeof communityBoardResponseSchema>;
 export type CommunityCommentsResponse = z.infer<typeof communityCommentsResponseSchema>;

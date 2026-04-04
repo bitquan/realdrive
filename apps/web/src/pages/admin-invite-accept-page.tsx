@@ -56,7 +56,7 @@ export function AdminInviteAcceptPage() {
             </span>
             <div>
               <CardTitle>Accept admin invite</CardTitle>
-              <CardDescription>Create your collector admin account for this RealDrive workspace.</CardDescription>
+              <CardDescription>Create your trusted operator account with Admin, Driver, and Rider access for this RealDrive workspace.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -104,7 +104,7 @@ export function AdminInviteAcceptPage() {
             {!passwordsMatch ? <p className="text-sm text-ops-error">Passwords do not match.</p> : null}
             {mutation.error ? <p className="text-sm text-ops-error">{mutation.error.message}</p> : null}
             <Button className="w-full" type="submit" disabled={mutation.isPending || !inviteToken || !passwordsMatch}>
-              Create admin account
+              Create trusted operator account
             </Button>
           </form>
         </CardContent>

@@ -518,6 +518,73 @@ async function ensureCollectorPayoutSettingsRecord(
   });
 }
 
+function buildTrustedOperatorVehicle(seed: string) {
+  const normalizedSeed = seed.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  const suffix = normalizedSeed.slice(-6) || "OPS001";
+
+  return {
+    makeModel: "RealDrive Operator Vehicle",
+    plate: `OPS-${suffix}`,
+    color: "Black",
+    rideType: toDbRideType("standard"),
+    seats: 4
+  };
+}
+
+async function ensureTrustedOperatorDriverProfile(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  collectorAdminId: string,
+  seed: string
+) {
+  const existingProfile = await tx.driverProfile.findUnique({
+    where: { userId },
+    include: {
+      vehicle: true
+    }
+  });
+
+  if (existingProfile) {
+    await tx.driverProfile.update({
+      where: { id: existingProfile.id },
+      data: {
+        collectorAdminId,
+        approved: true,
+        approvalStatus: "APPROVED",
+        available: false,
+        vehicle: existingProfile.vehicle
+          ? undefined
+          : {
+              create: buildTrustedOperatorVehicle(seed)
+            }
+      }
+    });
+
+    return;
+  }
+
+  await tx.driverProfile.create({
+    data: {
+      userId,
+      collectorAdminId,
+      approved: true,
+      approvalStatus: "APPROVED",
+      available: false,
+      homeState: null,
+      homeCity: null,
+      localDispatchEnabled: true,
+      localRadiusMiles: 25,
+      serviceAreaDispatchEnabled: false,
+      serviceAreaStates: [],
+      nationwideDispatchEnabled: false,
+      pricingMode: "PLATFORM",
+      vehicle: {
+        create: buildTrustedOperatorVehicle(seed)
+      }
+    }
+  });
+}
+
 async function markOverduePlatformDuesInternal(now = new Date()) {
   const overdueUnbatched = await prisma.platformDue.findMany({
     where: {
@@ -2326,21 +2393,38 @@ export const store: Store = {
 
   async createAdminInvite(inviterId, input, baseUrl) {
     const email = input.email.toLowerCase();
-    const invite = await prisma.adminInvite.create({
-      data: {
-        inviterId,
-        email,
-        token: createCommunityAccessToken(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-      },
-      include: {
-        inviter: {
-          select: collectorSummarySelect
+    const invite = await prisma.$transaction(async (tx) => {
+      await tx.adminInvite.updateMany({
+        where: {
+          inviterId,
+          email,
+          acceptedAt: null,
+          revokedAt: null,
+          expiresAt: {
+            gt: new Date()
+          }
         },
-        acceptedBy: {
-          select: collectorSummarySelect
+        data: {
+          revokedAt: new Date()
         }
-      }
+      });
+
+      return tx.adminInvite.create({
+        data: {
+          inviterId,
+          email,
+          token: createCommunityAccessToken(),
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        },
+        include: {
+          inviter: {
+            select: collectorSummarySelect
+          },
+          acceptedBy: {
+            select: collectorSummarySelect
+          }
+        }
+      });
     });
 
     const now = new Date();
@@ -2405,6 +2489,90 @@ export const store: Store = {
     }));
   },
 
+  async listAdminTeamUsers() {
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [{ role: DbRole.ADMIN }, { roles: { has: DbRole.ADMIN } }]
+      },
+      orderBy: {
+        name: "asc"
+      },
+      include: userInclude
+    });
+
+    const withCodes = await Promise.all(users.map((user) => ensureReferralCode(user)));
+    return withCodes.map(mapSessionUser);
+  },
+
+  async revokeAdminInvite(inviteId, _adminId, baseUrl = env.publicBaseUrl || env.clientOrigin) {
+    const existing = await prisma.adminInvite.findUnique({
+      where: { id: inviteId },
+      include: {
+        inviter: {
+          select: collectorSummarySelect
+        },
+        acceptedBy: {
+          select: collectorSummarySelect
+        }
+      }
+    });
+
+    if (!existing) {
+      throw new Error("Admin invite not found.");
+    }
+
+    if (existing.acceptedAt) {
+      throw new Error("Accepted invites cannot be revoked.");
+    }
+
+    if (existing.revokedAt) {
+      return {
+        id: existing.id,
+        email: existing.email,
+        token: existing.token,
+        inviteUrl: `${baseUrl}/admin/invite/${existing.token}`,
+        status: "revoked",
+        inviter: toCollectorSummary(existing.inviter)!,
+        acceptedBy: toCollectorSummary(existing.acceptedBy),
+        expiresAt: existing.expiresAt.toISOString(),
+        acceptedAt: existing.acceptedAt?.toISOString() ?? null,
+        revokedAt: existing.revokedAt?.toISOString() ?? null,
+        createdAt: existing.createdAt.toISOString(),
+        updatedAt: existing.updatedAt.toISOString()
+      };
+    }
+
+    const invite = await prisma.adminInvite.update({
+      where: { id: inviteId },
+      data: {
+        revokedAt: new Date()
+      },
+      include: {
+        inviter: {
+          select: collectorSummarySelect
+        },
+        acceptedBy: {
+          select: collectorSummarySelect
+        }
+      }
+    });
+
+    return {
+      id: invite.id,
+      email: invite.email,
+      token: invite.token,
+      inviteUrl: `${baseUrl}/admin/invite/${invite.token}`,
+      status: "revoked",
+      inviter: toCollectorSummary(invite.inviter)!,
+      acceptedBy: toCollectorSummary(invite.acceptedBy),
+      expiresAt: invite.expiresAt.toISOString(),
+      acceptedAt: invite.acceptedAt?.toISOString() ?? null,
+      revokedAt: invite.revokedAt?.toISOString() ?? null,
+      createdAt: invite.createdAt.toISOString(),
+      updatedAt: invite.updatedAt.toISOString()
+    };
+  },
+
   async acceptAdminInvite(input) {
     const invite = await prisma.adminInvite.findUnique({
       where: { token: input.token }
@@ -2423,23 +2591,48 @@ export const store: Store = {
       include: userInclude
     });
 
-    if (existing) {
-      throw new Error("A user with that email already exists.");
+    if (existing && hasDbRole(existing, DbRole.ADMIN)) {
+      throw new Error("A user with that email already has admin access.");
     }
 
     const created = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          role: DbRole.ADMIN,
-          roles: [DbRole.ADMIN],
-          name: input.name,
-          email: input.email.toLowerCase(),
-          passwordHash: input.passwordHash
-        },
-        include: userInclude
-      });
+      const user = existing
+        ? await tx.user.update({
+            where: { id: existing.id },
+            data: {
+              role: DbRole.ADMIN,
+              roles: {
+                set: Array.from(new Set([...(existing.roles ?? []), existing.role, DbRole.ADMIN, DbRole.DRIVER, DbRole.RIDER]))
+              },
+              name: input.name,
+              email: input.email.toLowerCase(),
+              passwordHash: input.passwordHash,
+              riderProfile: {
+                upsert: {
+                  update: {},
+                  create: {}
+                }
+              }
+            },
+            include: userInclude
+          })
+        : await tx.user.create({
+            data: {
+              role: DbRole.ADMIN,
+              roles: [DbRole.ADMIN, DbRole.DRIVER, DbRole.RIDER],
+              name: input.name,
+              email: input.email.toLowerCase(),
+              passwordHash: input.passwordHash,
+              riderProfile: {
+                create: {}
+              }
+            },
+            include: userInclude
+          });
 
+      await ensureTrustedOperatorDriverProfile(tx, user.id, user.id, invite.token);
       await ensureCollectorPayoutSettingsRecord(user.id, tx);
+      await ensureDriverRateCards(tx, user.id);
       await tx.adminInvite.update({
         where: { id: invite.id },
         data: {

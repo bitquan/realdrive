@@ -203,6 +203,8 @@ export interface Store {
   assignDriverCollector(driverId: string, collectorAdminId: string | null): Promise<DriverAccount>;
   createAdminInvite(inviterId: string, input: CreateAdminInviteInput, baseUrl: string): Promise<AdminInvite>;
   listAdminInvites(inviterId?: string | null, baseUrl?: string): Promise<AdminInvite[]>;
+  listAdminTeamUsers(): Promise<SessionUser[]>;
+  revokeAdminInvite(inviteId: string, adminId: string, baseUrl?: string): Promise<AdminInvite>;
   acceptAdminInvite(input: AcceptAdminInviteInput & { passwordHash: string }): Promise<AuthIdentity>;
   recordLocation(input: {
     rideId: string;
