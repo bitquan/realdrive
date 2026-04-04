@@ -107,14 +107,28 @@ export function HomePage() {
 
   const pickupSuggestionsQuery = useQuery({
     queryKey: ["address-suggestions", "pickup", deferredPickupQuery],
-    queryFn: () => api.addressSuggestions(deferredPickupQuery),
-    enabled: activeAddressField === "pickup" && deferredPickupQuery.length >= 3
+    queryFn: async () => {
+      try {
+        return await api.addressSuggestions(deferredPickupQuery);
+      } catch {
+        return [];
+      }
+    },
+    enabled: activeAddressField === "pickup" && deferredPickupQuery.length >= 3,
+    retry: false
   });
 
   const dropoffSuggestionsQuery = useQuery({
     queryKey: ["address-suggestions", "dropoff", deferredDropoffQuery],
-    queryFn: () => api.addressSuggestions(deferredDropoffQuery),
-    enabled: activeAddressField === "dropoff" && deferredDropoffQuery.length >= 3
+    queryFn: async () => {
+      try {
+        return await api.addressSuggestions(deferredDropoffQuery);
+      } catch {
+        return [];
+      }
+    },
+    enabled: activeAddressField === "dropoff" && deferredDropoffQuery.length >= 3,
+    retry: false
   });
 
   const closeAddressSuggestions = useCallback(() => {
