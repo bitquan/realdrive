@@ -2,8 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm build",
-  "devCommand": "pnpm dev",
+  "buildCommand": "pnpm --filter @realdrive/web build",
+  "devCommand": "pnpm --filter @realdrive/web dev",
   "outputDirectory": "dist",
   "rewrites": [
     {
