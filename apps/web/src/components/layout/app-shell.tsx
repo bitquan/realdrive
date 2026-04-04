@@ -35,7 +35,7 @@ export function AppShell() {
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
 
   return (
-    <div className="min-h-screen bg-ops-bg text-ops-text">
+    <div className="min-h-screen overflow-x-hidden bg-ops-bg text-ops-text">
       <div className="mx-auto flex min-h-screen w-full max-w-[1760px]">
         <aside className="hidden min-h-screen w-[292px] shrink-0 border-r border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))] px-5 py-6 lg:flex lg:flex-col">
           <Link
@@ -252,7 +252,7 @@ export function AppShell() {
 
       {mobileItems.length ? (
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))] px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-elevated lg:hidden">
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
             {mobileItems.map((item) => {
               const active = isNavItemActive(item, location.pathname);
               const Icon = item.icon;

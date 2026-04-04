@@ -280,7 +280,7 @@ export function HomePage() {
                 <Label htmlFor="rideType">Ride type</Label>
                 <select
                   id="rideType"
-                  className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-sm text-ops-text"
+                  className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-base text-ops-text md:text-sm"
                   value={bookingForm.rideType}
                   onChange={(event) =>
                     setBookingForm((current) => ({
@@ -298,7 +298,7 @@ export function HomePage() {
                 <Label htmlFor="scheduleMode">Timing</Label>
                 <select
                   id="scheduleMode"
-                  className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-sm text-ops-text"
+                  className="h-10 w-full rounded-xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-3.5 text-base text-ops-text md:text-sm"
                   value={bookingForm.scheduleMode}
                   onChange={(event) =>
                     setBookingForm((current) => ({
