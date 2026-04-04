@@ -7,6 +7,7 @@ import {
   PanelSection,
   SurfaceHeader
 } from "@/components/layout/ops-layout";
+import { HeadrestPrintTemplate } from "@/components/share/headrest-print-template";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -61,6 +62,12 @@ export function AdminSharePage() {
           fileName="realdrive-collector-driver"
         />
       </div>
+
+      <HeadrestPrintTemplate
+        title="Headrest rider flyer (collector link)"
+        shareUrl={collectorDriverUrl}
+        fileName="realdrive-headrest-collector"
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <PanelSection title="Team handoff" description="Trusted operator invites moved into Team so this page can stay focused on recruiting and launch assets.">

@@ -4,6 +4,7 @@ import type { DriverDispatchSettings, PaymentMethod, Ride, RideType } from "@sha
 import { Link } from "react-router-dom";
 import { BellRing, CarFront, CreditCard, MessageSquare } from "lucide-react";
 import { MetricCard, MetricStrip, SurfaceHeader } from "@/components/layout/ops-layout";
+import { HeadrestPrintTemplate } from "@/components/share/headrest-print-template";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -850,13 +851,21 @@ export function DriverDashboardPage() {
           </Card>
 
           {shareQuery.data ? (
-            <ShareQrCard
-              title="Your driver referral QR"
-              description="Share this rider-growth link from the driver side. It still points riders back to the booking flow."
-              shareUrl={shareQuery.data.shareUrl}
-              referralCode={shareQuery.data.referralCode}
-              fileName={`realdrive-driver-${shareQuery.data.referralCode.toLowerCase()}`}
-            />
+            <div className="space-y-6">
+              <ShareQrCard
+                title="Your driver referral QR"
+                description="Share this rider-growth link from the driver side. It still points riders back to the booking flow."
+                shareUrl={shareQuery.data.shareUrl}
+                referralCode={shareQuery.data.referralCode}
+                fileName={`realdrive-driver-${shareQuery.data.referralCode.toLowerCase()}`}
+              />
+
+              <HeadrestPrintTemplate
+                title="Headrest rider flyer"
+                shareUrl={shareQuery.data.shareUrl}
+                fileName={`realdrive-headrest-${shareQuery.data.referralCode.toLowerCase()}`}
+              />
+            </div>
           ) : null}
         </div>
       </div>
