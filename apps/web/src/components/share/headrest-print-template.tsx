@@ -16,6 +16,27 @@ function toXmlSafe(value: string) {
     .replaceAll("'", "&apos;");
 }
 
+function resolvePublicAppUrl(value: string) {
+  if (typeof window === "undefined") {
+    return value;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.origin !== window.location.origin && parsed.pathname.startsWith("/")) {
+      return `${window.location.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+
+    return value;
+  } catch {
+    if (value.startsWith("/")) {
+      return `${window.location.origin}${value}`;
+    }
+
+    return value;
+  }
+}
+
 function buildTemplateSvg(shareUrl: string, qrDataUrl: string) {
   const safeUrl = toXmlSafe(shareUrl);
 
@@ -57,11 +78,12 @@ export function HeadrestPrintTemplate({
   title?: string;
 }) {
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const resolvedShareUrl = resolvePublicAppUrl(shareUrl);
 
   useEffect(() => {
     let active = true;
 
-    void QRCode.toDataURL(shareUrl, {
+    void QRCode.toDataURL(resolvedShareUrl, {
       margin: 1,
       width: 560,
       color: {
@@ -77,15 +99,15 @@ export function HeadrestPrintTemplate({
     return () => {
       active = false;
     };
-  }, [shareUrl]);
+  }, [resolvedShareUrl]);
 
   const templateSvg = useMemo(() => {
     if (!qrDataUrl) {
       return "";
     }
 
-    return buildTemplateSvg(shareUrl, qrDataUrl);
-  }, [qrDataUrl, shareUrl]);
+    return buildTemplateSvg(resolvedShareUrl, qrDataUrl);
+  }, [qrDataUrl, resolvedShareUrl]);
 
   function downloadTemplateSvg() {
     if (!templateSvg) {
@@ -111,7 +133,7 @@ export function HeadrestPrintTemplate({
             <p className="mt-2 text-sm text-ops-muted">Centered QR layout for headrest placement with community and trust messaging.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={() => void copyText(shareUrl)}>
+            <Button type="button" variant="outline" onClick={() => void copyText(resolvedShareUrl)}>
               <Copy className="mr-2 h-4 w-4" />
               Copy link
             </Button>
@@ -168,7 +190,7 @@ export function HeadrestPrintTemplate({
         </div>
 
         <div className="mt-6 rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3">
-          <p className="truncate text-center text-[11px] text-slate-600 md:text-xs">{shareUrl}</p>
+          <p className="truncate text-center text-[11px] text-slate-600 md:text-xs">{resolvedShareUrl}</p>
         </div>
       </article>
     </section>

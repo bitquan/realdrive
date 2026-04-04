@@ -4,6 +4,27 @@ import { Copy, Download, Link as LinkIcon, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+function resolvePublicAppUrl(value: string) {
+  if (typeof window === "undefined") {
+    return value;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.origin !== window.location.origin && parsed.pathname.startsWith("/")) {
+      return `${window.location.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+
+    return value;
+  } catch {
+    if (value.startsWith("/")) {
+      return `${window.location.origin}${value}`;
+    }
+
+    return value;
+  }
+}
+
 async function copyText(value: string) {
   await navigator.clipboard.writeText(value);
 }
@@ -22,11 +43,12 @@ export function ShareQrCard({
   fileName: string;
 }) {
   const [pngUrl, setPngUrl] = useState("");
+  const resolvedShareUrl = resolvePublicAppUrl(shareUrl);
 
   useEffect(() => {
     let active = true;
 
-    void QRCode.toDataURL(shareUrl, {
+    void QRCode.toDataURL(resolvedShareUrl, {
       margin: 1,
       width: 280,
       color: {
@@ -42,10 +64,10 @@ export function ShareQrCard({
     return () => {
       active = false;
     };
-  }, [shareUrl]);
+  }, [resolvedShareUrl]);
 
   async function downloadSvg() {
-    const svg = await QRCode.toString(shareUrl, {
+    const svg = await QRCode.toString(resolvedShareUrl, {
       type: "svg",
       margin: 1,
       width: 280,
@@ -103,11 +125,11 @@ export function ShareQrCard({
 
         <div className="rounded-3xl border border-ops-border-soft bg-ops-surface p-4">
           <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Share link</p>
-          <p className="mt-2 break-all text-sm text-ops-text/80">{shareUrl}</p>
+          <p className="mt-2 break-all text-sm text-ops-text/80">{resolvedShareUrl}</p>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <Button type="button" variant="outline" onClick={() => void copyText(shareUrl)}>
+          <Button type="button" variant="outline" onClick={() => void copyText(resolvedShareUrl)}>
             <LinkIcon className="mr-2 h-4 w-4" />
             Copy link
           </Button>
