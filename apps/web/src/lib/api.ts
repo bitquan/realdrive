@@ -31,6 +31,7 @@ import type {
   CreateRideInput,
   DriverAccount,
   DriverDispatchSettings,
+  DriverIdleLocationInput,
   DriverDuesResponse,
   DriverInterest,
   DriverInterestInput,
@@ -301,6 +302,12 @@ export const api = {
   },
   sendDriverLocation(input: DriverLocationInput, token: string) {
     return apiFetch<Ride>("/driver/location", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  sendIdleDriverLocation(input: DriverIdleLocationInput, token: string) {
+    return apiFetch<SessionUser>("/driver/location/idle", {
       method: "POST",
       body: JSON.stringify(input)
     }, token);

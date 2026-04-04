@@ -17,6 +17,7 @@ import type {
   DriverBootstrapInput,
   DriverOnboardingDocument,
   DriverDispatchSettings,
+  DriverIdleLocationInput,
   DriverInterest,
   DriverInterestInput,
   DriverPricingMode,
@@ -215,6 +216,7 @@ export interface Store {
     speed?: number;
     available?: boolean;
   }): Promise<Ride>;
+  recordIdleLocation(driverId: string, input: DriverIdleLocationInput): Promise<SessionUser>;
   createRiderLead(
     input: RiderLeadInput & {
       userId?: string | null;

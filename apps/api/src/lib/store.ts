@@ -2684,6 +2684,25 @@ export const store: Store = {
     return getRideOrThrow(input.rideId);
   },
 
+  async recordIdleLocation(driverId, input) {
+    const updated = await prisma.user.update({
+      where: { id: driverId },
+      data: {
+        driverProfile: {
+          update: {
+            currentLat: input.lat,
+            currentLng: input.lng,
+            lastLocationAt: new Date(),
+            available: input.available
+          }
+        }
+      },
+      include: userInclude
+    });
+
+    return mapSessionUser(await ensureCommunityAccessToken(await ensureReferralCode(updated)));
+  },
+
   async createRiderLead(input) {
     const lead = await prisma.riderLead.create({
       data: {

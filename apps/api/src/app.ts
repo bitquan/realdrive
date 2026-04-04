@@ -31,6 +31,7 @@ import {
   createAdminInviteSchema,
   createDriverRoleSchema,
   driverDispatchSettingsUpdateSchema,
+  driverIdleLocationSchema,
   driverInterestInputSchema,
   driverLocationSchema,
   driverLoginSchema,
@@ -859,6 +860,21 @@ export function buildApp() {
 
     const ride = await rideService.recordDriverLocation(request.userContext.id, parsed.data);
     return reply.send(ride);
+  });
+
+  app.post("/driver/location/idle", { preHandler: requireRole("driver") }, async (request, reply) => {
+    const parsed = driverIdleLocationSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const driver = await store.recordIdleLocation(request.userContext.id, parsed.data);
+      io.emit("driver.availability.changed", driver);
+      return reply.send(driver);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.post("/driver/rides/:id/status", { preHandler: requireRole("driver") }, async (request, reply) => {

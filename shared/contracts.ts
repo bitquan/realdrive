@@ -579,6 +579,10 @@ export const driverLocationSchema = z.object({
   available: z.boolean().optional()
 });
 
+export const driverIdleLocationSchema = driverLocationSchema.omit({
+  rideId: true
+});
+
 export const adminUpdateRideSchema = z.object({
   status: rideStatusSchema.optional(),
   paymentStatus: paymentStatusSchema.optional(),
@@ -878,6 +882,7 @@ export type DriverDispatchSettingsUpdateInput = z.infer<typeof driverDispatchSet
 export type DriverRateCardUpdateInput = z.infer<typeof driverRateCardUpdateSchema>;
 export type DriverLocationInput = z.infer<typeof driverLocationSchema>;
 export type UpdateRideStatusInput = z.infer<typeof updateRideStatusSchema>;
+export type DriverIdleLocationInput = z.infer<typeof driverIdleLocationSchema>;
 export type AdminUpdateRideInput = z.infer<typeof adminUpdateRideSchema>;
 export type AdminUpdateDriverApprovalInput = z.infer<typeof adminUpdateDriverApprovalSchema>;
 export type AdminReviewDriverDocumentInput = z.infer<typeof adminReviewDriverDocumentSchema>;
