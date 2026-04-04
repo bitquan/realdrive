@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { PageHero } from "@/components/layout/page-hero";
@@ -26,6 +26,14 @@ export function DriverLoginPage() {
     return <Navigate to="/driver" replace />;
   }
 
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (loginMutation.isPending || !email || !password) {
+      return;
+    }
+    loginMutation.mutate({ email, password });
+  }
+
   return (
     <div className="grid gap-5 md:gap-6 lg:grid-cols-[0.95fr_1.05fr]">
       <section className="rounded-[2rem] border border-brand-ink/10 bg-white/90 p-5 shadow-soft md:p-8">
@@ -51,7 +59,8 @@ export function DriverLoginPage() {
           <CardTitle>Access driver app</CardTitle>
           <CardDescription>Sign in with your approved driver account.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
+          <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label htmlFor="driverEmail">Email</Label>
             <Input
@@ -73,11 +82,7 @@ export function DriverLoginPage() {
             />
           </div>
           {loginMutation.error ? <p className="text-sm text-red-600">{loginMutation.error.message}</p> : null}
-          <Button
-            className="w-full"
-            disabled={loginMutation.isPending || !email || !password}
-            onClick={() => loginMutation.mutate({ email, password })}
-          >
+          <Button className="w-full" type="submit" disabled={loginMutation.isPending || !email || !password}>
             Sign in
           </Button>
           <p className="text-sm text-brand-ink/60">
@@ -86,6 +91,7 @@ export function DriverLoginPage() {
               Apply to drive
             </Link>
           </p>
+          </form>
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,14 @@ export function AdminLoginPage() {
     return <Navigate to="/admin/setup" replace />;
   }
 
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (loginMutation.isPending || !email || !password) {
+      return;
+    }
+    loginMutation.mutate({ email, password });
+  }
+
   return (
     <div className="mx-auto max-w-lg">
       <Card>
@@ -42,7 +50,8 @@ export function AdminLoginPage() {
           <CardTitle>Admin sign-in</CardTitle>
           <CardDescription>Use the admin account you created during the one-time setup.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
+          <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label htmlFor="adminEmail">Email</Label>
             <Input
@@ -64,13 +73,10 @@ export function AdminLoginPage() {
             />
           </div>
           {loginMutation.error ? <p className="text-sm text-red-600">{loginMutation.error.message}</p> : null}
-          <Button
-            className="w-full"
-            disabled={loginMutation.isPending || !email || !password}
-            onClick={() => loginMutation.mutate({ email, password })}
-          >
+          <Button className="w-full" type="submit" disabled={loginMutation.isPending || !email || !password}>
             Sign in
           </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
