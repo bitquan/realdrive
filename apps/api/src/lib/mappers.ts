@@ -480,6 +480,8 @@ function mapDriverDocumentReviewSummary(documents: DriverOnboardingDocument[]) {
 }
 
 export function mapSessionUser(user: UserWithDriver): SessionUser {
+  const acceptedPaymentMethods = user.driverProfile?.acceptedPaymentMethods?.map(fromDbPaymentMethod);
+
   return {
     id: user.id,
     role: fromDbRole(user.role),
@@ -494,7 +496,7 @@ export function mapSessionUser(user: UserWithDriver): SessionUser {
     pricingMode: user.driverProfile ? fromDbDriverPricingMode(user.driverProfile.pricingMode) : undefined,
     homeState: user.driverProfile?.homeState ?? undefined,
     homeCity: user.driverProfile?.homeCity ?? undefined,
-    acceptedPaymentMethods: user.driverProfile?.acceptedPaymentMethods.map(fromDbPaymentMethod) ?? undefined,
+    acceptedPaymentMethods,
     vehicle: mapVehicle(user.driverProfile?.vehicle)
   };
 }
@@ -590,7 +592,8 @@ export function mapDriverAccount(user: UserWithDriver): DriverAccount {
     pricingMode: fromDbDriverPricingMode(user.driverProfile.pricingMode),
     homeState: user.driverProfile.homeState,
     homeCity: user.driverProfile.homeCity,
-    acceptedPaymentMethods: user.driverProfile.acceptedPaymentMethods.map(fromDbPaymentMethod),
+    acceptedPaymentMethods:
+      user.driverProfile.acceptedPaymentMethods?.map(fromDbPaymentMethod) ?? ["jim", "cashapp", "cash"],
     dispatchSettings: mapDispatchSettings(user.driverProfile),
     customRates: (user.driverRateCards ?? []).map(mapDriverRateRule),
     documents,

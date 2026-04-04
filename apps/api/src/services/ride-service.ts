@@ -44,6 +44,10 @@ function isDriverPaymentCompatible(driver: { acceptedPaymentMethods?: PaymentMet
   return acceptedPaymentMethods.includes(method);
 }
 
+function getDriverAcceptedPaymentMethods(driver: { acceptedPaymentMethods?: PaymentMethod[] }) {
+  return driver.acceptedPaymentMethods?.length ? driver.acceptedPaymentMethods : ["jim", "cashapp", "cash"];
+}
+
 export function canTransitionRide(current: RideStatus, next: RideStatus): boolean {
   if (current === next) {
     return true;
@@ -193,8 +197,9 @@ export function createRideService(deps: {
       }
 
       if (!isDriverPaymentCompatible(driverAccount, accepted.payment.method)) {
+        const acceptedPaymentMethods = getDriverAcceptedPaymentMethods(driverAccount);
         throw new Error(
-          `Driver does not accept ${formatPaymentMethod(accepted.payment.method)}. Rider must choose one of: ${driverAccount.acceptedPaymentMethods
+          `Driver does not accept ${formatPaymentMethod(accepted.payment.method)}. Rider must choose one of: ${acceptedPaymentMethods
             .map(formatPaymentMethod)
             .join(", ")}.`
         );
