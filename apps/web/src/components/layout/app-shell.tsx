@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { CarFront, LogOut, Route, Shield, UserRound } from "lucide-react";
 import type { Role } from "@shared/contracts";
 import { Badge } from "@/components/ui/badge";
@@ -28,11 +28,17 @@ function actionClassName(variant: ShellAction["variant"] = "secondary") {
 export function AppShell() {
   const { user, logout, switchRole } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const frame = getShellFrame(location.pathname, user);
   const sections = getShellSections(user);
   const mobileItems = getMobileNavItems(user);
   const CurrentRoleIcon = user ? roleIcons[user.role] : UserRound;
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
+
+  function goToRole(role: Role) {
+    switchRole(role);
+    void navigate(role === "admin" ? "/admin" : role === "driver" ? "/driver" : "/rider/rides");
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-ops-bg text-ops-text">
@@ -130,19 +136,7 @@ export function AppShell() {
                 </Link>
 
                 <div className="flex shrink-0 items-center gap-2">
-                  {user?.roles.length && user.roles.length > 1 ? (
-                    <select
-                      className="h-9 max-w-[7rem] rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-3 text-xs font-semibold text-ops-text outline-none transition focus:border-ops-primary/45"
-                      value={user.role}
-                      onChange={(event) => switchRole(event.target.value as Role)}
-                    >
-                      {user.roles.map((role) => (
-                        <option key={role} value={role}>
-                          {roleLabel(role)}
-                        </option>
-                      ))}
-                    </select>
-                  ) : user ? (
+                  {user && user.roles.length <= 1 ? (
                     <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
                       {roleLabel(user.role)}
                     </Badge>
@@ -159,6 +153,32 @@ export function AppShell() {
                   ) : null}
                 </div>
               </div>
+
+              {user?.roles.length && user.roles.length > 1 ? (
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-0.5 lg:hidden">
+                  {user.roles.map((role) => {
+                    const Icon = roleIcons[role];
+                    const active = user.role === role;
+
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => goToRole(role)}
+                        className={cn(
+                          "inline-flex h-9 shrink-0 items-center rounded-2xl border px-3 text-xs font-semibold transition",
+                          active
+                            ? "border-ops-primary/40 bg-ops-primary/16 text-ops-text"
+                            : "border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] text-ops-muted hover:border-ops-primary/28 hover:text-ops-text"
+                        )}
+                      >
+                        <Icon className={cn("mr-2 h-3.5 w-3.5", active ? "text-ops-primary" : "text-ops-muted")} />
+                        {roleLabel(role)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
 
               {!mobileHeaderMinimal ? (
                 <div className="mt-2.5 lg:hidden">

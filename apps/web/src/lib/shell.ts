@@ -94,6 +94,7 @@ const driverItems: ShellNavItem[] = [
   {
     id: "driver-dashboard",
     label: "Dashboard",
+    shortLabel: "Driver",
     to: "/driver",
     icon: Route,
     matchPatterns: ["/driver", "/driver/rides/:rideId"],
@@ -323,7 +324,15 @@ export function getShellSections(user: SessionUser | null): ShellSection[] {
 
 export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
   if (user?.role === "admin") {
-    return [adminItems[0], adminItems[1], adminItems[2], sharedItems[0]].filter((item) => canRenderItem(item, user));
+    return [
+      adminItems[0],
+      userHasRole(user, "driver") ? driverItems[0] : null,
+      adminItems[1],
+      adminItems[2],
+      sharedItems[0]
+    ]
+      .filter((item): item is ShellNavItem => item !== null)
+      .filter((item) => canRenderItem(item, user));
   }
 
   if (user?.role === "driver") {
