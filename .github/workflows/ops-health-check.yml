@@ -1,0 +1,31 @@
+name: Ops Health Check
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run health checks
+        env:
+          OPS_HEALTH_ENDPOINTS: ${{ secrets.OPS_HEALTH_ENDPOINTS }}
+          OPS_TIMEOUT_MS: "10000"
+          OPS_CREATE_ISSUE_ON_FAILURE: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/ops/health-check.mjs
