@@ -1,10 +1,16 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { Clock3, CreditCard, Navigation, UserRound } from "lucide-react";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
+import {
+  BottomActionBar,
+  DataField,
+  MapPanel
+} from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { formatMoney } from "@/lib/utils";
@@ -100,43 +106,91 @@ export function DriverRidePage() {
   const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
 
   return (
-    <div className="grid gap-3.5 md:gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-      <DeferredLiveMap ride={ride} />
-      <Card className="shadow-elevated">
-        <CardHeader>
-          <CardTitle>Trip workflow</CardTitle>
-          <CardDescription>Move the ride through the trip lifecycle and keep location updates flowing.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3.5 md:space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xl font-bold">{ride.rider.name}</p>
+    <div className="space-y-4 md:space-y-6">
+      <div className="grid gap-4 xl:grid-cols-[1.16fr_0.84fr]">
+        <DeferredLiveMap
+          ride={ride}
+          title="Driver route"
+          height={460}
+          meta="Pickup, dropoff, and driver position update from the live workflow screen."
+        />
+
+        <MapPanel
+          title="Trip workflow"
+          meta="Advance the ride through the real driver lifecycle and keep location updates flowing."
+          footer={
+            <div className="grid gap-3 md:grid-cols-3">
+              <DataField label="Customer total" value={formatMoney(customerTotal)} />
+              <DataField label="Driver subtotal" value={formatMoney(subtotal)} />
+              <DataField label="Platform due" value={formatMoney(platformDue)} />
+            </div>
+          }
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Driver trip</p>
+              <h2 className="mt-2 text-[2rem] font-extrabold tracking-[-0.04em] text-ops-text">{ride.rider.name}</h2>
+              <p className="mt-2 text-sm text-ops-muted">{ride.status.replaceAll("_", " ")}</p>
+            </div>
             <Badge>{ride.status.replaceAll("_", " ")}</Badge>
           </div>
-          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Pickup</p>
-            <p className="font-semibold">{ride.pickup.address}</p>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <DataField label="Pickup" value={ride.pickup.address} />
+            <DataField label="Dropoff" value={ride.dropoff.address} />
+            <DataField label="Ride type" value={ride.rideType} />
+            <DataField label="Route size" value={`${ride.estimatedMiles} miles`} subtle={`${ride.estimatedMinutes} minutes`} />
           </div>
-          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Dropoff</p>
-            <p className="font-semibold">{ride.dropoff.address}</p>
-          </div>
-          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
-            <p className="text-2xl font-extrabold">{formatMoney(customerTotal)}</p>
-            <p className="mt-2 text-sm text-ops-muted">Driver subtotal: {formatMoney(subtotal)}</p>
-            <p className="text-sm text-ops-muted">Platform due: {formatMoney(platformDue)}</p>
-          </div>
-          {nextStatus ? (
-            <Button className="w-full" onClick={() => statusMutation.mutate(nextStatus)}>
-              Mark as {nextStatus.replaceAll("_", " ")}
-            </Button>
-          ) : (
-            <div className="rounded-4xl border border-dashed border-ops-border p-4 text-sm text-ops-muted">
-              This ride has reached the end of the driver workflow.
+
+          <div className="grid gap-3">
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <UserRound className="h-4 w-4" />
+                Rider
+              </div>
+              <p className="font-semibold text-ops-text">{ride.rider.name}</p>
+              <p className="mt-1 text-sm text-ops-muted">{ride.rider.phone ?? "No rider phone available"}</p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <Clock3 className="h-4 w-4" />
+                Timing
+              </div>
+              <p className="font-semibold text-ops-text">{ride.scheduledFor ?? ride.requestedAt ? new Date(ride.scheduledFor ?? ride.requestedAt!).toLocaleString() : "Now"}</p>
+              <p className="mt-1 text-sm text-ops-muted">Keep this page open while the ride is active so live status stays current.</p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <CreditCard className="h-4 w-4" />
+                Payout snapshot
+              </div>
+              <p className="font-semibold text-ops-text">{formatMoney(customerTotal)}</p>
+              <p className="mt-1 text-sm text-ops-muted">Driver subtotal {formatMoney(subtotal)} · platform due {formatMoney(platformDue)}</p>
+            </div>
+          </div>
+        </MapPanel>
+      </div>
+
+      <BottomActionBar>
+        <Link
+          to="/driver"
+          className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+        >
+          Back to dashboard
+        </Link>
+        {nextStatus ? (
+          <Button className="h-11" onClick={() => statusMutation.mutate(nextStatus)}>
+            <Navigation className="mr-2 h-4 w-4" />
+            Mark as {nextStatus.replaceAll("_", " ")}
+          </Button>
+        ) : (
+          <div className="inline-flex h-11 items-center rounded-2xl border border-dashed border-ops-border px-4 text-sm text-ops-muted">
+            This ride has reached the end of the workflow.
+          </div>
+        )}
+      </BottomActionBar>
     </div>
   );
 }

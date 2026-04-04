@@ -6,20 +6,26 @@
   color-scheme: dark;
   font-family: "Sora", ui-sans-serif, system-ui;
   background:
-    radial-gradient(circle at top left, rgba(47, 129, 247, 0.14), transparent 35%),
-    radial-gradient(circle at 85% 0%, rgba(20, 34, 55, 0.5), transparent 42%),
-    linear-gradient(180deg, #090d14 0%, #070b12 100%);
-  color: #e5ecf6;
+    radial-gradient(circle at top left, rgba(90, 124, 255, 0.14), transparent 24%),
+    radial-gradient(circle at 82% -8%, rgba(65, 89, 155, 0.18), transparent 28%),
+    linear-gradient(180deg, #06080d 0%, #05070b 100%);
+  color: #f2f5fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #080b12;
-  color: #e5ecf6;
-  letter-spacing: 0.008em;
-  line-height: 1.42;
+  background:
+    radial-gradient(circle at top, rgba(90, 124, 255, 0.08), transparent 20%),
+    linear-gradient(180deg, #06080d 0%, #05070b 100%);
+  color: #f2f5fb;
+  letter-spacing: 0.002em;
+  line-height: 1.48;
 }
 
 #root {
@@ -32,4 +38,36 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(90, 124, 255, 0.28);
+  color: #f8fbff;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(12, 15, 21, 0.92);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(12, 15, 21, 0.92);
+  border-radius: 9999px;
+  background: rgba(154, 163, 178, 0.18);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(154, 163, 178, 0.3);
 }

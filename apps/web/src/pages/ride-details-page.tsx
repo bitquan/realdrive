@@ -1,12 +1,18 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { Clock3, CreditCard, Phone, User } from "lucide-react";
+import { Clock3, CreditCard, Phone, User, Vote } from "lucide-react";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
+import {
+  BottomActionBar,
+  DataField,
+  MapPanel,
+  PanelSection
+} from "@/components/layout/ops-layout";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { formatDateTime, formatMoney } from "@/lib/utils";
@@ -71,89 +77,110 @@ export function RideDetailsPage() {
 
   const ride = rideQuery.data;
   const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
+  const isMutable = ride.status !== "completed" && ride.status !== "canceled";
 
   return (
-    <div className="grid gap-3.5 md:gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-      <DeferredLiveMap ride={ride} />
+    <div className="space-y-4 md:space-y-6">
+      <div className="grid gap-4 xl:grid-cols-[1.16fr_0.84fr]">
+        <DeferredLiveMap
+          ride={ride}
+          title="Ride route"
+          height={460}
+          meta="Pickup, dropoff, and driver position stay tied to the live trip state."
+        />
 
-      <div className="space-y-3.5 md:space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ride status</CardTitle>
-            <CardDescription>Live updates appear here as your driver progresses through the trip.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+        <MapPanel
+          title="Rider trip panel"
+          meta="This is the real trip state, payment status, and driver assignment for your ride."
+          footer={
+            <div className="grid gap-3 md:grid-cols-3">
+              <DataField label="Current stage" value={ride.status.replaceAll("_", " ")} />
+              <DataField label="All-in total" value={formatMoney(customerTotal)} />
+              <DataField label="Estimated route" value={`${ride.estimatedMiles} miles`} subtle={`${ride.estimatedMinutes} minutes`} />
+            </div>
+          }
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Rider ride</p>
+              <h2 className="mt-2 text-[2rem] font-extrabold tracking-[-0.04em] text-ops-text">{ride.rider.name}</h2>
+              <p className="mt-2 text-sm text-ops-muted">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
+            </div>
+            <div className="text-right">
               <Badge>{ride.status.replaceAll("_", " ")}</Badge>
-              <p className="text-lg font-bold text-ops-text">{formatMoney(customerTotal)}</p>
+              <p className="mt-3 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{formatMoney(customerTotal)}</p>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Pickup</p>
-                <p className="mt-2 font-semibold">{ride.pickup.address}</p>
-              </div>
-              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Dropoff</p>
-                <p className="mt-2 font-semibold">{ride.dropoff.address}</p>
-              </div>
-            </div>
-            <div className="grid gap-3">
-              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                  <User className="h-4 w-4" />
-                  Driver
-                </div>
-                <p className="font-semibold">{ride.driver?.name ?? "Waiting for assignment"}</p>
-                <p className="text-sm text-ops-muted">{ride.driver?.vehicle?.makeModel ?? "Dispatching nearby drivers"}</p>
-              </div>
-              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                  <Clock3 className="h-4 w-4" />
-                  Requested
-                </div>
-                <p className="font-semibold">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
-                <p className="text-sm text-ops-muted">
-                  {ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes
-                </p>
-              </div>
-              <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                  <CreditCard className="h-4 w-4" />
-                  Payment
-                </div>
-                <p className="font-semibold">{ride.payment.method}</p>
-                <p className="text-sm text-ops-muted">Status: {ride.payment.status}</p>
-                <p className="text-sm text-ops-muted/80">All-in total: {formatMoney(customerTotal)}</p>
-              </div>
-            </div>
-            {ride.status !== "completed" && ride.status !== "canceled" ? (
-              <Button variant="outline" className="w-full border-ops-destructive/35 text-ops-destructive hover:bg-ops-destructive/10" onClick={() => cancelMutation.mutate()}>
-                <Phone className="mr-2 h-4 w-4" />
-                Cancel ride
-              </Button>
-            ) : null}
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Community board</CardTitle>
-            <CardDescription>
-              Riders can read proposals now and unlock posting, voting, and comments after 51 completed rides.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/40 p-4 text-sm text-ops-muted">
-              {communityQuery.data?.eligibility.reason ?? "You can open the community board from this rider account."}
+          <div className="grid gap-3 md:grid-cols-2">
+            <DataField label="Pickup" value={ride.pickup.address} />
+            <DataField label="Dropoff" value={ride.dropoff.address} />
+            <DataField
+              label="Driver"
+              value={ride.driver?.name ?? "Waiting for assignment"}
+              subtle={ride.driver?.vehicle?.makeModel ?? "Dispatching nearby drivers"}
+            />
+            <DataField
+              label="Payment"
+              value={ride.payment.method}
+              subtle={`Status: ${ride.payment.status}`}
+            />
+          </div>
+
+          <div className="grid gap-3">
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <User className="h-4 w-4" />
+                Driver contact
+              </div>
+              <p className="font-semibold text-ops-text">{ride.driver?.name ?? "Waiting for assignment"}</p>
+              <p className="mt-1 text-sm text-ops-muted">{ride.driver?.vehicle?.makeModel ?? "No vehicle assigned yet"}</p>
+              {ride.driver?.phone ? (
+                <p className="mt-2 flex items-center gap-2 text-sm text-ops-muted">
+                  <Phone className="h-4 w-4" />
+                  {ride.driver.phone}
+                </p>
+              ) : null}
             </div>
+
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <Clock3 className="h-4 w-4" />
+                Trip timing
+              </div>
+              <p className="font-semibold text-ops-text">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
+              <p className="mt-1 text-sm text-ops-muted">Updates refresh live as dispatch and driver status change.</p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <CreditCard className="h-4 w-4" />
+                Payment note
+              </div>
+              <p className="font-semibold text-ops-text">{ride.payment.method}</p>
+              <p className="mt-1 text-sm text-ops-muted">
+                Collected outside the app · {ride.payment.status}
+              </p>
+            </div>
+          </div>
+        </MapPanel>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[0.72fr_0.28fr]">
+        <PanelSection title="Community board" description="Riders can read proposals now and unlock posting, voting, and comments after 51 completed rides.">
+          <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm leading-6 text-ops-muted">
+            {communityQuery.data?.eligibility.reason ?? "You can open the community board from this rider account."}
+          </div>
+          <div className="mt-4">
             <Link
               to="/community"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3b8fff]"
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-primary/45 bg-ops-primary px-4 text-sm font-semibold text-white transition hover:bg-[#6887ff]"
             >
+              <Vote className="mr-2 h-4 w-4" />
               Open community board
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </PanelSection>
 
         {shareQuery.data ? (
           <ShareQrCard
@@ -165,6 +192,24 @@ export function RideDetailsPage() {
           />
         ) : null}
       </div>
+
+      <BottomActionBar>
+        <Link
+          to="/rider/rides"
+          className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+        >
+          Back to my rides
+        </Link>
+        {isMutable ? (
+          <Button
+            variant="ghost"
+            className="h-11 border border-ops-destructive/28 text-ops-destructive hover:bg-ops-destructive/10 hover:text-ops-destructive"
+            onClick={() => cancelMutation.mutate()}
+          >
+            Cancel ride
+          </Button>
+        ) : null}
+      </BottomActionBar>
     </div>
   );
 }

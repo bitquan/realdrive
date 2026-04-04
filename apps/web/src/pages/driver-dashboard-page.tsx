@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DriverDispatchSettings, Ride, RideType } from "@shared/contracts";
 import { Link } from "react-router-dom";
+import { BellRing, CarFront, CreditCard, MessageSquare } from "lucide-react";
+import { MetricCard, MetricStrip, SurfaceHeader } from "@/components/layout/ops-layout";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -252,27 +254,23 @@ export function DriverDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Driver dashboard</CardTitle>
-          <CardDescription>
-            Go available, accept work, manage your market settings, and stay current on platform dues.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-lg font-semibold">{profileQuery.data?.name}</p>
-                <Badge>{profileQuery.data?.pricingMode === "custom" ? "custom rates" : "platform rates"}</Badge>
-                {suspended ? <Badge className="border-red-200 bg-red-50 text-red-700">dues overdue</Badge> : null}
-              </div>
-              <p className="text-sm text-ops-muted">
+      <SurfaceHeader
+        eyebrow="Driver operations"
+        title={profileQuery.data?.name ? `${profileQuery.data.name} driver desk` : "Driver desk"}
+        description="Go available, accept real work, manage your dispatch footprint, and keep platform dues from interrupting the live flow."
+        aside={
+          <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge>{profileQuery.data?.pricingMode === "custom" ? "custom rates" : "platform rates"}</Badge>
+              {suspended ? <Badge className="border-ops-destructive/28 bg-ops-destructive/10 text-ops-destructive">dues overdue</Badge> : null}
+            </div>
+            <div className="mt-4 space-y-2 text-sm leading-6 text-ops-muted">
+              <p>
                 {profileQuery.data?.homeCity && profileQuery.data?.homeState
                   ? `${profileQuery.data.homeCity}, ${profileQuery.data.homeState}`
                   : profileQuery.data?.vehicle?.makeModel ?? "Vehicle pending"}
               </p>
-              <p className="text-sm text-ops-muted/80">
+              <p>
                 {dispatchForm.localEnabled ? `Local ${dispatchForm.localRadiusMiles} mi` : "Local off"} ·{" "}
                 {dispatchForm.serviceAreaEnabled
                   ? `States ${dispatchForm.serviceAreaStates.join(", ") || serviceAreaText || "none"}`
@@ -280,49 +278,31 @@ export function DriverDashboardPage() {
                 · {dispatchForm.nationwideEnabled ? "Nationwide on" : "Nationwide off"}
               </p>
             </div>
-            <Button
-              variant={profileQuery.data?.available ? "default" : "outline"}
-              disabled={availabilityMutation.isPending || (!profileQuery.data?.available && suspended)}
-              onClick={() => availabilityMutation.mutate(!profileQuery.data?.available)}
-            >
-              {profileQuery.data?.available ? "Set offline" : suspended ? "Clear dues to go available" : "Go available"}
-            </Button>
-          </div>
-          {suspended ? (
-            <div className="rounded-4xl border border-amber-500/20 bg-amber-50 p-4 text-sm text-amber-800">
-              You have overdue platform dues. New offers and availability are blocked until an admin marks those dues
-              paid or waived.
+            <div className="mt-5">
+              <Button
+                variant={profileQuery.data?.available ? "default" : "outline"}
+                disabled={availabilityMutation.isPending || (!profileQuery.data?.available && suspended)}
+                onClick={() => availabilityMutation.mutate(!profileQuery.data?.available)}
+              >
+                {profileQuery.data?.available ? "Set offline" : suspended ? "Clear dues to go available" : "Go available"}
+              </Button>
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
+          </div>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Incoming offers</p>
-            <p className="mt-2 text-3xl font-extrabold">{offersQuery.data?.length ?? 0}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Active rides</p>
-            <p className="mt-2 text-3xl font-extrabold">{activeRidesQuery.data?.length ?? 0}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Outstanding dues</p>
-            <p className="mt-2 text-3xl font-extrabold">{formatMoney(duesQuery.data?.outstandingTotal ?? 0)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Community access</p>
-            <p className="mt-2 text-3xl font-extrabold">{community?.eligibility.canVote ? "Full" : "Read"}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {suspended ? (
+        <div className="rounded-[1.45rem] border border-ops-destructive/28 bg-ops-destructive/10 p-4 text-sm text-ops-text">
+          You have overdue platform dues. New offers and availability are blocked until an admin marks those dues paid or waived.
+        </div>
+      ) : null}
+
+      <MetricStrip>
+        <MetricCard label="Incoming offers" value={offersQuery.data?.length ?? 0} meta="First accepted offer wins" icon={BellRing} />
+        <MetricCard label="Active rides" value={activeRidesQuery.data?.length ?? 0} meta="Trips currently in your workflow" icon={CarFront} tone="primary" />
+        <MetricCard label="Outstanding dues" value={formatMoney(duesQuery.data?.outstandingTotal ?? 0)} meta="Manual 5% due balance" icon={CreditCard} tone="warning" />
+        <MetricCard label="Community access" value={community?.eligibility.canVote ? "Full" : "Read"} meta="Posting and voting state" icon={MessageSquare} />
+      </MetricStrip>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>

@@ -13,28 +13,30 @@ export default {
           mist: "#1e293b"
         },
         ops: {
-          bg: "#080b12",
-          surface: "#0f1623",
-          panel: "#151f31",
-          border: "#243247",
-          "border-soft": "#1b2638",
-          text: "#e5ecf6",
-          muted: "#90a0b8",
-          primary: "#2f81f7",
-          destructive: "#e55263",
-          success: "#2fbc7d",
-          warning: "#d4a64e",
-          error: "#e55263"
+          bg: "#05070b",
+          surface: "#0a0d12",
+          panel: "#11151d",
+          rail: "#090c11",
+          border: "#262b35",
+          "border-soft": "#1a1f28",
+          text: "#f2f5fb",
+          muted: "#9aa3b2",
+          primary: "#5a7cff",
+          destructive: "#ff5f62",
+          success: "#40d09a",
+          warning: "#f5b244",
+          error: "#ff5f62"
         }
       },
       boxShadow: {
-        soft: "0 24px 56px -34px rgba(4, 10, 18, 0.9)",
-        panel: "0 18px 44px -28px rgba(5, 11, 20, 0.95)",
-        elevated: "0 26px 70px -40px rgba(0, 0, 0, 0.95)",
-        glow: "0 0 0 1px rgba(47,129,247,0.20), 0 10px 38px -26px rgba(47,129,247,0.65)"
+        soft: "0 18px 50px -36px rgba(0, 0, 0, 0.85)",
+        panel: "0 24px 80px -48px rgba(0, 0, 0, 0.95)",
+        elevated: "0 32px 120px -64px rgba(0, 0, 0, 1)",
+        glow: "0 0 0 1px rgba(90,124,255,0.24), 0 18px 50px -34px rgba(90,124,255,0.55)"
       },
       borderRadius: {
-        "4xl": "1.5rem"
+        "4xl": "1.5rem",
+        "5xl": "2rem"
       },
       fontFamily: {
         sans: ["'Sora'", "'Inter'", "ui-sans-serif", "system-ui"]

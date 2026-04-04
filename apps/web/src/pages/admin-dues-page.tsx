@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, CreditCard, Landmark, Wallet } from "lucide-react";
 import type { DuePaymentMethod, PlatformDue } from "@shared/contracts";
+import {
+  DataField,
+  EntityList,
+  MetricCard,
+  MetricStrip,
+  PanelSection,
+  SurfaceHeader
+} from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
@@ -47,32 +55,32 @@ function DueEditor({
   });
 
   return (
-    <div className="rounded-4xl border border-ops-border-soft p-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="rounded-[1.6rem] border border-ops-border-soft/90 bg-ops-surface/72 p-5">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-semibold">{due.driver.name}</p>
-            <Badge className={due.status === "overdue" ? "border-red-200 bg-red-50 text-red-700" : undefined}>
+            <p className="font-semibold text-ops-text">{due.driver.name}</p>
+            <Badge className={due.status === "overdue" ? "border-ops-destructive/28 bg-ops-destructive/10 text-ops-destructive" : undefined}>
               {due.status}
             </Badge>
           </div>
           <p className="text-sm text-ops-muted">{due.driver.email ?? due.driver.phone ?? "No contact set"}</p>
           <p className="text-sm text-ops-muted">{due.ride.pickupAddress}</p>
           <p className="text-sm text-ops-muted">{due.ride.dropoffAddress}</p>
-          <p className="text-sm text-ops-muted/80">Due by {formatDateTime(due.dueAt)}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-ops-muted">Due by {formatDateTime(due.dueAt)}</p>
         </div>
-        <div className="text-left md:text-right">
-          <p className="font-semibold">{formatMoney(due.amount)}</p>
-          <p className="text-sm text-ops-muted">Driver subtotal: {formatMoney(due.ride.subtotal)}</p>
-          <p className="text-sm text-ops-muted/80">Customer total: {formatMoney(due.ride.customerTotal)}</p>
+        <div className="grid gap-3 sm:grid-cols-3 xl:w-[24rem]">
+          <DataField label="Due amount" value={formatMoney(due.amount)} />
+          <DataField label="Ride subtotal" value={formatMoney(due.ride.subtotal)} />
+          <DataField label="Customer total" value={formatMoney(due.ride.customerTotal)} />
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[0.8fr_0.8fr_1.4fr_auto]">
+      <div className="mt-5 grid gap-4 xl:grid-cols-[0.85fr_0.85fr_1.4fr_auto]">
         <div className="space-y-2">
           <Label>Status</Label>
           <select
-            className="h-11 w-full rounded-2xl border border-ops-border bg-ops-surface px-4 text-sm"
+            className="h-11 w-full rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 text-sm text-ops-text outline-none transition focus:border-ops-primary/70"
             value={status}
             onChange={(event) => setStatus(event.target.value as "pending" | "paid" | "waived")}
           >
@@ -84,7 +92,7 @@ function DueEditor({
         <div className="space-y-2">
           <Label>Payment method</Label>
           <select
-            className="h-11 w-full rounded-2xl border border-ops-border bg-ops-surface px-4 text-sm"
+            className="h-11 w-full rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 text-sm text-ops-text outline-none transition focus:border-ops-primary/70"
             value={paymentMethod}
             onChange={(event) => setPaymentMethod(event.target.value as DuePaymentMethod)}
           >
@@ -165,161 +173,149 @@ export function AdminDuesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Outstanding dues</p>
-            <p className="mt-2 text-3xl font-extrabold">{formatMoney(outstandingTotal)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Open dues</p>
-            <p className="mt-2 text-3xl font-extrabold">{outstanding.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Overdue drivers</p>
-            <p className="mt-2 text-3xl font-extrabold">{overdueDrivers.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-ops-muted">Resolved dues</p>
-            <p className="mt-2 text-3xl font-extrabold">{history.length}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <SurfaceHeader
+        eyebrow="Finance queue"
+        title="Keep dues and payout instructions tied to real driver accounts"
+        description="This surface manages the live manual 5% due workflow. Drivers see these settings directly and overdue accounts affect dispatch in real time."
+        aside={
+          <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Current posture</p>
+            <p className="mt-4 text-sm leading-6 text-ops-muted">
+              Outstanding dues, payout instructions, and overdue driver status all stay inside the same queue so finance changes do not drift away from dispatch behavior.
+            </p>
+          </div>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Platform payout instructions</CardTitle>
-          <CardDescription>Drivers see these instructions in their dues area when they need to send the 5% platform due.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Cash App handle</Label>
-            <Input
-              value={payoutForm.cashAppHandle}
-              onChange={(event) => setPayoutForm((current) => ({ ...current, cashAppHandle: event.target.value }))}
-              placeholder="$realdrive"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Zelle handle</Label>
-            <Input
-              value={payoutForm.zelleHandle}
-              onChange={(event) => setPayoutForm((current) => ({ ...current, zelleHandle: event.target.value }))}
-              placeholder="you@example.com"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Jim handle</Label>
-            <Input
-              value={payoutForm.jimHandle}
-              onChange={(event) => setPayoutForm((current) => ({ ...current, jimHandle: event.target.value }))}
-              placeholder="@jim-handle"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Cash instructions</Label>
-            <Input
-              value={payoutForm.cashInstructions}
-              onChange={(event) => setPayoutForm((current) => ({ ...current, cashInstructions: event.target.value }))}
-              placeholder="Meet in person, text first"
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Other instructions</Label>
-            <Input
-              value={payoutForm.otherInstructions}
-              onChange={(event) => setPayoutForm((current) => ({ ...current, otherInstructions: event.target.value }))}
-              placeholder="Anything drivers should know about manual dues payment"
-            />
-          </div>
-          {payoutMutation.error ? <p className="text-sm text-ops-error md:col-span-2">{payoutMutation.error.message}</p> : null}
-          <div className="md:col-span-2">
-            <Button onClick={() => payoutMutation.mutate()}>Save payout settings</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <MetricStrip>
+        <MetricCard label="Outstanding dues" value={formatMoney(outstandingTotal)} meta="Pending and overdue combined" icon={Wallet} tone="warning" />
+        <MetricCard label="Open dues" value={outstanding.length} meta="Editable finance records" icon={CreditCard} />
+        <MetricCard label="Overdue drivers" value={overdueDrivers.length} meta="Currently blocked from new dispatch" icon={AlertTriangle} tone="danger" />
+        <MetricCard label="Resolved history" value={history.length} meta="Paid or waived dues on record" icon={Landmark} tone="success" />
+      </MetricStrip>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Overdue drivers</CardTitle>
-          <CardDescription>These drivers are blocked from new dispatch until all overdue dues are cleared.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {overdueDrivers.length ? (
-            overdueDrivers.map((driver) => (
-              <div key={driver.driverId} className="rounded-4xl border border-ops-border-soft p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-semibold">{driver.name}</p>
-                    <p className="text-sm text-ops-muted">{driver.email ?? driver.phone ?? "No contact set"}</p>
-                  </div>
-                  <Badge className="border-red-200 bg-red-50 text-red-700">{driver.overdueCount} overdue</Badge>
-                </div>
-                <p className="mt-3 text-sm text-ops-muted">Overdue amount: {formatMoney(driver.overdueAmount)}</p>
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="space-y-6">
+          <PanelSection title="Payout instructions" description="Drivers see these instructions inside their live dues surface.">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Cash App handle</Label>
+                <Input
+                  value={payoutForm.cashAppHandle}
+                  onChange={(event) => setPayoutForm((current) => ({ ...current, cashAppHandle: event.target.value }))}
+                  placeholder="$realdrive"
+                />
               </div>
-            ))
-          ) : (
-            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
-              No overdue drivers right now.
+              <div className="space-y-2">
+                <Label>Zelle handle</Label>
+                <Input
+                  value={payoutForm.zelleHandle}
+                  onChange={(event) => setPayoutForm((current) => ({ ...current, zelleHandle: event.target.value }))}
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Jim handle</Label>
+                <Input
+                  value={payoutForm.jimHandle}
+                  onChange={(event) => setPayoutForm((current) => ({ ...current, jimHandle: event.target.value }))}
+                  placeholder="@jim-handle"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Cash instructions</Label>
+                <Input
+                  value={payoutForm.cashInstructions}
+                  onChange={(event) => setPayoutForm((current) => ({ ...current, cashInstructions: event.target.value }))}
+                  placeholder="Meet in person, text first"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Other instructions</Label>
+                <Input
+                  value={payoutForm.otherInstructions}
+                  onChange={(event) => setPayoutForm((current) => ({ ...current, otherInstructions: event.target.value }))}
+                  placeholder="Anything drivers should know about manual dues payment"
+                />
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Outstanding dues</CardTitle>
-          <CardDescription>Mark dues paid, waived, or back to pending after reviewing manual payment proof.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {outstanding.length ? (
-            outstanding.map((due) => <DueEditor key={due.id} due={due} token={token!} />)
-          ) : (
-            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
-              No outstanding dues right now.
+            {payoutMutation.error ? <p className="mt-4 text-sm text-ops-error">{payoutMutation.error.message}</p> : null}
+            <div className="mt-5">
+              <Button onClick={() => payoutMutation.mutate()}>Save payout settings</Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </PanelSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Resolved history</CardTitle>
-          <CardDescription>Paid and waived dues stay here as the finance audit trail.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {history.length ? (
-            history.map((due) => (
-              <div key={due.id} className="rounded-4xl border border-ops-border-soft p-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{due.driver.name}</p>
-                      <Badge>{due.status}</Badge>
+          <PanelSection title="Overdue drivers" description="These drivers are blocked from new dispatch until overdue dues are cleared.">
+            <EntityList>
+              {overdueDrivers.length ? (
+                overdueDrivers.map((driver) => (
+                  <div key={driver.driverId} className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-ops-text">{driver.name}</p>
+                          <Badge className="border-ops-destructive/28 bg-ops-destructive/10 text-ops-destructive">
+                            {driver.overdueCount} overdue
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-ops-muted">{driver.email ?? driver.phone ?? "No contact set"}</p>
+                      </div>
+                      <p className="font-semibold text-ops-text">{formatMoney(driver.overdueAmount)}</p>
                     </div>
-                    <p className="text-sm text-ops-muted">{due.ride.riderName}</p>
-                    <p className="text-sm text-ops-muted/80">
-                      {due.paymentMethod ? `Method: ${due.paymentMethod}` : "No payment method recorded"} · Updated{" "}
-                      {formatDateTime(due.updatedAt)}
-                    </p>
                   </div>
-                  <p className="font-semibold">{formatMoney(due.amount)}</p>
+                ))
+              ) : (
+                <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
+                  No overdue drivers right now.
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
-              Paid or waived dues will appear here.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </EntityList>
+          </PanelSection>
+        </div>
+
+        <div className="space-y-6">
+          <PanelSection title="Outstanding dues" description="Mark dues paid, waived, or back to pending after reviewing manual payment proof.">
+            <EntityList>
+              {outstanding.length ? (
+                outstanding.map((due) => <DueEditor key={due.id} due={due} token={token!} />)
+              ) : (
+                <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
+                  No outstanding dues right now.
+                </div>
+              )}
+            </EntityList>
+          </PanelSection>
+
+          <PanelSection title="Resolved history" description="Paid and waived dues stay here as the finance audit trail.">
+            <EntityList>
+              {history.length ? (
+                history.map((due) => (
+                  <div key={due.id} className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-ops-text">{due.driver.name}</p>
+                          <Badge>{due.status}</Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-ops-muted">{due.ride.riderName}</p>
+                        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
+                          {due.paymentMethod ? `Method: ${due.paymentMethod}` : "No payment method recorded"} · Updated{" "}
+                          {formatDateTime(due.updatedAt)}
+                        </p>
+                      </div>
+                      <p className="font-semibold text-ops-text">{formatMoney(due.amount)}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
+                  Paid or waived dues will appear here.
+                </div>
+              )}
+            </EntityList>
+          </PanelSection>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { CalendarClock, ChevronRight } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarClock, Route } from "lucide-react";
+import { ListRowLink, MetricCard, MetricStrip, PanelSection, SurfaceHeader } from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/utils";
@@ -14,42 +13,52 @@ export function RideHistoryPage() {
     queryFn: () => api.listRiderRides(token!)
   });
 
+  const rides = ridesQuery.data ?? [];
+  const activeCount = rides.filter((ride) => ["requested", "scheduled", "offered", "accepted", "en_route", "arrived", "in_progress"].includes(ride.status)).length;
+  const completedCount = rides.filter((ride) => ride.status === "completed").length;
+  const totalSpend = rides.reduce((total, ride) => total + ride.payment.amountDue, 0);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your rides</CardTitle>
-        <CardDescription>Review active, scheduled, and completed trips.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {ridesQuery.data?.map((ride) => (
-          <Link
-            key={ride.id}
-            to={`/rider/rides/${ride.id}`}
-            className="flex items-center justify-between rounded-4xl border border-ops-border-soft bg-ops-panel/40 p-4 transition hover:bg-ops-panel"
-          >
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold">{ride.pickup.address}</p>
-                <ChevronRight className="h-4 w-4 text-ops-muted/80" />
-                <p className="font-semibold">{ride.dropoff.address}</p>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-ops-muted">
-                <CalendarClock className="h-4 w-4" />
-                {formatDateTime(ride.scheduledFor ?? ride.requestedAt)}
-              </div>
+    <div className="space-y-6">
+      <SurfaceHeader
+        eyebrow="Rider history"
+        title="Open every trip from one rider queue"
+        description="This page stays focused on real rides only: active, scheduled, completed, and canceled trips that already exist in your account."
+      />
+
+      <MetricStrip>
+        <MetricCard label="Total rides" value={rides.length} meta="Trip records on this account" icon={Route} />
+        <MetricCard label="Active or scheduled" value={activeCount} meta="Trips still in motion or waiting" icon={CalendarClock} tone="primary" />
+        <MetricCard label="Completed" value={completedCount} meta="Finished rider trips" icon={Route} tone="success" />
+        <MetricCard label="Total spend" value={formatMoney(totalSpend)} meta="All recorded ride totals" icon={Route} />
+      </MetricStrip>
+
+      <PanelSection title="Ride queue" description="Tap into any ride to open the live detail panel and trip map.">
+        <div className="space-y-3">
+          {rides.length ? (
+            rides.map((ride) => (
+              <ListRowLink
+                key={ride.id}
+                to={`/rider/rides/${ride.id}`}
+                title={
+                  <>
+                    {ride.pickup.address}
+                    <span className="mx-2 text-ops-muted">to</span>
+                    {ride.dropoff.address}
+                  </>
+                }
+                description={formatDateTime(ride.scheduledFor ?? ride.requestedAt)}
+                badge={<Badge>{ride.status.replaceAll("_", " ")}</Badge>}
+                meta={formatMoney(ride.payment.amountDue)}
+              />
+            ))
+          ) : (
+            <div className="rounded-[1.45rem] border border-dashed border-ops-border p-8 text-center text-sm text-ops-muted">
+              No rides yet. Book your first trip from the rider home page.
             </div>
-            <div className="text-right">
-              <Badge>{ride.status.replaceAll("_", " ")}</Badge>
-              <p className="mt-2 text-sm font-semibold">{formatMoney(ride.payment.amountDue)}</p>
-            </div>
-          </Link>
-        ))}
-        {!ridesQuery.data?.length ? (
-          <div className="rounded-4xl border border-dashed border-ops-border p-8 text-center text-sm text-ops-muted">
-            No rides yet. Book your first trip from the rider home page.
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+          )}
+        </div>
+      </PanelSection>
+    </div>
   );
 }

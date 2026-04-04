@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Map, { Marker } from "react-map-gl/mapbox";
 import { MapPin, Navigation } from "lucide-react";
 import type { Ride } from "@shared/contracts";
@@ -13,14 +14,25 @@ function midpoint(ride: Ride) {
   };
 }
 
-export function LiveMap({ ride }: { ride: Ride }) {
+export function LiveMap({
+  ride,
+  title = "Live trip map",
+  height = 360,
+  meta
+}: {
+  ride: Ride;
+  title?: string;
+  height?: number;
+  meta?: ReactNode;
+}) {
   const center = midpoint(ride);
 
   if (!MAPBOX_TOKEN) {
     return (
       <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>Live trip map</CardTitle>
+          <CardTitle>{title}</CardTitle>
+          {meta ? <p className="mt-2 text-sm text-ops-muted">{meta}</p> : null}
         </CardHeader>
         <CardContent>
           <div className="rounded-3xl border border-dashed border-ops-border bg-ops-panel p-6 text-sm text-ops-muted">
@@ -50,7 +62,8 @@ export function LiveMap({ ride }: { ride: Ride }) {
   return (
     <Card className="overflow-hidden">
       <CardHeader>
-        <CardTitle>Live trip map</CardTitle>
+        <CardTitle>{title}</CardTitle>
+        {meta ? <p className="mt-2 text-sm text-ops-muted">{meta}</p> : null}
       </CardHeader>
       <CardContent>
         <div className="overflow-hidden rounded-3xl">
@@ -59,7 +72,7 @@ export function LiveMap({ ride }: { ride: Ride }) {
               ...center,
               zoom: 11
             }}
-            style={{ width: "100%", height: 360 }}
+            style={{ width: "100%", height }}
             mapStyle="mapbox://styles/mapbox/dark-v11"
             mapboxAccessToken={MAPBOX_TOKEN}
           >

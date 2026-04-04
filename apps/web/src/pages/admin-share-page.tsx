@@ -1,7 +1,11 @@
-import { Share2 } from "lucide-react";
-import { PageHero } from "@/components/layout/page-hero";
+import { Link2, QrCode, Route, Share2 } from "lucide-react";
+import {
+  MetricCard,
+  MetricStrip,
+  PanelSection,
+  SurfaceHeader
+} from "@/components/layout/ops-layout";
 import { ShareQrCard } from "@/components/share/share-qr-card";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function publicOrigin() {
   return typeof window === "undefined" ? "" : window.location.origin;
@@ -14,14 +18,20 @@ export function AdminSharePage() {
 
   return (
     <div className="space-y-6">
-      <PageHero
-        eyebrow="Business QR kit"
-        icon={Share2}
-        title="Stable launch QR codes for riders and drivers"
-        description="These business QR codes stay tied to the service itself. Personal rider and driver referral QR codes are handled separately inside their own surfaces."
+      <SurfaceHeader
+        eyebrow="Share kit"
+        title="Keep the business launch links clean and real"
+        description="These QR assets point to routes that already exist today. They stay separate from personal rider and driver referral QR codes inside the logged-in surfaces."
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <MetricStrip>
+        <MetricCard label="Business rider route" value="/" meta="Public booking and rider lead capture" icon={Route} tone="primary" />
+        <MetricCard label="Business driver route" value="/driver/signup" meta="Creates a real pending driver account" icon={Share2} />
+        <MetricCard label="QR assets" value="2" meta="One for rider growth and one for driver recruiting" icon={QrCode} />
+        <MetricCard label="Public origin" value={baseUrl || "Local"} meta="Regenerate if the public base URL changes" icon={Link2} />
+      </MetricStrip>
+
+      <div className="grid gap-6 xl:grid-cols-2">
         <ShareQrCard
           title="Business rider QR"
           description="Points to the public rider booking and email-capture landing page."
@@ -36,17 +46,19 @@ export function AdminSharePage() {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Launch notes</CardTitle>
-          <CardDescription>Use the rider QR for rider growth and the driver QR when you are ready to recruit approved helpers.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-ops-muted">
-          <p>The rider QR is the main acquisition asset for this pilot.</p>
-          <p>The driver QR creates a real pending driver account that still requires admin approval.</p>
-          <p>If your public base URL changes, regenerate or re-download these QR images from this page.</p>
-        </CardContent>
-      </Card>
+      <PanelSection title="Launch notes" description="Use these assets only for the routes the app already supports today.">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4 text-sm leading-6 text-ops-muted">
+            The rider QR is the main acquisition asset for the public booking flow.
+          </div>
+          <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4 text-sm leading-6 text-ops-muted">
+            The driver QR creates a real pending driver account that still requires admin approval.
+          </div>
+          <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4 text-sm leading-6 text-ops-muted">
+            If your public base URL changes, re-download these QR assets from this page so the shell stays honest.
+          </div>
+        </div>
+      </PanelSection>
     </div>
   );
 }

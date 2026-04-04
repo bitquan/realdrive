@@ -1,11 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { Clock3, CreditCard, Phone, Share2, User, Vote } from "lucide-react";
-import { PageHero } from "@/components/layout/page-hero";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
+import {
+  BottomActionBar,
+  DataField,
+  MapPanel,
+  PanelSection
+} from "@/components/layout/ops-layout";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/utils";
 
@@ -29,117 +34,137 @@ export function PublicTrackPage() {
   const { ride, share, communityAccess } = trackQuery.data;
 
   return (
-    <div className="space-y-3.5 md:space-y-6">
-      <PageHero
-        eyebrow="Live trip tracking"
-        icon={Share2}
-        title="Track your ride live from this link"
-        description="Keep this page open to follow status, route progress, pickup details, and driver updates in real time without signing in."
-      />
+    <div className="space-y-4 md:space-y-6">
+      <div className="grid gap-4 xl:grid-cols-[1.16fr_0.84fr]">
+        <DeferredLiveMap
+          ride={ride}
+          title="Live route"
+          height={460}
+          meta="Keep this page open to watch dispatch progress, driver movement, and pickup timing."
+        />
 
-      <div className="grid gap-4 md:gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-        <DeferredLiveMap ride={ride} />
+        <MapPanel
+          title="Tracking panel"
+          meta="This public link stays focused on the actual ride state, driver assignment, and rider follow-up tools."
+          footer={
+            <div className="grid gap-3 md:grid-cols-3">
+              <DataField label="Status" value={ride.status.replaceAll("_", " ")} />
+              <DataField label="Total due" value={formatMoney(ride.payment.amountDue)} />
+              <DataField label="ETA snapshot" value={`${ride.estimatedMinutes} min`} subtle={`${ride.estimatedMiles} miles`} />
+            </div>
+          }
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Public ride tracking</p>
+              <h2 className="mt-2 text-[2rem] font-extrabold tracking-[-0.04em] text-ops-text">{ride.rider.name}</h2>
+              <p className="mt-2 text-sm text-ops-muted">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
+            </div>
+            <div className="text-right">
+              <Badge>{ride.status.replaceAll("_", " ")}</Badge>
+              <p className="mt-3 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{formatMoney(ride.payment.amountDue)}</p>
+            </div>
+          </div>
 
-        <div className="space-y-3.5 md:space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ride status</CardTitle>
-              <CardDescription>Updates refresh automatically while dispatch and driver status change.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge>{ride.status.replaceAll("_", " ")}</Badge>
-                <p className="text-lg font-bold text-ops-text">{formatMoney(ride.payment.amountDue)}</p>
-              </div>
-              <p className="text-sm text-ops-muted">
-                Current stage: <span className="font-semibold text-ops-text">{ride.status.replaceAll("_", " ")}</span>
-              </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Pickup</p>
-                  <p className="mt-2 font-semibold">{ride.pickup.address}</p>
-                </div>
-                <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-ops-muted">Dropoff</p>
-                  <p className="mt-2 font-semibold">{ride.dropoff.address}</p>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                  <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                    <User className="h-4 w-4" />
-                    Driver
-                  </div>
-                  <p className="font-semibold">{ride.driver?.name ?? "Waiting for assignment"}</p>
-                  <p className="text-sm text-ops-muted">
-                    {ride.driver?.vehicle?.makeModel ?? "Dispatch is working on your trip"}
-                  </p>
-                  {ride.driver?.phone ? (
-                    <p className="mt-2 flex items-center gap-2 text-sm text-ops-muted">
-                      <Phone className="h-4 w-4" />
-                      {ride.driver.phone}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                  <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                    <Clock3 className="h-4 w-4" />
-                    Timing
-                  </div>
-                  <p className="font-semibold">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
-                  <p className="text-sm text-ops-muted">
-                    {ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes
-                  </p>
-                </div>
-
-                <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/70 to-[#121b2a] p-4">
-                  <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                    <CreditCard className="h-4 w-4" />
-                    Payment
-                  </div>
-                  <p className="font-semibold">{ride.payment.method}</p>
-                  <p className="text-sm text-ops-muted">Collected outside the app · {ride.payment.status}</p>
-                  <p className="mt-1 text-sm text-ops-muted/80">
-                    All-in total: {formatMoney(ride.payment.amountDue)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {communityAccess ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Community board</CardTitle>
-                <CardDescription>
-                  Use your rider community link to read proposals now and unlock voting once you become a heavy rider.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link
-                  to={`/community/join/${communityAccess.token}`}
-                  className="inline-flex items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3b8fff]"
-                >
-                  <Vote className="mr-2 h-4 w-4" />
-                  Open community board
-                </Link>
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {share ? (
-            <ShareQrCard
-              title="Share your rider QR"
-              description="Invite another rider with your personal RealDrive link."
-              shareUrl={share.shareUrl}
-              referralCode={share.referralCode}
-              fileName={`realdrive-rider-${share.referralCode.toLowerCase()}`}
+          <div className="grid gap-3 md:grid-cols-2">
+            <DataField label="Pickup" value={ride.pickup.address} />
+            <DataField label="Dropoff" value={ride.dropoff.address} />
+            <DataField
+              label="Driver"
+              value={ride.driver?.name ?? "Waiting for assignment"}
+              subtle={ride.driver?.vehicle?.makeModel ?? "Dispatch is working on your trip"}
             />
-          ) : null}
-        </div>
+            <DataField label="Payment" value={ride.payment.method} subtle={`Status: ${ride.payment.status}`} />
+          </div>
+
+          <div className="grid gap-3">
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <User className="h-4 w-4" />
+                Driver contact
+              </div>
+              <p className="font-semibold text-ops-text">{ride.driver?.name ?? "Waiting for assignment"}</p>
+              <p className="mt-1 text-sm text-ops-muted">{ride.driver?.vehicle?.makeModel ?? "Dispatch is working on your trip"}</p>
+              {ride.driver?.phone ? (
+                <p className="mt-2 flex items-center gap-2 text-sm text-ops-muted">
+                  <Phone className="h-4 w-4" />
+                  {ride.driver.phone}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <Clock3 className="h-4 w-4" />
+                Timing
+              </div>
+              <p className="font-semibold text-ops-text">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
+              <p className="mt-1 text-sm text-ops-muted">
+                {ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes
+              </p>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <div className="mb-2 flex items-center gap-2 text-ops-muted">
+                <CreditCard className="h-4 w-4" />
+                Payment note
+              </div>
+              <p className="font-semibold text-ops-text">{ride.payment.method}</p>
+              <p className="mt-1 text-sm text-ops-muted">Collected outside the app · {ride.payment.status}</p>
+            </div>
+          </div>
+        </MapPanel>
       </div>
+
+      <div className="grid gap-4 xl:grid-cols-[0.72fr_0.28fr]">
+        {communityAccess ? (
+          <PanelSection title="Community board" description="Use your rider community link to read proposals now and unlock voting later as the rider account grows.">
+            <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm leading-6 text-ops-muted">
+              This button opens the real community exchange flow tied to this rider trip.
+            </div>
+            <div className="mt-4">
+              <Link
+                to={`/community/join/${communityAccess.token}`}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-primary/45 bg-ops-primary px-4 text-sm font-semibold text-white transition hover:bg-[#6887ff]"
+              >
+                <Vote className="mr-2 h-4 w-4" />
+                Open community board
+              </Link>
+            </div>
+          </PanelSection>
+        ) : null}
+
+        {share ? (
+          <ShareQrCard
+            title="Share your rider QR"
+            description="Invite another rider with your personal RealDrive link."
+            shareUrl={share.shareUrl}
+            referralCode={share.referralCode}
+            fileName={`realdrive-rider-${share.referralCode.toLowerCase()}`}
+          />
+        ) : null}
+      </div>
+
+      <BottomActionBar>
+        {communityAccess ? (
+          <Link
+            to={`/community/join/${communityAccess.token}`}
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-primary/45 bg-ops-primary px-4 text-sm font-semibold text-white transition hover:bg-[#6887ff]"
+          >
+            <Vote className="mr-2 h-4 w-4" />
+            Community board
+          </Link>
+        ) : null}
+        {share ? (
+          <a
+            href={share.shareUrl}
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            Open rider link
+          </a>
+        ) : null}
+      </BottomActionBar>
     </div>
   );
 }

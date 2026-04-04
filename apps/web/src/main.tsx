@@ -29,7 +29,7 @@ const ShareRedirectPage = lazy(() => import("@/pages/share-redirect-page").then(
 
 function PageLoader({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div className="rounded-4xl border border-brand-ink/10 bg-white p-8 text-sm text-brand-ink/55">Loading...</div>}>
+    <Suspense fallback={<div className="rounded-4xl border border-ops-border-soft bg-ops-surface p-8 text-sm text-ops-muted">Loading...</div>}>
       {children}
     </Suspense>
   );
@@ -51,7 +51,7 @@ function RequireRole({
   }, [role, switchRole, user]);
 
   if (loading) {
-    return <div className="rounded-4xl border border-brand-ink/10 bg-white p-8 text-sm text-brand-ink/55">Loading...</div>;
+    return <div className="rounded-4xl border border-ops-border-soft bg-ops-surface p-8 text-sm text-ops-muted">Loading...</div>;
   }
 
   if (!user) {
@@ -69,7 +69,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="rounded-4xl border border-brand-ink/10 bg-white p-8 text-sm text-brand-ink/55">Loading...</div>;
+    return <div className="rounded-4xl border border-ops-border-soft bg-ops-surface p-8 text-sm text-ops-muted">Loading...</div>;
   }
 
   if (!user) {
