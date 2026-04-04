@@ -16,6 +16,7 @@ import type {
   CommunityEligibility,
   DriverProfileUpdateInput,
   DuePaymentMethod,
+  PaymentMethod,
   RideType
 } from "@shared/contracts";
 import { env } from "../config/env.js";
@@ -148,6 +149,10 @@ function normalizeStateList(states: string[]) {
         .filter(Boolean)
     )
   );
+}
+
+function normalizeAcceptedPaymentMethods(methods: PaymentMethod[]) {
+  return Array.from(new Set(methods));
 }
 
 const requiredDriverDocumentTypes: DriverDocumentType[] = [
@@ -1377,6 +1382,9 @@ export const store: Store = {
           update: {
             homeState: patch.homeState?.toUpperCase(),
             homeCity: patch.homeCity,
+            acceptedPaymentMethods: patch.acceptedPaymentMethods
+              ? normalizeAcceptedPaymentMethods(patch.acceptedPaymentMethods).map(toDbPaymentMethod)
+              : undefined,
             vehicle: vehicleUpdate
               ? {
                   update: vehicleUpdate

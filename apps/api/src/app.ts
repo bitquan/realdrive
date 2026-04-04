@@ -536,30 +536,34 @@ export function buildApp() {
       email: parsed.data.email ?? null
     });
 
-    const ride = await rideService.createRide(
-      rider,
-      {
-        pickupAddress: parsed.data.pickupAddress,
-        dropoffAddress: parsed.data.dropoffAddress,
-        rideType: parsed.data.rideType,
-        paymentMethod: parsed.data.paymentMethod,
-        scheduledFor: parsed.data.scheduledFor
-      },
-      {
-        publicTrackingToken: createPublicTrackingToken(),
-        referredByUserId: referredByUser?.id ?? null,
-        referredByCode: referredByUser?.referralCode ?? null
-      }
-    );
+    try {
+      const ride = await rideService.createRide(
+        rider,
+        {
+          pickupAddress: parsed.data.pickupAddress,
+          dropoffAddress: parsed.data.dropoffAddress,
+          rideType: parsed.data.rideType,
+          paymentMethod: parsed.data.paymentMethod,
+          scheduledFor: parsed.data.scheduledFor
+        },
+        {
+          publicTrackingToken: createPublicTrackingToken(),
+          referredByUserId: referredByUser?.id ?? null,
+          referredByCode: referredByUser?.referralCode ?? null
+        }
+      );
 
-    const communityAccessToken = await store.ensureUserCommunityAccessToken(rider.id);
+      const communityAccessToken = await store.ensureUserCommunityAccessToken(rider.id);
 
-    return reply.send({
-      ride,
-      trackingUrl: `${resolvePublicBaseUrl(request)}/track/${ride.publicTrackingToken}`,
-      share: buildShareInfo(request, rider),
-      communityAccess: buildCommunityAccessLink(request, communityAccessToken)
-    });
+      return reply.send({
+        ride,
+        trackingUrl: `${resolvePublicBaseUrl(request)}/track/${ride.publicTrackingToken}`,
+        share: buildShareInfo(request, rider),
+        communityAccess: buildCommunityAccessLink(request, communityAccessToken)
+      });
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.get("/public/track/:token", async (request, reply) => {
@@ -701,8 +705,12 @@ export function buildApp() {
       return sendValidationError(reply, parsed.error.flatten());
     }
 
-    const ride = await rideService.createRide(request.userContext, parsed.data);
-    return reply.send(ride);
+    try {
+      const ride = await rideService.createRide(request.userContext, parsed.data);
+      return reply.send(ride);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.get("/rides/:id", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {

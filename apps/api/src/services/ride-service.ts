@@ -2,6 +2,7 @@ import type {
   AdminUpdateRideInput,
   CreateRideInput,
   DriverLocationInput,
+  PaymentMethod,
   Ride,
   RideStatus,
   SessionUser
@@ -23,6 +24,25 @@ const DRIVER_TRANSITIONS: Record<string, RideStatus[]> = {
   arrived: ["in_progress"],
   in_progress: ["completed"]
 };
+
+const paymentMethodLabels: Record<PaymentMethod, string> = {
+  jim: "Jim",
+  cashapp: "Cash App",
+  cash: "Cash"
+};
+
+function formatPaymentMethod(method: PaymentMethod) {
+  return paymentMethodLabels[method];
+}
+
+function isDriverPaymentCompatible(driver: { acceptedPaymentMethods?: PaymentMethod[] }, method: PaymentMethod) {
+  const acceptedPaymentMethods = driver.acceptedPaymentMethods;
+  if (!acceptedPaymentMethods?.length) {
+    return true;
+  }
+
+  return acceptedPaymentMethods.includes(method);
+}
 
 export function canTransitionRide(current: RideStatus, next: RideStatus): boolean {
   if (current === next) {
@@ -50,14 +70,15 @@ export function createRideService(deps: {
     }
 
     const eligibleDrivers = await store.listEligibleDriversForRide(ride.pickup, ride.pickup.stateCode);
+    const compatibleDrivers = eligibleDrivers.filter((driver) => isDriverPaymentCompatible(driver, ride.payment.method));
     const offeredRide = await store.createRideOffers(
       ride.id,
-      eligibleDrivers.map((driver) => driver.id),
+      compatibleDrivers.map((driver) => driver.id),
       new Date(Date.now() + 2 * 60 * 1000)
     );
 
-    if (eligibleDrivers.length) {
-      events.rideOffered(offeredRide, eligibleDrivers.map((driver) => driver.id));
+    if (compatibleDrivers.length) {
+      events.rideOffered(offeredRide, compatibleDrivers.map((driver) => driver.id));
     } else {
       events.rideUpdated(offeredRide);
     }
@@ -82,6 +103,23 @@ export function createRideService(deps: {
 
       if (!rule) {
         throw new Error(`Missing platform pricing rule for ${input.rideType}`);
+      }
+
+      const eligibleDrivers = await store.listEligibleDriversForRide(route.pickup, route.pickup.stateCode);
+      if (eligibleDrivers.length) {
+        const compatibleDrivers = eligibleDrivers.filter((driver) => isDriverPaymentCompatible(driver, input.paymentMethod));
+        if (!compatibleDrivers.length) {
+          const acceptedPaymentMethods = Array.from(
+            new Set(eligibleDrivers.flatMap((driver) => driver.acceptedPaymentMethods ?? []))
+          );
+          const acceptedLabel = acceptedPaymentMethods.length
+            ? acceptedPaymentMethods.map(formatPaymentMethod).join(", ")
+            : "none";
+
+          throw new Error(
+            `Driver does not accept ${formatPaymentMethod(input.paymentMethod)}. Accepted payment methods: ${acceptedLabel}.`
+          );
+        }
       }
 
       const status: RideStatus = input.scheduledFor ? "scheduled" : "requested";
@@ -152,6 +190,14 @@ export function createRideService(deps: {
       const driverAccount = await store.getDriverAccount(driverId);
       if (!driverAccount) {
         throw new Error("Driver account not found");
+      }
+
+      if (!isDriverPaymentCompatible(driverAccount, accepted.payment.method)) {
+        throw new Error(
+          `Driver does not accept ${formatPaymentMethod(accepted.payment.method)}. Rider must choose one of: ${driverAccount.acceptedPaymentMethods
+            .map(formatPaymentMethod)
+            .join(", ")}.`
+        );
       }
 
       let pricedRide = accepted;

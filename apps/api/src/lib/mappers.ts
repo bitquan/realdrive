@@ -328,6 +328,7 @@ type DriverProfileRecord = {
   currentLng: number | null;
   rating: number;
   pricingMode: DbDriverPricingMode;
+  acceptedPaymentMethods: DbPaymentMethod[];
   localDispatchEnabled: boolean;
   localRadiusMiles: number;
   serviceAreaDispatchEnabled: boolean;
@@ -493,6 +494,7 @@ export function mapSessionUser(user: UserWithDriver): SessionUser {
     pricingMode: user.driverProfile ? fromDbDriverPricingMode(user.driverProfile.pricingMode) : undefined,
     homeState: user.driverProfile?.homeState ?? undefined,
     homeCity: user.driverProfile?.homeCity ?? undefined,
+    acceptedPaymentMethods: user.driverProfile?.acceptedPaymentMethods.map(fromDbPaymentMethod) ?? undefined,
     vehicle: mapVehicle(user.driverProfile?.vehicle)
   };
 }
@@ -588,6 +590,7 @@ export function mapDriverAccount(user: UserWithDriver): DriverAccount {
     pricingMode: fromDbDriverPricingMode(user.driverProfile.pricingMode),
     homeState: user.driverProfile.homeState,
     homeCity: user.driverProfile.homeCity,
+    acceptedPaymentMethods: user.driverProfile.acceptedPaymentMethods.map(fromDbPaymentMethod),
     dispatchSettings: mapDispatchSettings(user.driverProfile),
     customRates: (user.driverRateCards ?? []).map(mapDriverRateRule),
     documents,

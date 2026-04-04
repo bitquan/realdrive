@@ -36,6 +36,7 @@ const driverAccount: DriverAccount = {
   pricingMode: "platform",
   homeState: "VA",
   homeCity: "Richmond",
+  acceptedPaymentMethods: ["jim", "cashapp", "cash"],
   dispatchSettings: {
     localEnabled: true,
     localRadiusMiles: 25,
@@ -300,6 +301,56 @@ describe("ride service", () => {
     const released = await service.releaseDueScheduledRides(new Date());
     expect(released).toHaveLength(1);
     expect(rideOffered).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects booking when eligible drivers do not accept the selected payment method", async () => {
+    const service = createRideService({
+      store: createStore({
+        listEligibleDriversForRide: async () => [
+          {
+            ...driverAccount,
+            acceptedPaymentMethods: ["cashapp"],
+            lat: 33.76,
+            lng: -84.38,
+            rating: 4.9
+          }
+        ]
+      }),
+      maps: {
+        estimateRoute: vi.fn().mockResolvedValue({
+          pickup: {
+            address: "123 Main St, Richmond, VA",
+            lat: 33.75,
+            lng: -84.39,
+            stateCode: "VA"
+          },
+          dropoff: {
+            address: "Airport, Richmond, VA",
+            lat: 33.63,
+            lng: -84.44,
+            stateCode: "VA"
+          },
+          distanceMiles: 7,
+          durationMinutes: 18,
+          provider: "fallback"
+        })
+      },
+      events: {
+        rideOffered: vi.fn(),
+        rideUpdated: vi.fn(),
+        rideLocationUpdated: vi.fn(),
+        driverAvailabilityChanged: vi.fn()
+      }
+    });
+
+    await expect(
+      service.createRide(rider, {
+        pickupAddress: "123 Main St, Richmond, VA",
+        dropoffAddress: "Airport, Richmond, VA",
+        rideType: "standard",
+        paymentMethod: "jim"
+      })
+    ).rejects.toThrow("Accepted payment methods: Cash App");
   });
 
   it("rejects a second acceptance once the offer is gone", async () => {

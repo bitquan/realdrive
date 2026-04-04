@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { DriverDispatchSettings, Ride, RideType } from "@shared/contracts";
+import type { DriverDispatchSettings, PaymentMethod, Ride, RideType } from "@shared/contracts";
 import { Link } from "react-router-dom";
 import { BellRing, CarFront, CreditCard, MessageSquare } from "lucide-react";
 import { MetricCard, MetricStrip, SurfaceHeader } from "@/components/layout/ops-layout";
@@ -20,6 +20,8 @@ const emptyRateForm = {
   suv: { baseFare: "0", perMile: "0", perMinute: "0", multiplier: "1" },
   xl: { baseFare: "0", perMile: "0", perMinute: "0", multiplier: "1" }
 };
+
+const paymentMethodOptions: PaymentMethod[] = ["jim", "cashapp", "cash"];
 
 function getRidePricing(ride: Ride) {
   return {
@@ -94,6 +96,7 @@ export function DriverDashboardPage() {
   const [serviceAreaText, setServiceAreaText] = useState("");
   const [rateMode, setRateMode] = useState<"platform" | "custom">("platform");
   const [rateForm, setRateForm] = useState(emptyRateForm);
+  const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<PaymentMethod[]>(paymentMethodOptions);
 
   useEffect(() => {
     if (!profileQuery.data) {
@@ -111,6 +114,7 @@ export function DriverDashboardPage() {
       rideType: profileQuery.data.vehicle?.rideType ?? "standard",
       seats: String(profileQuery.data.vehicle?.seats ?? 4)
     });
+    setAcceptedPaymentMethods(profileQuery.data.acceptedPaymentMethods?.length ? profileQuery.data.acceptedPaymentMethods : paymentMethodOptions);
   }, [profileQuery.data]);
 
   useEffect(() => {
@@ -166,6 +170,7 @@ export function DriverDashboardPage() {
           phone: profileForm.phone,
           homeState: profileForm.homeState,
           homeCity: profileForm.homeCity,
+          acceptedPaymentMethods,
           vehicle: {
             makeModel: profileForm.makeModel,
             plate: profileForm.plate,
@@ -380,6 +385,40 @@ export function DriverDashboardPage() {
                   onChange={(event) => setProfileForm((current) => ({ ...current, seats: event.target.value }))}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Accepted rider payments</Label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {paymentMethodOptions.map((method) => {
+                  const active = acceptedPaymentMethods.includes(method);
+
+                  return (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => {
+                        if (active && acceptedPaymentMethods.length === 1) {
+                          return;
+                        }
+
+                        setAcceptedPaymentMethods((current) =>
+                          current.includes(method)
+                            ? current.filter((entry) => entry !== method)
+                            : [...current, method]
+                        );
+                      }}
+                      className={`rounded-3xl border px-3 py-3 text-left transition ${
+                        active
+                          ? "border-ops-primary/45 bg-ops-primary text-white"
+                          : "border-ops-border-soft bg-ops-surface text-ops-text hover:bg-ops-panel"
+                      }`}
+                    >
+                      <p className="font-semibold">{formatPaymentMethod(method)}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-ops-muted">Riders selecting a disabled method will be asked to choose one you accept.</p>
             </div>
             {profileMutation.error ? <p className="text-sm text-ops-error">{profileMutation.error.message}</p> : null}
             <Button onClick={() => profileMutation.mutate()}>Save profile</Button>

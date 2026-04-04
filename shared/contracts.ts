@@ -69,6 +69,8 @@ export const driverDispatchSettingsSchema = z.object({
   nationwideEnabled: z.boolean()
 });
 
+export const driverAcceptedPaymentMethodsSchema = z.array(paymentMethodSchema).min(1).max(3);
+
 const rateRuleFields = {
   rideType: rideTypeSchema,
   baseFare: z.number().nonnegative(),
@@ -165,6 +167,7 @@ export const sessionUserSchema = z.object({
   pricingMode: driverPricingModeSchema.optional(),
   homeState: z.string().nullable().optional(),
   homeCity: z.string().nullable().optional(),
+  acceptedPaymentMethods: driverAcceptedPaymentMethodsSchema.optional(),
   vehicle: vehicleSchema.nullable().optional()
 });
 
@@ -183,6 +186,7 @@ export const driverAccountSchema = sessionUserSchema.extend({
   pricingMode: driverPricingModeSchema,
   homeState: z.string().nullable(),
   homeCity: z.string().nullable(),
+  acceptedPaymentMethods: driverAcceptedPaymentMethodsSchema,
   dispatchSettings: driverDispatchSettingsSchema,
   customRates: z.array(driverRateRuleSchema).optional(),
   documents: z.array(driverOnboardingDocumentSchema),
@@ -547,6 +551,7 @@ export const driverProfileUpdateSchema = z.object({
   phone: z.string().min(8).optional(),
   homeState: z.string().min(2).max(2).optional(),
   homeCity: z.string().min(2).optional(),
+  acceptedPaymentMethods: driverAcceptedPaymentMethodsSchema.optional(),
   vehicle: vehicleInputSchema.partial().optional()
 });
 

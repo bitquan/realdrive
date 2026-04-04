@@ -181,6 +181,7 @@ model DriverProfile {
   serviceAreaDispatchEnabled Boolean              @default(true)
   serviceAreaStates          String[]             @default([])
   nationwideDispatchEnabled  Boolean              @default(false)
+  acceptedPaymentMethods     PaymentMethod[]      @default([JIM, CASHAPP, CASH])
   pricingMode                DriverPricingMode    @default(PLATFORM)
   createdAt                  DateTime             @default(now())
   updatedAt                  DateTime             @updatedAt
