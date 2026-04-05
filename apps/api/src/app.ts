@@ -82,7 +82,7 @@ import { createStripeCheckoutLink, generateApiKey, hashApiKey, verifyStripeWebho
 
 function resolvePublicBaseUrl(request: FastifyRequest) {
   const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
-  return env.publicBaseUrl || origin || env.clientOrigin;
+  return env.publicBaseUrl || env.clientOrigin || origin;
 }
 
 function buildShareInfo(request: FastifyRequest, user: SessionUser | null): ShareInfo | null {
