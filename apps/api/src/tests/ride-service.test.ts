@@ -161,6 +161,8 @@ function createStore(stubs: Partial<Store>): Store {
       }
     ],
     replacePlatformPricingRules: notImplemented,
+    listPlatformRateBenchmarks: async () => [],
+    upsertPlatformRateBenchmarks: async () => [],
     createRide: async () => makeRide(),
     getRideById: async () => makeRide(),
     getRideByPublicTrackingToken: async () => makeRide(),

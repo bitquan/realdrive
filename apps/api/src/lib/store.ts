@@ -1,10 +1,12 @@
 import {
+  BenchmarkProvider as DbBenchmarkProvider,
   PlatformDueBatchStatus as DbPlatformDueBatchStatus,
   Prisma,
   Role as DbRole,
   type IssueReport as DbIssueReport
 } from "@prisma/client";
 import type {
+  BenchmarkProvider,
   CollectorAdminSummary,
   IssueReport,
   IssueReportStatus,
@@ -12,6 +14,7 @@ import type {
   NotificationPreference,
   UpdateNotificationPreferenceInput,
   UpsertPushSubscriptionInput,
+  PlatformRateBenchmarkRule,
   DriverDocumentType,
   DriverDocumentUpload,
   CommunityEligibility,
@@ -140,6 +143,14 @@ function isClaimableSeedAdmin(user: { role: DbRole; roles?: DbRole[]; email: str
 
 function normalizeMarketKey(value?: string | null) {
   return value?.trim().toUpperCase() || "DEFAULT";
+}
+
+function toDbBenchmarkProvider(provider: BenchmarkProvider): DbBenchmarkProvider {
+  return provider === "uber" ? DbBenchmarkProvider.UBER : DbBenchmarkProvider.LYFT;
+}
+
+function fromDbBenchmarkProvider(provider: DbBenchmarkProvider): BenchmarkProvider {
+  return provider === DbBenchmarkProvider.UBER ? "uber" : "lyft";
 }
 
 function normalizeStateList(states: string[]) {
@@ -1574,6 +1585,58 @@ export const store: Store = {
     });
 
     return rules.map(mapPricingRule);
+  },
+
+  async listPlatformRateBenchmarks() {
+    const rules = await prisma.platformRateBenchmark.findMany({
+      orderBy: [{ marketKey: "asc" }, { provider: "asc" }, { rideType: "asc" }]
+    });
+
+    return rules.map((rule): PlatformRateBenchmarkRule => ({
+      provider: fromDbBenchmarkProvider(rule.provider),
+      marketKey: normalizeMarketKey(rule.marketKey),
+      rideType: rule.rideType.toLowerCase() as PlatformRateBenchmarkRule["rideType"],
+      baseFare: Number(rule.baseFare),
+      perMile: Number(rule.perMile),
+      perMinute: Number(rule.perMinute),
+      multiplier: Number(rule.multiplier),
+      observedAt: rule.observedAt.toISOString()
+    }));
+  },
+
+  async upsertPlatformRateBenchmarks(rules) {
+    await prisma.$transaction(
+      rules.map((rule) =>
+        prisma.platformRateBenchmark.upsert({
+          where: {
+            provider_marketKey_rideType: {
+              provider: toDbBenchmarkProvider(rule.provider),
+              marketKey: normalizeMarketKey(rule.marketKey),
+              rideType: toDbRideType(rule.rideType)
+            }
+          },
+          update: {
+            baseFare: rule.baseFare,
+            perMile: rule.perMile,
+            perMinute: rule.perMinute,
+            multiplier: rule.multiplier,
+            observedAt: new Date()
+          },
+          create: {
+            provider: toDbBenchmarkProvider(rule.provider),
+            marketKey: normalizeMarketKey(rule.marketKey),
+            rideType: toDbRideType(rule.rideType),
+            baseFare: rule.baseFare,
+            perMile: rule.perMile,
+            perMinute: rule.perMinute,
+            multiplier: rule.multiplier,
+            observedAt: new Date()
+          }
+        })
+      )
+    );
+
+    return this.listPlatformRateBenchmarks();
   },
 
   async replacePlatformPricingRules(rules) {

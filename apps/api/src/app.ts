@@ -43,6 +43,7 @@ import {
   riderLeadInputSchema,
   removePushSubscriptionSchema,
   updateNotificationPreferenceSchema,
+  updatePlatformRateBenchmarksSchema,
   updatePlatformPayoutSettingsSchema,
   updatePlatformRatesSchema,
   updateRideStatusSchema,
@@ -141,17 +142,42 @@ export function buildApp() {
   };
 
   async function applyAutoPlatformRates(trigger: "manual" | "scheduled" | "startup") {
-    if (!env.uberRateFeedUrl || !env.lyftRateFeedUrl) {
-      throw new Error("UBER_RATE_FEED_URL and LYFT_RATE_FEED_URL must be configured");
+    const snapshotRules = await store.listPlatformRateBenchmarks();
+    let uberRules = snapshotRules
+      .filter((rule) => rule.provider === "uber")
+      .map((rule) => ({
+        marketKey: rule.marketKey,
+        rideType: rule.rideType,
+        baseFare: rule.baseFare,
+        perMile: rule.perMile,
+        perMinute: rule.perMinute,
+        multiplier: rule.multiplier
+      }));
+    let lyftRules = snapshotRules
+      .filter((rule) => rule.provider === "lyft")
+      .map((rule) => ({
+        marketKey: rule.marketKey,
+        rideType: rule.rideType,
+        baseFare: rule.baseFare,
+        perMile: rule.perMile,
+        perMinute: rule.perMinute,
+        multiplier: rule.multiplier
+      }));
+
+    if (!uberRules.length || !lyftRules.length) {
+      if (!env.uberRateFeedUrl || !env.lyftRateFeedUrl) {
+        throw new Error("Save Uber and Lyft benchmark snapshots in Admin Pricing, or configure feed URLs");
+      }
+
+      const [uberPayload, lyftPayload] = await Promise.all([
+        fetchFeed(env.uberRateFeedUrl),
+        fetchFeed(env.lyftRateFeedUrl)
+      ]);
+
+      uberRules = parseBenchmarkFeed(uberPayload);
+      lyftRules = parseBenchmarkFeed(lyftPayload);
     }
 
-    const [uberPayload, lyftPayload] = await Promise.all([
-      fetchFeed(env.uberRateFeedUrl),
-      fetchFeed(env.lyftRateFeedUrl)
-    ]);
-
-    const uberRules = parseBenchmarkFeed(uberPayload);
-    const lyftRules = parseBenchmarkFeed(lyftPayload);
     const computedRules = buildUndercutRules(uberRules, lyftRules, undercutAmount);
 
     if (!computedRules.length) {
@@ -2089,13 +2115,32 @@ export function buildApp() {
     return reply.send(rules);
   });
 
+  app.get("/admin/platform-rates/benchmarks", { preHandler: requireRole("admin") }, async () => {
+    const rules = await store.listPlatformRateBenchmarks();
+    return { rules };
+  });
+
+  app.put("/admin/platform-rates/benchmarks", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = updatePlatformRateBenchmarksSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const rules = await store.upsertPlatformRateBenchmarks(parsed.data.rules);
+    return reply.send({ rules });
+  });
+
   app.get("/admin/platform-rates/auto-status", { preHandler: requireRole("admin") }, async () => {
+    const benchmarkRules = await store.listPlatformRateBenchmarks();
+    const uberSnapshots = benchmarkRules.filter((rule) => rule.provider === "uber").length;
+    const lyftSnapshots = benchmarkRules.filter((rule) => rule.provider === "lyft").length;
+
     return {
       enabled: env.platformRateAutoApplyEnabled,
       intervalMinutes: autoApplyIntervalMinutes,
       undercutAmount,
-      uberFeedConfigured: Boolean(env.uberRateFeedUrl),
-      lyftFeedConfigured: Boolean(env.lyftRateFeedUrl),
+      uberFeedConfigured: uberSnapshots > 0 || Boolean(env.uberRateFeedUrl),
+      lyftFeedConfigured: lyftSnapshots > 0 || Boolean(env.lyftRateFeedUrl),
       lastRunAt: autoRateState.lastRunAt,
       lastAppliedRuleCount: autoRateState.lastAppliedRuleCount,
       lastError: autoRateState.lastError

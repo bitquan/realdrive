@@ -630,6 +630,23 @@ export const updatePlatformRatesSchema = z.object({
   )
 });
 
+export const benchmarkProviderSchema = z.enum(["uber", "lyft"]);
+
+export const platformRateBenchmarkRuleSchema = z.object({
+  provider: benchmarkProviderSchema,
+  marketKey: z.string().min(2),
+  ...rateRuleFields,
+  observedAt: z.string().optional()
+});
+
+export const updatePlatformRateBenchmarksSchema = z.object({
+  rules: z.array(platformRateBenchmarkRuleSchema.omit({ observedAt: true }))
+});
+
+export const platformRateBenchmarksResponseSchema = z.object({
+  rules: z.array(platformRateBenchmarkRuleSchema)
+});
+
 export const platformRateAutoStatusSchema = z.object({
   enabled: z.boolean(),
   intervalMinutes: z.number().int().positive(),
@@ -1054,6 +1071,10 @@ export type AdminReviewDriverDocumentInput = z.infer<typeof adminReviewDriverDoc
 export type AdminUpdateDriverInput = z.infer<typeof adminUpdateDriverSchema>;
 export type UpdatePlatformRatesInput = z.infer<typeof updatePlatformRatesSchema>;
 export type UpdatePricingRulesInput = z.infer<typeof updatePricingRulesSchema>;
+export type BenchmarkProvider = z.infer<typeof benchmarkProviderSchema>;
+export type PlatformRateBenchmarkRule = z.infer<typeof platformRateBenchmarkRuleSchema>;
+export type UpdatePlatformRateBenchmarksInput = z.infer<typeof updatePlatformRateBenchmarksSchema>;
+export type PlatformRateBenchmarksResponse = z.infer<typeof platformRateBenchmarksResponseSchema>;
 export type PlatformRateAutoStatus = z.infer<typeof platformRateAutoStatusSchema>;
 export type PlatformRateAutoApplyResponse = z.infer<typeof platformRateAutoApplyResponseSchema>;
 export type CreateDriverRoleInput = z.infer<typeof createDriverRoleSchema>;

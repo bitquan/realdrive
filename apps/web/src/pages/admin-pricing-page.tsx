@@ -62,6 +62,11 @@ export function AdminPricingPage() {
     queryKey: ["admin-platform-rates"],
     queryFn: () => api.listPlatformRates(token!)
   });
+  const benchmarkQuery = useQuery({
+    queryKey: ["admin-platform-rate-benchmarks"],
+    queryFn: () => api.listPlatformRateBenchmarks(token!),
+    enabled: Boolean(token)
+  });
   const autoStatusQuery = useQuery({
     queryKey: ["admin-platform-rates-auto-status"],
     queryFn: () => api.getPlatformRateAutoStatus(token!),
@@ -104,6 +109,29 @@ export function AdminPricingPage() {
     }
   }, [benchmarkMarketKey, markets]);
 
+  useEffect(() => {
+    if (!benchmarkQuery.data || !benchmarkMarketKey) {
+      return;
+    }
+
+    const next = emptyBenchmarkForm();
+
+    for (const rule of benchmarkQuery.data.rules) {
+      if (rule.marketKey !== benchmarkMarketKey) {
+        continue;
+      }
+
+      next[rule.provider][rule.rideType] = {
+        baseFare: String(rule.baseFare),
+        perMile: String(rule.perMile),
+        perMinute: String(rule.perMinute),
+        multiplier: String(rule.multiplier)
+      };
+    }
+
+    setBenchmarkRates(next);
+  }, [benchmarkMarketKey, benchmarkQuery.data]);
+
   const updateMutation = useMutation({
     mutationFn: () =>
       api.updatePlatformRates(
@@ -128,6 +156,30 @@ export function AdminPricingPage() {
     mutationFn: () => api.applyPlatformRatesAuto(token!),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-platform-rates"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-platform-rates-auto-status"] });
+    }
+  });
+
+  const saveBenchmarkMutation = useMutation({
+    mutationFn: () =>
+      api.updatePlatformRateBenchmarks(
+        {
+          rules: (["uber", "lyft"] as const).flatMap((provider) =>
+            (["standard", "suv", "xl"] as RideType[]).map((rideType) => ({
+              provider,
+              marketKey: benchmarkMarketKey,
+              rideType,
+              baseFare: Number(benchmarkRates[provider][rideType].baseFare),
+              perMile: Number(benchmarkRates[provider][rideType].perMile),
+              perMinute: Number(benchmarkRates[provider][rideType].perMinute),
+              multiplier: Number(benchmarkRates[provider][rideType].multiplier)
+            }))
+          )
+        },
+        token!
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-platform-rate-benchmarks"] });
       await queryClient.invalidateQueries({ queryKey: ["admin-platform-rates-auto-status"] });
     }
   });
@@ -209,6 +261,13 @@ export function AdminPricingPage() {
             </div>
             <Button
               variant="outline"
+              onClick={() => saveBenchmarkMutation.mutate()}
+              disabled={!benchmarkMarketKey || saveBenchmarkMutation.isPending}
+            >
+              {saveBenchmarkMutation.isPending ? "Saving..." : "Save benchmark snapshot"}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => {
                 if (!benchmarkMarketKey) {
                   return;
@@ -257,6 +316,9 @@ export function AdminPricingPage() {
               Apply Uber/Lyft minus $0.05
             </Button>
           </div>
+
+          {saveBenchmarkMutation.error ? <p className="mt-2 text-sm text-ops-error">{saveBenchmarkMutation.error.message}</p> : null}
+          {benchmarkQuery.error ? <p className="mt-2 text-sm text-ops-error">{benchmarkQuery.error.message}</p> : null}
 
           <div className="grid gap-4 lg:grid-cols-2">
             {(["uber", "lyft"] as const).map((provider) => (

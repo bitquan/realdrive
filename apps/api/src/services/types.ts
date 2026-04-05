@@ -34,6 +34,7 @@ import type {
   PaymentStatus,
   PlatformDue,
   PlatformDueBatch,
+  PlatformRateBenchmarkRule,
   PlatformDueStatus,
   PlatformPayoutSettings,
   PricingRule,
@@ -136,6 +137,8 @@ export interface Store {
   ensureUserCommunityAccessToken(userId: string): Promise<string>;
   listPlatformPricingRules(): Promise<PricingRule[]>;
   replacePlatformPricingRules(rules: Omit<PricingRule, "id" | "updatedAt">[]): Promise<PricingRule[]>;
+  listPlatformRateBenchmarks(): Promise<PlatformRateBenchmarkRule[]>;
+  upsertPlatformRateBenchmarks(rules: Array<Omit<PlatformRateBenchmarkRule, "observedAt">>): Promise<PlatformRateBenchmarkRule[]>;
   createRide(input: CreateRideRecordInput): Promise<Ride>;
   getRideById(rideId: string): Promise<Ride | null>;
   getRideByPublicTrackingToken(token: string): Promise<Ride | null>;

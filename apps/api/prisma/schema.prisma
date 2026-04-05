@@ -116,6 +116,11 @@ enum RidePricingSource {
   ADMIN_OVERRIDE
 }
 
+enum BenchmarkProvider {
+  UBER
+  LYFT
+}
+
 model User {
   id                    String              @id @default(cuid())
   role                  Role
@@ -298,6 +303,24 @@ model PricingRule {
   updatedAt  DateTime @updatedAt
 
   @@unique([marketKey, rideType])
+}
+
+model PlatformRateBenchmark {
+  id         String            @id @default(cuid())
+  provider   BenchmarkProvider
+  marketKey  String            @default("DEFAULT")
+  rideType   RideType
+  baseFare   Decimal           @db.Decimal(10, 2)
+  perMile    Decimal           @db.Decimal(10, 2)
+  perMinute  Decimal           @db.Decimal(10, 2)
+  multiplier Decimal           @db.Decimal(10, 2)
+  observedAt DateTime          @default(now())
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([provider, marketKey, rideType])
+  @@index([marketKey, rideType])
+  @@index([provider, observedAt])
 }
 
 model DriverRateCard {

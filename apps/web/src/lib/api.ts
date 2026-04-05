@@ -54,6 +54,7 @@ import type {
   PlatformDueBatch,
   PlatformRateAutoApplyResponse,
   PlatformRateAutoStatus,
+  PlatformRateBenchmarksResponse,
   PlatformPayoutSettings,
   PricingRule,
   PublicRideRequest,
@@ -68,6 +69,7 @@ import type {
   CreateAdminInviteInput,
   TrackSiteHeartbeatInput,
   UpdatePlatformPayoutSettingsInput,
+  UpdatePlatformRateBenchmarksInput,
   UpdatePlatformRatesInput,
   UpdateRideStatusInput
 } from "@shared/contracts";
@@ -509,6 +511,15 @@ export const api = {
   },
   updatePlatformRates(input: UpdatePlatformRatesInput, token: string) {
     return apiFetch<PricingRule[]>("/admin/platform-rates", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  listPlatformRateBenchmarks(token: string) {
+    return apiFetch<PlatformRateBenchmarksResponse>("/admin/platform-rates/benchmarks", undefined, token);
+  },
+  updatePlatformRateBenchmarks(input: UpdatePlatformRateBenchmarksInput, token: string) {
+    return apiFetch<PlatformRateBenchmarksResponse>("/admin/platform-rates/benchmarks", {
       method: "PUT",
       body: JSON.stringify(input)
     }, token);
