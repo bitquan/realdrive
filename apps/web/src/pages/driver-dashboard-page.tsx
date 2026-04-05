@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DriverDispatchSettings, PaymentMethod, Ride, RideType } from "@shared/contracts";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AlertTriangle, BellRing, CarFront, CreditCard, MessageSquare } from "lucide-react";
 import { MetricCard, MetricStrip, SurfaceHeader } from "@/components/layout/ops-layout";
 import { HeadrestPrintTemplate } from "@/components/share/headrest-print-template";
@@ -32,7 +32,141 @@ function getRidePricing(ride: Ride) {
   };
 }
 
+function IncomingOffersCard({
+  offers,
+  suspended,
+  acceptMutation,
+  declineMutation
+}: {
+  offers: Ride[];
+  suspended: boolean;
+  acceptMutation: {
+    isPending: boolean;
+    mutate: (rideId: string) => void;
+  };
+  declineMutation: {
+    isPending: boolean;
+    mutate: (rideId: string) => void;
+  };
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Dispatch inbox</CardTitle>
+        <CardDescription>New jobs stay at the top so drivers do not have to dig through account settings to find live work.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {offers.map((ride) => {
+          const pricing = getRidePricing(ride);
+
+          return (
+            <div key={ride.id} className="rounded-4xl border border-ops-border-soft p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{ride.pickup.address}</p>
+                  <p className="text-sm text-ops-muted">{ride.dropoff.address}</p>
+                </div>
+                <Badge>{ride.rideType}</Badge>
+              </div>
+              <p className="mt-3 text-sm text-ops-muted">{ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div className="rounded-3xl border border-ops-border-soft p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
+                  <p className="mt-1 font-semibold">{formatMoney(pricing.customerTotal)}</p>
+                </div>
+                <div className="rounded-3xl border border-ops-border-soft p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Your subtotal</p>
+                  <p className="mt-1 font-semibold">{formatMoney(pricing.subtotal)}</p>
+                </div>
+                <div className="rounded-3xl border border-ops-border-soft p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
+                  <p className="mt-1 font-semibold">{formatMoney(pricing.platformDue)}</p>
+                </div>
+                <div className="rounded-3xl border border-ops-border-soft p-3 md:col-span-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Trip payment</p>
+                  <p className="mt-1 font-semibold">{formatPaymentMethod(ride.payment.method)}</p>
+                  <p className="mt-1 text-sm text-ops-muted">Chosen by the rider during booking · status {ride.payment.status}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <Button className="flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
+                  {acceptMutation.isPending ? "Accepting..." : "Accept"}
+                </Button>
+                <Button variant="outline" className="flex-1" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
+                  Decline
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+        {!offers.length ? (
+          <div className="rounded-4xl border border-dashed border-ops-border p-6 text-center text-sm text-ops-muted">
+            No ride offers right now.
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActiveRidesCard({ rides }: { rides: Ride[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Active rides</CardTitle>
+        <CardDescription>Continue trip workflows, live tracking, and payout visibility.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {rides.map((ride) => {
+          const pricing = getRidePricing(ride);
+
+          return (
+            <Link
+              key={ride.id}
+              to={`/driver/rides/${ride.id}`}
+              className="block rounded-4xl border border-ops-border-soft p-4 transition hover:bg-ops-panel/55"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{ride.rider.name}</p>
+                  <p className="text-sm text-ops-muted">{ride.pickup.address}</p>
+                </div>
+                <Badge>{ride.status.replaceAll("_", " ")}</Badge>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
+                  <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.customerTotal)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Your subtotal</p>
+                  <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.subtotal)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
+                  <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.platformDue)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Trip payment</p>
+                  <p className="mt-1 text-sm font-semibold">{formatPaymentMethod(ride.payment.method)}</p>
+                  <p className="mt-1 text-xs text-ops-muted">Status {ride.payment.status}</p>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+        {!rides.length ? (
+          <div className="rounded-4xl border border-dashed border-ops-border p-6 text-center text-sm text-ops-muted">
+            No active rides yet.
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function DriverDashboardPage() {
+  const navigate = useNavigate();
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const profileQuery = useQuery({
@@ -225,9 +359,10 @@ export function DriverDashboardPage() {
 
   const acceptMutation = useMutation({
     mutationFn: (rideId: string) => api.acceptOffer(rideId, token!),
-    onSuccess: () => {
+    onSuccess: (ride) => {
       void queryClient.invalidateQueries({ queryKey: ["driver-offers"] });
       void queryClient.invalidateQueries({ queryKey: ["driver-active-rides"] });
+      void navigate(`/driver/rides/${ride.id}`);
     }
   });
 
@@ -331,6 +466,16 @@ export function DriverDashboardPage() {
         <MetricCard label="Outstanding dues" value={formatMoney(duesQuery.data?.outstandingTotal ?? 0)} meta="Completed-trip dues and open batch balance" icon={CreditCard} tone="warning" />
         <MetricCard label="Community access" value={community?.eligibility.canVote ? "Full" : "Read"} meta="Posting and voting state" icon={MessageSquare} />
       </MetricStrip>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <IncomingOffersCard
+          offers={offersQuery.data ?? []}
+          suspended={suspended}
+          acceptMutation={acceptMutation}
+          declineMutation={declineMutation}
+        />
+        <ActiveRidesCard rides={activeRidesQuery.data ?? []} />
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
@@ -604,117 +749,6 @@ export function DriverDashboardPage() {
           <Button onClick={() => rateMutation.mutate()}>Save pricing</Button>
         </CardContent>
       </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Incoming offers</CardTitle>
-            <CardDescription>First accepted offer wins the trip. New work is blocked when dues are overdue.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {offersQuery.data?.map((ride) => {
-              const pricing = getRidePricing(ride);
-
-              return (
-                <div key={ride.id} className="rounded-4xl border border-ops-border-soft p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{ride.pickup.address}</p>
-                      <p className="text-sm text-ops-muted">{ride.dropoff.address}</p>
-                    </div>
-                    <Badge>{ride.rideType}</Badge>
-                  </div>
-                  <p className="mt-3 text-sm text-ops-muted">{ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes</p>
-                  <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <div className="rounded-3xl border border-ops-border-soft p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
-                      <p className="mt-1 font-semibold">{formatMoney(pricing.customerTotal)}</p>
-                    </div>
-                    <div className="rounded-3xl border border-ops-border-soft p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Your subtotal</p>
-                      <p className="mt-1 font-semibold">{formatMoney(pricing.subtotal)}</p>
-                    </div>
-                    <div className="rounded-3xl border border-ops-border-soft p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
-                      <p className="mt-1 font-semibold">{formatMoney(pricing.platformDue)}</p>
-                    </div>
-                    <div className="rounded-3xl border border-ops-border-soft p-3 md:col-span-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Trip payment</p>
-                      <p className="mt-1 font-semibold">{formatPaymentMethod(ride.payment.method)}</p>
-                      <p className="mt-1 text-sm text-ops-muted">Chosen by the rider during booking · status {ride.payment.status}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-3">
-                    <Button className="flex-1" disabled={suspended} onClick={() => acceptMutation.mutate(ride.id)}>
-                      Accept
-                    </Button>
-                    <Button variant="outline" className="flex-1" onClick={() => declineMutation.mutate(ride.id)}>
-                      Decline
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-            {!offersQuery.data?.length ? (
-              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-center text-sm text-ops-muted">
-                No ride offers right now.
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Active rides</CardTitle>
-            <CardDescription>Continue trip workflows, live tracking, and payout visibility.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {activeRidesQuery.data?.map((ride) => {
-              const pricing = getRidePricing(ride);
-
-              return (
-                <Link
-                  key={ride.id}
-                  to={`/driver/rides/${ride.id}`}
-                  className="block rounded-4xl border border-ops-border-soft p-4 transition hover:bg-ops-panel/55"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{ride.rider.name}</p>
-                      <p className="text-sm text-ops-muted">{ride.pickup.address}</p>
-                    </div>
-                    <Badge>{ride.status.replaceAll("_", " ")}</Badge>
-                  </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Customer total</p>
-                      <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.customerTotal)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Your subtotal</p>
-                      <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.subtotal)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Platform due</p>
-                      <p className="mt-1 text-sm font-semibold">{formatMoney(pricing.platformDue)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-ops-muted">Trip payment</p>
-                      <p className="mt-1 text-sm font-semibold">{formatPaymentMethod(ride.payment.method)}</p>
-                      <p className="mt-1 text-xs text-ops-muted">Status {ride.payment.status}</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-            {!activeRidesQuery.data?.length ? (
-              <div className="rounded-4xl border border-dashed border-ops-border p-6 text-center text-sm text-ops-muted">
-                No active rides yet.
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
