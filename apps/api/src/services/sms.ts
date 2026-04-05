@@ -14,6 +14,7 @@ export interface SmsService {
   notifyRiderDriverAccepted(riderPhone: string, ride: Ride): Promise<void>;
   notifyRiderDriverEnRoute(riderPhone: string, ride: Ride): Promise<void>;
   notifyRiderDriverArrived(riderPhone: string, ride: Ride): Promise<void>;
+  notifyRiderRideStarted(riderPhone: string, ride: Ride): Promise<void>;
   notifyRiderRideComplete(riderPhone: string, ride: Ride): Promise<void>;
   notifyDriverRideComplete(driverPhone: string, ride: Ride): Promise<void>;
   notifyRiderCanceled(riderPhone: string, ride: Ride): Promise<void>;
@@ -107,6 +108,16 @@ export function createSmsService(): SmsService {
       await send(
         riderPhone,
         `📍 ${driverName} has arrived at ${pickup}. Please come out!`,
+      );
+    },
+
+    /** Rider: ride has started */
+    async notifyRiderRideStarted(riderPhone, ride) {
+      const driverName = ride.driver?.name ?? "Your driver";
+      const dropoff = shortAddress(ride.dropoff.address);
+      await send(
+        riderPhone,
+        `🛣️ Your trip with ${driverName} is now in progress to ${dropoff}.`,
       );
     },
 

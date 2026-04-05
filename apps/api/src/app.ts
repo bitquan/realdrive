@@ -432,6 +432,26 @@ export function buildApp() {
               sendSms: () => sms.notifyRiderDriverArrived(riderPhone ?? "", ride)
             });
           })();
+        } else if (ride.status === "in_progress") {
+          void (async () => {
+            const pushResult = await sendPushForUser({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "in_progress",
+              title: "Ride in progress",
+              body: "Your trip has started.",
+              url: riderTrackUrl
+            });
+            await sendCriticalSmsFallback({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "in_progress",
+              phone: riderPhone,
+              pushSentCount: pushResult.sentCount,
+              pushFailedCount: pushResult.failedCount,
+              sendSms: () => sms.notifyRiderRideStarted(riderPhone ?? "", ride)
+            });
+          })();
         } else if (ride.status === "completed") {
           void Promise.all([
             sendPushForUser({
@@ -1581,7 +1601,7 @@ export function buildApp() {
             message: z.string().min(3).max(320).optional(),
             rideId: z.string().min(1).optional(),
             scenario: z
-              .enum(["new_job", "accepted", "en_route", "arrived", "completed", "canceled"])
+              .enum(["new_job", "accepted", "en_route", "arrived", "in_progress", "completed", "canceled"])
               .optional()
           })
           .safeParse(request.body);
@@ -1641,6 +1661,14 @@ export function buildApp() {
             return reply.status(400).send({ message: "No rider phone found on this ride. Provide `to` to override." });
           }
           await sms.notifyRiderDriverArrived(riderPhone, ride);
+          return reply.send({ ok: true, mode: "scenario", scenario, to: riderPhone, rideId });
+        }
+
+        if (scenario === "in_progress") {
+          if (!riderPhone) {
+            return reply.status(400).send({ message: "No rider phone found on this ride. Provide `to` to override." });
+          }
+          await sms.notifyRiderRideStarted(riderPhone, ride);
           return reply.send({ ok: true, mode: "scenario", scenario, to: riderPhone, rideId });
         }
 

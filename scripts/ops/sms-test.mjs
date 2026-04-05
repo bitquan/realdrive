@@ -12,7 +12,7 @@
  *
  * Optional scenario mode (instead of raw message):
  * - SMS_TEST_RIDE_ID
- * - SMS_TEST_SCENARIO: new_job | accepted | en_route | arrived | completed | canceled
+ * - SMS_TEST_SCENARIO: new_job | accepted | en_route | arrived | in_progress | completed | canceled
  */
 
 const apiBaseUrl = process.env.SMS_TEST_API_BASE_URL ?? "http://localhost:4000";
