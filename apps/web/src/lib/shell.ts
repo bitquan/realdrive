@@ -469,6 +469,7 @@ export function getShellSections(user: SessionUser | null): ShellSection[] {
 
 export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
   const driverItem = getDriverNavItem(user);
+  const notificationsItem = sharedItems.find((item) => item.id === "notifications");
 
   if (user?.role === "admin") {
     return [
@@ -476,19 +477,21 @@ export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
       adminItems.find((item) => item.id === "admin-dispatch"),
       adminItems.find((item) => item.id === "admin-drivers"),
       adminItems.find((item) => item.id === "admin-dues"),
-      adminItems.find((item) => item.id === "admin-team")
+      notificationsItem
     ]
       .filter((item): item is ShellNavItem => item !== null)
       .filter((item) => canRenderItem(item, user));
   }
 
   if (user?.role === "driver") {
-    return [driverItem, riderItems[0], sharedItems[0], riderItems[1]]
+    return [driverItem, riderItems[0], notificationsItem, riderItems[1]]
       .filter((item): item is ShellNavItem => item !== null)
       .filter((item) => canRenderItem(item, user));
   }
 
-  return [riderItems[0], riderItems[1], sharedItems[0], riderItems[2]].filter((item) => canRenderItem(item, user));
+  return [riderItems[0], riderItems[1], notificationsItem, riderItems[2]]
+    .filter((item): item is ShellNavItem => item !== null)
+    .filter((item) => canRenderItem(item, user));
 }
 
 export function getShellFrame(pathname: string, user: SessionUser | null): ShellFrame {
