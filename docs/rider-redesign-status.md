@@ -1,0 +1,191 @@
+# Rider Redesign Status
+
+## Scope
+- The rider redesign has not started as a dedicated checkpointed workstream yet.
+- This document records the current rider baseline so the next rider phase can start from a concrete, accurate state.
+- The rider scope is still centered on the existing booking and trip routes rather than a new parallel rider app.
+- This work stops at rider scope planning/status for now.
+
+## Final direction
+- existing `/` route for booking
+- existing `/rider/rides` route for history
+- existing `/rider/rides/:rideId` route for ride detail
+- real booking and tracking flow only
+- rider history and ride detail kept connected
+- no fake rider dashboard or duplicate route tree
+
+## Completed phases
+
+### Baseline rider improvement — Address suggestions for booking
+- summary
+  - Added rider booking address suggestions so pickup and dropoff entry uses a stronger real-world booking flow.
+- files
+  - [apps/api/src/app.ts](apps/api/src/app.ts)
+  - [apps/api/src/services/maps.ts](apps/api/src/services/maps.ts)
+  - [apps/api/src/services/types.ts](apps/api/src/services/types.ts)
+  - [apps/web/src/lib/api.ts](apps/web/src/lib/api.ts)
+  - [apps/web/src/pages/home-page.tsx](apps/web/src/pages/home-page.tsx)
+  - [shared/contracts.ts](shared/contracts.ts)
+- what changed
+  - Added address-suggestion support on the backend and exposed it through the web client.
+  - Wired the rider booking page to use address suggestions during trip creation.
+- verification summary
+  - Historical commit already on `main`.
+  - No dedicated rider redesign verification log exists in the current workstream.
+- commit message
+  - `feat(rider): add address suggestions for pickup/dropoff`
+- short hash
+  - `8738914`
+- pushed or not pushed
+  - pushed
+- production status
+  - on `main`; live deployment confirmation unknown
+
+### Baseline rider/payment improvement — Enforce driver accepted payment methods
+- summary
+  - Ensured rider bookings respect the driver payment methods that are actually accepted.
+- files
+  - [apps/api/prisma/schema.prisma](apps/api/prisma/schema.prisma)
+  - [apps/api/src/app.ts](apps/api/src/app.ts)
+  - [apps/api/src/lib/mappers.ts](apps/api/src/lib/mappers.ts)
+  - [apps/api/src/lib/store.ts](apps/api/src/lib/store.ts)
+  - [apps/api/src/services/ride-service.ts](apps/api/src/services/ride-service.ts)
+  - [apps/api/src/tests/ride-service.test.ts](apps/api/src/tests/ride-service.test.ts)
+  - [apps/web/src/pages/driver-dashboard-page.tsx](apps/web/src/pages/driver-dashboard-page.tsx)
+  - [shared/contracts.ts](shared/contracts.ts)
+- what changed
+  - Added data-model and service support for driver payment preferences.
+  - Enforced those preferences in booking/ride handling so rider choices stay valid against real driver capabilities.
+- verification summary
+  - Historical commit already on `main`.
+  - No dedicated rider redesign verification log exists in the current workstream.
+- commit message
+  - `feat(payments): enforce driver accepted payment methods for rider bookings`
+- short hash
+  - `1a70614`
+- pushed or not pushed
+  - pushed
+- production status
+  - on `main`; live deployment confirmation unknown
+
+### Baseline rider/mobile fix — Remove horizontal overflow on rider ride view
+- summary
+  - Fixed a mobile presentation problem on the rider ride view.
+- files
+  - [apps/web/src/pages/home-page.tsx](apps/web/src/pages/home-page.tsx)
+- what changed
+  - Removed horizontal overflow affecting the rider mobile experience.
+- verification summary
+  - Historical commit already on `main`.
+  - No dedicated rider redesign verification log exists in the current workstream.
+- commit message
+  - `fix(web-mobile): remove horizontal overflow on rider ride view`
+- short hash
+  - `d2f96cd`
+- pushed or not pushed
+  - pushed
+- production status
+  - on `main`; live deployment confirmation unknown
+
+### Shared rider-facing workflow addition — Issue reporting entry points
+- summary
+  - Added shared bug-reporting and feature-request flows that also affect rider-visible experiences.
+- files
+  - [apps/api/src/app.ts](apps/api/src/app.ts)
+  - [apps/api/src/config/env.ts](apps/api/src/config/env.ts)
+  - [apps/api/src/lib/store.ts](apps/api/src/lib/store.ts)
+  - [apps/api/src/services/issue-reports.ts](apps/api/src/services/issue-reports.ts)
+  - [apps/api/src/services/types.ts](apps/api/src/services/types.ts)
+  - [apps/web/src/lib/api.ts](apps/web/src/lib/api.ts)
+  - [apps/web/src/pages/ride-details-page.tsx](apps/web/src/pages/ride-details-page.tsx)
+  - [shared/contracts.ts](shared/contracts.ts)
+- what changed
+  - Added shared issue-report flows used across rider, driver, and admin experiences.
+  - Exposed rider-side entry points through ride-related pages.
+- verification summary
+  - Historical commit already on `main`.
+  - This was not a rider-only redesign checkpoint.
+- commit message
+  - `feat(issue-reporting): add rider/driver/admin reports with async GitHub sync`
+- short hash
+  - `cfc490c`
+- pushed or not pushed
+  - pushed
+- production status
+  - on `main`; live deployment confirmation unknown
+
+## Commit timeline
+
+| order | short hash | commit message | purpose | pushed to main? | production candidate? | production verified? |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | `8738914` | `feat(rider): add address suggestions for pickup/dropoff` | improve rider booking input quality | yes | yes | unknown |
+| 2 | `1a70614` | `feat(payments): enforce driver accepted payment methods for rider bookings` | keep rider payment selection aligned with actual driver capabilities | yes | yes | unknown |
+| 3 | `d2f96cd` | `fix(web-mobile): remove horizontal overflow on rider ride view` | fix rider mobile layout overflow | yes | yes | unknown |
+| 4 | `cfc490c` | `feat(issue-reporting): add rider/driver/admin reports with async GitHub sync` | add rider-visible issue reporting entry points | yes | yes | unknown |
+
+## Known pushed checkpoints from this work
+- No dedicated rider redesign chain has been pushed yet.
+- The commits above are rider-relevant baseline work already on `main`.
+
+## Files changed across the project
+- [apps/web/src/pages/home-page.tsx](apps/web/src/pages/home-page.tsx)
+  - Current rider booking surface.
+- [apps/web/src/pages/ride-history-page.tsx](apps/web/src/pages/ride-history-page.tsx)
+  - Rider trip-history queue for active, scheduled, and completed rides.
+- [apps/web/src/pages/ride-details-page.tsx](apps/web/src/pages/ride-details-page.tsx)
+  - Rider ride-detail surface with live trip context.
+- [apps/web/src/pages/public-track-page.tsx](apps/web/src/pages/public-track-page.tsx)
+  - Public live trip tracking route.
+- [apps/web/src/components/ui/address-autocomplete-input.tsx](apps/web/src/components/ui/address-autocomplete-input.tsx)
+  - Booking address input component tied to rider trip creation quality.
+- [apps/web/src/lib/api.ts](apps/web/src/lib/api.ts)
+  - Shared web API client used by rider booking, history, and ride-detail flows.
+- [apps/web/src/components/layout/app-shell.tsx](apps/web/src/components/layout/app-shell.tsx)
+  - Shared shell that rider routes currently inherit.
+- [apps/web/src/lib/shell.ts](apps/web/src/lib/shell.ts)
+  - Route framing and shell metadata affecting rider pages.
+
+## Production status
+
+### Pushed to main
+- `8738914` — `feat(rider): add address suggestions for pickup/dropoff`
+- `1a70614` — `feat(payments): enforce driver accepted payment methods for rider bookings`
+- `d2f96cd` — `fix(web-mobile): remove horizontal overflow on rider ride view`
+- `cfc490c` — `feat(issue-reporting): add rider/driver/admin reports with async GitHub sync`
+
+### Confirmed deployed
+- unknown
+
+### Still local only
+- No rider-specific redesign checkpoint is currently tracked as local-only.
+
+## What remains
+
+### rider follow-up polish
+- Define the actual rider redesign scope before changing layouts or workflows.
+- Decide whether rider booking, rider history, or rider detail should be redesigned first.
+
+### production verification
+- Confirm the current production rider booking flow still works after the latest shared web fixes.
+- Confirm rider history and rider detail still behave correctly in production.
+
+### QA / smoke tests
+- Run a focused rider smoke pass for booking, history, detail, and public tracking.
+
+### later non-rider work
+- Do not start rider redesign implementation until driver production verification is complete.
+
+## Deferred / intentionally not included
+- no rider visual redesign has been started yet
+- no rider route restructuring has been started yet
+- no rider-only shell architecture has been introduced
+- no backend rewrite beyond existing baseline rider features has been done for this redesign effort
+- no admin or driver redesign work is counted here unless it directly affects rider behavior
+
+## Risks / watch items
+- Production state for current rider flows is not yet manually confirmed in this documentation pass.
+- Rider baseline spans shared booking, tracking, and shell files, so later redesign work should stay checkpointed.
+- Shared API client changes can affect rider flows even when the checkpoint is not rider-specific.
+
+## Recommended next step after rider scope
+- Decide the first rider redesign checkpoint explicitly: booking surface, ride history, or ride detail.
