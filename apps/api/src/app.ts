@@ -66,7 +66,7 @@ import { calculateCustomerTotal, calculateFare, calculatePlatformDue, findPlatfo
 import { createPushService } from "./services/push.js";
 import { createRideService } from "./services/ride-service.js";
 import { createSmsService } from "./services/sms.js";
-import { buildUndercutRules, fetchFeed, parseBenchmarkFeed } from "./services/platform-rate-auto.js";
+import { buildUndercutRules } from "./services/platform-rate-auto.js";
 
 function resolvePublicBaseUrl(request: FastifyRequest) {
   const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
@@ -143,7 +143,7 @@ export function buildApp() {
 
   async function applyAutoPlatformRates(trigger: "manual" | "scheduled" | "startup") {
     const snapshotRules = await store.listPlatformRateBenchmarks();
-    let uberRules = snapshotRules
+    const uberRules = snapshotRules
       .filter((rule) => rule.provider === "uber")
       .map((rule) => ({
         marketKey: rule.marketKey,
@@ -153,7 +153,7 @@ export function buildApp() {
         perMinute: rule.perMinute,
         multiplier: rule.multiplier
       }));
-    let lyftRules = snapshotRules
+    const lyftRules = snapshotRules
       .filter((rule) => rule.provider === "lyft")
       .map((rule) => ({
         marketKey: rule.marketKey,
@@ -165,23 +165,13 @@ export function buildApp() {
       }));
 
     if (!uberRules.length || !lyftRules.length) {
-      if (!env.uberRateFeedUrl || !env.lyftRateFeedUrl) {
-        throw new Error("Save Uber and Lyft benchmark snapshots in Admin Pricing, or configure feed URLs");
-      }
-
-      const [uberPayload, lyftPayload] = await Promise.all([
-        fetchFeed(env.uberRateFeedUrl),
-        fetchFeed(env.lyftRateFeedUrl)
-      ]);
-
-      uberRules = parseBenchmarkFeed(uberPayload);
-      lyftRules = parseBenchmarkFeed(lyftPayload);
+      throw new Error("Save Uber and Lyft benchmark snapshots in Admin Pricing to enable auto-apply");
     }
 
     const computedRules = buildUndercutRules(uberRules, lyftRules, undercutAmount);
 
     if (!computedRules.length) {
-      throw new Error("No usable pricing rules returned from benchmark feeds");
+      throw new Error("No usable pricing rules computed from benchmark snapshots");
     }
 
     await store.replacePlatformPricingRules(computedRules);
