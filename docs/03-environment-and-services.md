@@ -14,6 +14,7 @@ Optional for a more realistic setup:
 
 - Twilio Verify for real rider SMS OTP
 - Mapbox for real geocoding, directions, and web maps
+- Web Push VAPID keys for browser and mobile web push notifications
 
 You do not need to pay for Twilio or Mapbox to run this project locally because the app has fallbacks.
 
@@ -122,6 +123,14 @@ Defined in `apps/api/.env`.
   Twilio auth credential.
 - `TWILIO_VERIFY_SERVICE_SID`
   Twilio Verify service id.
+- `TWILIO_FROM_NUMBER`
+  Twilio sender used for SMS fallback notifications.
+- `WEB_PUSH_VAPID_PUBLIC_KEY`
+  Public VAPID key used by browser subscriptions.
+- `WEB_PUSH_VAPID_PRIVATE_KEY`
+  Private VAPID key used by the API to sign push messages.
+- `WEB_PUSH_VAPID_SUBJECT`
+  Contact subject for VAPID, usually `mailto:team@yourdomain.com`.
 - `CLIENT_ORIGIN`
   Frontend origin for local/dev CORS expectations.
 - `PORT`
@@ -229,6 +238,33 @@ With Mapbox configured:
 - Rider quote requests use live geocoding and directions
 - Public tracking and driver ride views render real maps
 - This is the preferred setup for tomorrow’s pilot
+
+## Web Push (VAPID)
+
+Needed if you want:
+
+- Browser/device push notifications from `/notifications`
+- Push-first lifecycle alerts with SMS fallback
+
+Required setup:
+
+1. Generate VAPID keys:
+
+```bash
+pnpm --filter @realdrive/api exec web-push generate-vapid-keys
+```
+
+2. Copy keys into `apps/api/.env` as:
+  - `WEB_PUSH_VAPID_PUBLIC_KEY`
+  - `WEB_PUSH_VAPID_PRIVATE_KEY`
+  - `WEB_PUSH_VAPID_SUBJECT`
+3. Restart the API.
+
+Without Web Push configured:
+
+- Notification endpoints still work
+- Push delivery logs record `server_push_not_configured`
+- SMS fallback behavior still applies for critical events
 
 ## Recommended Secret Handling
 

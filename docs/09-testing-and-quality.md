@@ -85,6 +85,26 @@ Current status:
 - Driver sees offer updates
 - Ride detail view refreshes when ride state changes
 
+## Notifications (Push + Fallback)
+
+- Open `/notifications` as an authenticated user
+- Enable push on current browser/device
+- Run **Send test push** and confirm `manual_test` entry in delivery logs
+- Verify push behavior with app open and app backgrounded/closed
+- Trigger ride status updates and confirm push logs for:
+	- `new_job`
+	- `accepted`
+	- `en_route`
+	- `arrived`
+	- `in_progress`
+	- `completed`
+	- `canceled`
+- Confirm SMS fallback only appears for critical events when push is unavailable or fails
+
+Detailed walkthrough:
+
+- [Push Notifications Playbook](./12-push-notifications-playbook.md)
+
 ## Recommended Next Tests
 
 - Integration tests for Fastify route handlers

@@ -39,6 +39,8 @@ Providers:
   Referral redirect route that sends traffic back to the rider flow
 - `/community`
   Shared authenticated community board for drivers, admins, and eligible riders
+- `/notifications`
+  Shared authenticated notification center for push setup, preference toggles, test push, and delivery logs
 - `/rider/rides`
   Rider history
 - `/rider/rides/:rideId`

@@ -33,3 +33,5 @@ This folder is the project handbook for RealDrive.
   Current limitations, non-production defaults, and recommended next implementation steps.
 - [11 Live Deployment](./11-live-deployment.md)
   Render + Vercel deployment flow, required env vars, and post-deploy checks.
+- [12 Push Notifications Playbook](./12-push-notifications-playbook.md)
+  End-to-end how-to for setup, testing tutorials, troubleshooting, and operator checks.

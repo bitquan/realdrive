@@ -187,6 +187,31 @@ Local behavior:
 
 - Use the development OTP returned by the API
 
+## Push Notifications Runbook
+
+Quick path:
+
+1. Confirm API push config:
+
+```bash
+curl http://localhost:4000/public/push/config
+```
+
+2. In the web app, open `/notifications`.
+3. Click **Enable push on this browser**.
+4. Click **Send test push**.
+5. Confirm delivery logs populate under `/notifications`.
+
+If push does not show, check:
+
+- Browser permission is granted
+- User has at least one active push subscription
+- API has VAPID env vars configured
+
+For full setup/tutorial/troubleshooting coverage:
+
+- [Push Notifications Playbook](./12-push-notifications-playbook.md)
+
 ## Maps are using fallback coordinates
 
 Expected if:

@@ -163,6 +163,42 @@ Purpose:
 
 - Return the authenticated rider or driver's stable personal referral/share link
 
+### `GET /me/notification-preferences`
+
+Purpose:
+
+- Return notification preference state and active push subscriptions for current user
+
+### `PUT /me/notification-preferences`
+
+Purpose:
+
+- Update `pushEnabled` and `smsCriticalOnly` notification preferences
+
+### `POST /me/push-subscriptions`
+
+Purpose:
+
+- Upsert current browser/device push subscription for current user
+
+### `POST /me/push-subscriptions/unsubscribe`
+
+Purpose:
+
+- Remove one push subscription endpoint for current user
+
+### `POST /me/notifications/test-push`
+
+Purpose:
+
+- Trigger a `manual_test` push notification for current user to validate setup
+
+### `GET /me/notification-delivery-logs`
+
+Purpose:
+
+- Return notification delivery logs for current user
+
 ### `POST /me/roles/driver`
 
 Purpose:

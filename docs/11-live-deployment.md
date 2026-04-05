@@ -37,6 +37,10 @@ This repo includes [`render.yaml`](../render.yaml), so you can deploy with Rende
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_VERIFY_SERVICE_SID` (must be a `VA...` value)
+- `TWILIO_FROM_NUMBER`
+- `WEB_PUSH_VAPID_PUBLIC_KEY`
+- `WEB_PUSH_VAPID_PRIVATE_KEY`
+- `WEB_PUSH_VAPID_SUBJECT`
 - `OWNER_DRIVER_USER_ID`
 - `OWNER_DRIVER_PHONE`
 
@@ -77,6 +81,8 @@ So checked-in Prisma migrations apply automatically on each deploy.
 3. Complete one rider quote + booking.
 4. Verify tracking page `/track/:token` loads.
 5. Verify driver signup/login flow.
+6. Verify `/notifications` can enable push and send a `manual_test` push.
+7. Confirm delivery logs show push entries for the test user.
 
 ## Security Notes
 
