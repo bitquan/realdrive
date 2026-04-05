@@ -1,0 +1,138 @@
+name: Roadmap Feature
+description: Track one planned roadmap feature with owner, sprint, and readiness
+title: "[Roadmap] "
+labels:
+  - "roadmap"
+  - "type:feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for features from `docs/13-roadmap-baseline-25-features.md`.
+        Keep scope tight, define acceptance criteria, and set a realistic sprint target.
+
+  - type: input
+    id: roadmap_id
+    attributes:
+      label: Roadmap item number
+      description: Which roadmap item does this issue map to?
+      placeholder: "e.g. 4"
+    validations:
+      required: true
+
+  - type: input
+    id: feature_name
+    attributes:
+      label: Feature name
+      description: Use the exact roadmap feature title.
+      placeholder: "Notification center polish"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Target phase
+      options:
+        - "A (Now)"
+        - "B (Next)"
+        - "C (Later)"
+        - "Deferred"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: readiness
+    attributes:
+      label: Readiness status
+      description: Current stage of this work.
+      options:
+        - "spec"
+        - "design"
+        - "build"
+        - "qa"
+        - "done"
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      description: GitHub handle or team owning delivery.
+      placeholder: "@owner"
+    validations:
+      required: true
+
+  - type: input
+    id: sprint
+    attributes:
+      label: Sprint target
+      description: Planned sprint/milestone.
+      placeholder: "Sprint 14"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user or business problem are we solving?
+      placeholder: "Users cannot quickly confirm notification health from one place."
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope
+      description: Bullet list of what this issue includes.
+      placeholder: |
+        - Update settings UX
+        - Add clear status states
+        - Improve error feedback
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Explicitly list what this issue will not do.
+      placeholder: |
+        - No backend schema changes
+        - No unrelated dashboard redesign
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable success criteria.
+      placeholder: |
+        - [ ] Criteria 1
+        - [ ] Criteria 2
+        - [ ] Criteria 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / blockers
+      description: Related issues, external dependencies, or blockers.
+      placeholder: "Depends on #123"
+    validations:
+      required: false
+
+  - type: textarea
+    id: rollout_risk
+    attributes:
+      label: Rollout and risk notes
+      description: Deployment plan, rollback note, and risk controls.
+      placeholder: |
+        Deploy behind existing route.
+        Rollback by reverting UI commit if regression appears.
+    validations:
+      required: false

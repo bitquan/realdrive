@@ -93,3 +93,8 @@ Create one follow-up implementation board that maps each `Now` and `Next` item t
 - owner
 - sprint target
 - readiness status (`spec`, `design`, `build`, `qa`, `done`)
+
+Use these files for execution tracking:
+
+- [Roadmap Implementation Board](./14-roadmap-implementation-board.md)
+- [Roadmap Feature Issue Template](../.github/ISSUE_TEMPLATE/roadmap-feature.yml)

@@ -37,3 +37,5 @@ This folder is the project handbook for RealDrive.
   End-to-end how-to for setup, testing tutorials, troubleshooting, and operator checks.
 - [13 Roadmap Baseline (25 Features)](./13-roadmap-baseline-25-features.md)
   Planning baseline for 25 upcoming features, phased roadmap, UI upgrades, and deferred gaps.
+- [14 Roadmap Implementation Board](./14-roadmap-implementation-board.md)
+  Track owners, sprints, readiness, and issue links for all 25 roadmap features.
