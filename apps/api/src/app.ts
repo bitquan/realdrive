@@ -162,6 +162,25 @@ export function buildApp() {
     };
   });
 
+  function resolveOptionalUserIdFromAuthHeader(request: FastifyRequest): string | null {
+    const authHeader = typeof request.headers.authorization === "string" ? request.headers.authorization : "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return null;
+    }
+
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payload = app.jwt.verify<{ sub?: string }>(token);
+      return typeof payload.sub === "string" ? payload.sub : null;
+    } catch {
+      return null;
+    }
+  }
+
   async function logPushSkipped(userId: string, rideId: string | null, eventKey: string, reason: string) {
     await store.logNotificationDelivery({
       userId,
@@ -920,6 +939,33 @@ export function buildApp() {
     return drivers.filter((driver) => driver.approved && isOwnerDriver(driver));
   });
 
+  app.post("/public/analytics/heartbeat", async (request, reply) => {
+    const parsed = z
+      .object({
+        sessionId: z.string().min(8).max(120),
+        path: z.string().min(1).max(500).optional(),
+        referrer: z.string().max(500).optional()
+      })
+      .safeParse(request.body);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const userAgent = typeof request.headers["user-agent"] === "string" ? request.headers["user-agent"] : null;
+    const userId = resolveOptionalUserIdFromAuthHeader(request);
+
+    await store.trackSiteHeartbeat({
+      sessionId: parsed.data.sessionId,
+      path: parsed.data.path,
+      referrer: parsed.data.referrer,
+      userAgent,
+      userId
+    });
+
+    return reply.status(202).send({ ok: true });
+  });
+
   app.post("/public/rides", async (request, reply) => {
     const parsed = publicRideRequestSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -1199,6 +1245,21 @@ export function buildApp() {
       };
     }
   );
+
+  app.get("/admin/data/activity", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = z
+      .object({
+        windowMinutes: z.coerce.number().int().min(1).max(24 * 60).default(30)
+      })
+      .safeParse(request.query);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const overview = await store.getAdminActivityOverview(parsed.data.windowMinutes);
+    return reply.send(overview);
+  });
 
   app.post("/issues/report", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
     const parsed = createIssueReportSchema.safeParse(request.body);

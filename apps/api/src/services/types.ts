@@ -2,6 +2,7 @@ import type {
   AcceptAdminInviteInput,
   AddressSuggestion,
   AdminInvite,
+  AdminActivityResponse,
   AdminSetupStatusResponse,
   AdminUpdatePlatformDueBatchInput,
   AdminReviewDriverDocumentInput,
@@ -331,6 +332,15 @@ export interface Store {
     errorText?: string | null;
     metadata?: Record<string, string | number | boolean | null> | null;
   }): Promise<void>;
+  trackSiteHeartbeat(input: {
+    sessionId: string;
+    path?: string | null;
+    referrer?: string | null;
+    userAgent?: string | null;
+    userId?: string | null;
+    seenAt?: Date;
+  }): Promise<void>;
+  getAdminActivityOverview(windowMinutes: number): Promise<AdminActivityResponse>;
 
   // Roadmap feature voting
   createRoadmapFeatureVote(userId: string, featureId: string): Promise<void>;

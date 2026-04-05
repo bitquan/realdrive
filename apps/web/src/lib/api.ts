@@ -5,6 +5,7 @@ import type {
   AdminInvitesResponse,
   AdminTeamResponse,
   AdminDuesResponse,
+  AdminActivityResponse,
   AdminLeadsResponse,
   AdminLogin,
   AdminReconcilePlatformDueBatchInput,
@@ -63,6 +64,7 @@ import type {
   SessionUser,
   ShareInfo,
   CreateAdminInviteInput,
+  TrackSiteHeartbeatInput,
   UpdatePlatformPayoutSettingsInput,
   UpdatePlatformRatesInput,
   UpdateRideStatusInput
@@ -225,6 +227,12 @@ export const api = {
   },
   publicPushConfig() {
     return apiFetch<{ enabled: boolean; vapidPublicKey: string | null }>("/public/push/config");
+  },
+  trackSiteHeartbeat(input: TrackSiteHeartbeatInput) {
+    return apiFetch<{ ok: true }>("/public/analytics/heartbeat", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
   },
   getNotificationPreferences(token: string) {
     return apiFetch<NotificationPreferencesResponse>("/me/notification-preferences", undefined, token);
@@ -398,6 +406,10 @@ export const api = {
   },
   listAdminLeads(token: string) {
     return apiFetch<AdminLeadsResponse>("/admin/leads", undefined, token);
+  },
+  getAdminActivity(token: string, windowMinutes = 30) {
+    const params = new URLSearchParams({ windowMinutes: String(windowMinutes) });
+    return apiFetch<AdminActivityResponse>(`/admin/data/activity?${params.toString()}`, undefined, token);
   },
   updateAdminRide(rideId: string, input: AdminUpdateRideInput, token: string) {
     return apiFetch<Ride>(`/admin/rides/${rideId}`, {

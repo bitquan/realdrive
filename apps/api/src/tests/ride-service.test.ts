@@ -291,6 +291,15 @@ function createStore(stubs: Partial<Store>): Store {
     listPushSubscriptions: async () => [],
     listNotificationDeliveryLogs: async () => [],
     logNotificationDelivery: async () => undefined,
+    trackSiteHeartbeat: async () => undefined,
+    getAdminActivityOverview: async () => ({
+      windowMinutes: 30,
+      activeVisitors: 0,
+      visitors24h: 0,
+      heartbeats24h: 0,
+      topPaths: [],
+      recentVisitors: []
+    }),
     createRoadmapFeatureVote: async () => undefined,
     removeRoadmapFeatureVote: async () => undefined,
     hasUserVotedForFeature: async () => false,

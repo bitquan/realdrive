@@ -59,6 +59,24 @@ export function AppShell() {
     setDismissedPrompt(window.localStorage.getItem(key) === "1");
   }, [user?.id]);
 
+  useEffect(() => {
+    const storageKey = "realdrive.analytics.sessionId";
+    let sessionId = window.localStorage.getItem(storageKey);
+
+    if (!sessionId) {
+      sessionId = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+      window.localStorage.setItem(storageKey, sessionId);
+    }
+
+    void api.trackSiteHeartbeat({
+      sessionId,
+      path: location.pathname,
+      referrer: document.referrer || undefined
+    }).catch(() => undefined);
+  }, [location.pathname]);
+
   const shouldShowNotificationPrompt = useMemo(() => {
     if (!user || !token || dismissedPrompt) {
       return false;

@@ -87,6 +87,7 @@ export function AdminDashboardPage() {
         description="Keep drivers approved, dues clear, community activity visible, and every live ride tied to a real action instead of a mock-only control."
         actions={[
           { label: "Dispatch", to: "/admin/dispatch", icon: Route, variant: "primary" },
+          { label: "Data", to: "/admin/data", icon: Users, variant: "secondary" },
           { label: "Review drivers", to: "/admin/drivers", icon: Users, variant: "secondary" },
           { label: "Manage dues", to: "/admin/dues", icon: CreditCard, variant: "secondary" },
           { label: "Team", to: "/admin/team", icon: ShieldCheck, variant: "secondary" },

@@ -3275,6 +3275,123 @@ export const store: Store = {
     });
   },
 
+  async trackSiteHeartbeat(input) {
+    const seenAt = input.seenAt ?? new Date();
+
+    await prisma.siteVisit.upsert({
+      where: {
+        sessionId: input.sessionId
+      },
+      update: {
+        userId: input.userId ?? undefined,
+        lastSeenAt: seenAt,
+        lastPath: input.path ?? null,
+        referrer: input.referrer ?? null,
+        userAgent: input.userAgent ?? null,
+        heartbeatCount: {
+          increment: 1
+        }
+      },
+      create: {
+        sessionId: input.sessionId,
+        userId: input.userId ?? null,
+        firstSeenAt: seenAt,
+        lastSeenAt: seenAt,
+        lastPath: input.path ?? null,
+        referrer: input.referrer ?? null,
+        userAgent: input.userAgent ?? null,
+        heartbeatCount: 1
+      }
+    });
+  },
+
+  async getAdminActivityOverview(windowMinutes) {
+    const now = new Date();
+    const activeSince = new Date(now.getTime() - windowMinutes * 60 * 1000);
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [activeVisitors, visitors24h, visitRows, recentVisitors] = await Promise.all([
+      prisma.siteVisit.count({
+        where: {
+          lastSeenAt: {
+            gte: activeSince
+          }
+        }
+      }),
+      prisma.siteVisit.count({
+        where: {
+          firstSeenAt: {
+            gte: dayAgo
+          }
+        }
+      }),
+      prisma.siteVisit.findMany({
+        where: {
+          lastSeenAt: {
+            gte: dayAgo
+          }
+        },
+        select: {
+          heartbeatCount: true,
+          lastPath: true
+        }
+      }),
+      prisma.siteVisit.findMany({
+        where: {
+          lastSeenAt: {
+            gte: dayAgo
+          }
+        },
+        orderBy: {
+          lastSeenAt: "desc"
+        },
+        take: 20,
+        select: {
+          sessionId: true,
+          userId: true,
+          firstSeenAt: true,
+          lastSeenAt: true,
+          lastPath: true,
+          referrer: true,
+          heartbeatCount: true
+        }
+      })
+    ]);
+
+    const heartbeats24h = visitRows.reduce((sum, row) => sum + row.heartbeatCount, 0);
+    const pathCount = new Map<string, number>();
+
+    for (const row of visitRows) {
+      if (!row.lastPath) {
+        continue;
+      }
+
+      pathCount.set(row.lastPath, (pathCount.get(row.lastPath) ?? 0) + row.heartbeatCount);
+    }
+
+    const topPaths = Array.from(pathCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([path, hits]) => ({ path, hits }));
+
+    return {
+      windowMinutes,
+      activeVisitors,
+      visitors24h,
+      heartbeats24h,
+      topPaths,
+      recentVisitors: recentVisitors.map((visit) => ({
+        sessionId: visit.sessionId,
+        userId: visit.userId,
+        firstSeenAt: visit.firstSeenAt.toISOString(),
+        lastSeenAt: visit.lastSeenAt.toISOString(),
+        lastPath: visit.lastPath,
+        referrer: visit.referrer,
+        heartbeatCount: visit.heartbeatCount
+      }))
+    };
+  },
+
   async createIssueReport(input) {
     const report = await prisma.issueReport.create({
       data: {

@@ -156,6 +156,7 @@ model User {
   pushSubscriptions     PushSubscription[]
   notificationPreference NotificationPreference?
   notificationLogs      NotificationDeliveryLog[]
+  siteVisits            SiteVisit[]
   roadmapFeatureVotes   RoadmapFeatureVote[]
   featureRequests       FeatureRequest[]
 }
@@ -537,6 +538,23 @@ model NotificationDeliveryLog {
   @@index([userId, createdAt])
   @@index([rideId])
   @@index([channel, eventKey, createdAt])
+}
+
+model SiteVisit {
+  id             String   @id @default(cuid())
+  sessionId      String   @unique
+  userId         String?
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  lastPath       String?
+  referrer       String?
+  userAgent      String?
+  heartbeatCount Int      @default(1)
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([lastSeenAt])
+  @@index([firstSeenAt])
+  @@index([userId])
 }
 
 model AuditLog {

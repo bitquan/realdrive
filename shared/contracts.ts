@@ -917,6 +917,40 @@ export const notificationDeliveryLogsResponseSchema = z.object({
   logs: z.array(notificationDeliveryLogSchema)
 });
 
+export const trackSiteHeartbeatSchema = z.object({
+  sessionId: z.string().min(8).max(120),
+  path: z.string().min(1).max(500).optional(),
+  referrer: z.string().max(500).optional()
+});
+
+export const trackSiteHeartbeatResponseSchema = z.object({
+  ok: z.literal(true)
+});
+
+export const adminActivityTopPathSchema = z.object({
+  path: z.string(),
+  hits: z.number().int().nonnegative()
+});
+
+export const adminActivityRecentVisitorSchema = z.object({
+  sessionId: z.string(),
+  userId: z.string().nullable(),
+  firstSeenAt: z.string(),
+  lastSeenAt: z.string(),
+  lastPath: z.string().nullable(),
+  referrer: z.string().nullable(),
+  heartbeatCount: z.number().int().nonnegative()
+});
+
+export const adminActivityResponseSchema = z.object({
+  windowMinutes: z.number().int().positive(),
+  activeVisitors: z.number().int().nonnegative(),
+  visitors24h: z.number().int().nonnegative(),
+  heartbeats24h: z.number().int().nonnegative(),
+  topPaths: z.array(adminActivityTopPathSchema),
+  recentVisitors: z.array(adminActivityRecentVisitorSchema)
+});
+
 export const ridesResponseSchema = z.array(rideSchema);
 export const pricingRulesResponseSchema = z.array(pricingRuleSchema);
 export const driverRatesResponseSchema = driverRateCardSchema;
@@ -1041,3 +1075,8 @@ export type CommunityCommentsResponse = z.infer<typeof communityCommentsResponse
 export type IssueReportResponse = z.infer<typeof issueReportResponseSchema>;
 export type NotificationPreferencesResponse = z.infer<typeof notificationPreferencesResponseSchema>;
 export type NotificationDeliveryLogsResponse = z.infer<typeof notificationDeliveryLogsResponseSchema>;
+export type TrackSiteHeartbeatInput = z.infer<typeof trackSiteHeartbeatSchema>;
+export type TrackSiteHeartbeatResponse = z.infer<typeof trackSiteHeartbeatResponseSchema>;
+export type AdminActivityTopPath = z.infer<typeof adminActivityTopPathSchema>;
+export type AdminActivityRecentVisitor = z.infer<typeof adminActivityRecentVisitorSchema>;
+export type AdminActivityResponse = z.infer<typeof adminActivityResponseSchema>;

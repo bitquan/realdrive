@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  BarChart3,
   BookOpen,
   CarFront,
   CreditCard,
@@ -200,6 +201,14 @@ const adminItems: ShellNavItem[] = [
     roles: ["admin"]
   },
   {
+    id: "admin-data",
+    label: "Data",
+    to: "/admin/data",
+    icon: BarChart3,
+    matchPatterns: ["/admin/data"],
+    roles: ["admin"]
+  },
+  {
     id: "admin-help",
     label: "Guide",
     to: "/admin/help",
@@ -290,6 +299,16 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       description: "Manage recruit links, QR assets, and launch links without mixing in team-management work.",
       mapMode: "ambient",
       actions: [{ label: "Team", to: "/admin/team", icon: ShieldCheck, variant: "secondary" }]
+    }
+  },
+  {
+    patterns: ["/admin/data"],
+    frame: {
+      eyebrow: "Admin",
+      title: "Traffic and activity",
+      description: "Track active visitors, 24h session volume, and the most visited routes.",
+      mapMode: "ambient",
+      actions: [{ label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" }]
     }
   },
   {
