@@ -157,12 +157,13 @@ export function saveStoredAuth(auth: StoredAuth | null) {
 }
 
 export async function apiFetch<T>(path: string, options?: RequestInit, token?: string): Promise<T> {
+  const hasBody = options?.body !== undefined;
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        ...(hasBody ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options?.headers ?? {})
       }
