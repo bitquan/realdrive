@@ -1,6 +1,6 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
-import { DriverApprovalStatus, DriverPricingMode, PrismaClient, RideType, Role } from "@prisma/client";
+import { BenchmarkProvider, DriverApprovalStatus, DriverPricingMode, PrismaClient, RideType, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -181,6 +181,49 @@ async function seedDemoDrivers() {
   }
 }
 
+async function seedBenchmarks() {
+  // DEFAULT market benchmarks from BENCHMARKS.md
+  const benchmarks = [
+    // Uber DEFAULT
+    { provider: BenchmarkProvider.UBER, marketKey: "DEFAULT", rideType: RideType.STANDARD, baseFare: 2.5, perMile: 1.2, perMinute: 0.45, multiplier: 1 },
+    { provider: BenchmarkProvider.UBER, marketKey: "DEFAULT", rideType: RideType.SUV, baseFare: 4.0, perMile: 1.8, perMinute: 0.6, multiplier: 1 },
+    { provider: BenchmarkProvider.UBER, marketKey: "DEFAULT", rideType: RideType.XL, baseFare: 5.0, perMile: 2.0, perMinute: 0.7, multiplier: 1 },
+    // Lyft DEFAULT
+    { provider: BenchmarkProvider.LYFT, marketKey: "DEFAULT", rideType: RideType.STANDARD, baseFare: 2.75, perMile: 1.15, perMinute: 0.5, multiplier: 1 },
+    { provider: BenchmarkProvider.LYFT, marketKey: "DEFAULT", rideType: RideType.SUV, baseFare: 4.25, perMile: 1.75, perMinute: 0.65, multiplier: 1 },
+    { provider: BenchmarkProvider.LYFT, marketKey: "DEFAULT", rideType: RideType.XL, baseFare: 5.25, perMile: 1.95, perMinute: 0.75, multiplier: 1 }
+  ];
+
+  for (const benchmark of benchmarks) {
+    await prisma.platformRateBenchmark.upsert({
+      where: {
+        provider_marketKey_rideType: {
+          provider: benchmark.provider,
+          marketKey: benchmark.marketKey,
+          rideType: benchmark.rideType
+        }
+      },
+      update: {
+        baseFare: benchmark.baseFare,
+        perMile: benchmark.perMile,
+        perMinute: benchmark.perMinute,
+        multiplier: benchmark.multiplier,
+        observedAt: new Date()
+      },
+      create: {
+        provider: benchmark.provider,
+        marketKey: benchmark.marketKey,
+        rideType: benchmark.rideType,
+        baseFare: benchmark.baseFare,
+        perMile: benchmark.perMile,
+        perMinute: benchmark.perMinute,
+        multiplier: benchmark.multiplier,
+        observedAt: new Date()
+      }
+    });
+  }
+}
+
 async function main() {
   await upsertMarketRules("DEFAULT", [
     { rideType: RideType.STANDARD, baseFare: 6, perMile: 2.2, perMinute: 0.4, multiplier: 1 },
@@ -201,6 +244,7 @@ async function main() {
   ]);
 
   await seedDemoDrivers();
+  await seedBenchmarks();
 }
 
 main()
