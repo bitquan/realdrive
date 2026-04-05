@@ -31,6 +31,8 @@ const CommunityJoinPage = lazy(() => import("@/pages/community-join-page").then(
 const CommunityPage = lazy(() => import("@/pages/community-page").then((module) => ({ default: module.CommunityPage })));
 const ShareRedirectPage = lazy(() => import("@/pages/share-redirect-page").then((module) => ({ default: module.ShareRedirectPage })));
 const RequestFeaturePage = lazy(() => import("@/pages/request-feature-page").then((module) => ({ default: module.RequestFeaturePage })));
+const SmsConsentPage = lazy(() => import("@/pages/sms-consent-page").then((module) => ({ default: module.SmsConsentPage })));
+const SmsHelpPage = lazy(() => import("@/pages/sms-help-page").then((module) => ({ default: module.SmsHelpPage })));
 
 function PageLoader({ children }: { children: React.ReactNode }) {
   return (
@@ -99,6 +101,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/drive-with-us" element={<PageLoader><DriverInterestPage /></PageLoader>} />
             <Route path="/driver/signup" element={<PageLoader><DriverInterestPage /></PageLoader>} />
             <Route path="/share/:referralCode" element={<PageLoader><ShareRedirectPage /></PageLoader>} />
+            <Route path="/sms-consent" element={<PageLoader><SmsConsentPage /></PageLoader>} />
+            <Route path="/sms-help" element={<PageLoader><SmsHelpPage /></PageLoader>} />
             <Route path="/community/join/:token" element={<PageLoader><CommunityJoinPage /></PageLoader>} />
             <Route
               path="/community"
