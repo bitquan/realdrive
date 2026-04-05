@@ -70,3 +70,17 @@ Drivers now sign up normally at `/driver/signup`, stay `pending` until approved,
 - Driver auth uses email/password, not OTP.
 - The API and Vite app load environment variables from their own package directories, so the app-level `.env` files are the source of truth for local development.
 - Business QR codes are available in the admin UI at `/admin/share`.
+
+## Notifications Quick Start
+
+1. Configure API env vars for push in `apps/api/.env`:
+	- `WEB_PUSH_VAPID_PUBLIC_KEY`
+	- `WEB_PUSH_VAPID_PRIVATE_KEY`
+	- `WEB_PUSH_VAPID_SUBJECT`
+2. Restart API (`pnpm dev:api` or full `pnpm dev`).
+3. Log in and open `/notifications`.
+4. Click **Enable push on this browser** and allow permission.
+5. Click **Send test push**.
+6. Verify delivery entries in the notification delivery log.
+
+For full setup, troubleshooting, and ride-lifecycle test tutorials, use [docs/12-push-notifications-playbook.md](./docs/12-push-notifications-playbook.md).

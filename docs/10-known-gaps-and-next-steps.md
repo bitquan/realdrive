@@ -17,7 +17,7 @@
 - Single-region assumptions
 - English-only UI
 - No native mobile apps
-- No push notifications
+- Push notifications depend on browser/device subscription and platform support (for example iOS web constraints)
 - No file uploads or driver document review workflow
 - No admin audit UI even though audit records are stored
 - No advanced dispatch heuristics beyond local radius, service-area state match, and nationwide fan-out

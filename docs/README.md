@@ -35,3 +35,5 @@ This folder is the project handbook for RealDrive.
   Render + Vercel deployment flow, required env vars, and post-deploy checks.
 - [12 Push Notifications Playbook](./12-push-notifications-playbook.md)
   End-to-end how-to for setup, testing tutorials, troubleshooting, and operator checks.
+- [13 Roadmap Baseline (25 Features)](./13-roadmap-baseline-25-features.md)
+  Planning baseline for 25 upcoming features, phased roadmap, UI upgrades, and deferred gaps.
