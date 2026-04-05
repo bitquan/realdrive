@@ -30,6 +30,7 @@ const AdminInviteAcceptPage = lazy(() => import("@/pages/admin-invite-accept-pag
 const CommunityJoinPage = lazy(() => import("@/pages/community-join-page").then((module) => ({ default: module.CommunityJoinPage })));
 const CommunityPage = lazy(() => import("@/pages/community-page").then((module) => ({ default: module.CommunityPage })));
 const ShareRedirectPage = lazy(() => import("@/pages/share-redirect-page").then((module) => ({ default: module.ShareRedirectPage })));
+const RequestFeaturePage = lazy(() => import("@/pages/request-feature-page").then((module) => ({ default: module.RequestFeaturePage })));
 
 function PageLoader({ children }: { children: React.ReactNode }) {
   return (
@@ -104,6 +105,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireAuth>
                   <PageLoader><CommunityPage /></PageLoader>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/request-feature"
+              element={
+                <RequireAuth>
+                  <PageLoader><RequestFeaturePage /></PageLoader>
                 </RequireAuth>
               }
             />

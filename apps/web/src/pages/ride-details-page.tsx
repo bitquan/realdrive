@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { Clock3, CreditCard, Phone, User, Vote } from "lucide-react";
@@ -22,7 +22,6 @@ export function RideDetailsPage() {
   const { rideId = "" } = useParams();
   const { token } = useAuth();
   const queryClient = useQueryClient();
-  const [issueFeedback, setIssueFeedback] = useState<string | null>(null);
   const rideQuery = useQuery({
     queryKey: ["ride", rideId],
     queryFn: () => api.getRide(rideId, token!)
@@ -44,25 +43,6 @@ export function RideDetailsPage() {
       queryClient.setQueryData(["ride", rideId], ride);
       void queryClient.invalidateQueries({ queryKey: ["rider-rides"] });
     }
-  });
-
-  const issueReportMutation = useMutation({
-    mutationFn: (payload: { summary: string; details?: string }) =>
-      api.submitIssueReport(
-        {
-          source: "rider_app",
-          summary: payload.summary,
-          details: payload.details,
-          rideId,
-          page: window.location.pathname,
-          metadata: {
-            rideStatus: rideQuery.data?.status ?? "unknown"
-          }
-        },
-        token!
-      ),
-    onSuccess: () => setIssueFeedback("Issue submitted. We will review it shortly."),
-    onError: (error) => setIssueFeedback(error instanceof Error ? error.message : "Issue report failed")
   });
 
   useEffect(() => {
@@ -98,6 +78,7 @@ export function RideDetailsPage() {
   const ride = rideQuery.data;
   const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
   const isMutable = ride.status !== "completed" && ride.status !== "canceled";
+  const requestFeatureUrl = `/request-feature?source=rider_app&rideId=${encodeURIComponent(rideId)}&contextPath=${encodeURIComponent(`/rider/rides/${rideId}`)}`;
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -220,22 +201,12 @@ export function RideDetailsPage() {
         >
           Back to my rides
         </Link>
-        <Button
-          variant="outline"
-          className="h-11"
-          disabled={issueReportMutation.isPending}
-          onClick={() => {
-            const summary = window.prompt("Describe the issue in one sentence.")?.trim();
-            if (!summary) {
-              return;
-            }
-
-            const details = window.prompt("Optional details (steps, expected behavior).")?.trim();
-            issueReportMutation.mutate({ summary, details: details || undefined });
-          }}
+        <Link
+          to={requestFeatureUrl}
+          className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
         >
-          Report issue
-        </Button>
+          Request feature
+        </Link>
         {isMutable ? (
           <Button
             variant="ghost"
@@ -246,7 +217,6 @@ export function RideDetailsPage() {
           </Button>
         ) : null}
       </BottomActionBar>
-      {issueFeedback ? <p className="text-xs text-ops-muted">{issueFeedback}</p> : null}
     </div>
   );
 }

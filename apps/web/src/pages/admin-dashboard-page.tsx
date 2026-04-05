@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { AlertTriangle, CreditCard, MessageSquare, QrCode, Route, ShieldCheck, UserPlus, Users } from "lucide-react";
@@ -20,7 +19,6 @@ import { useAuth } from "@/providers/auth-provider";
 export function AdminDashboardPage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
-  const [issueFeedback, setIssueFeedback] = useState<string | null>(null);
   const ridesQuery = useQuery({
     queryKey: ["admin-rides"],
     queryFn: () => api.listAdminRides(token!),
@@ -63,25 +61,6 @@ export function AdminDashboardPage() {
     }
   });
 
-  const issueReportMutation = useMutation({
-    mutationFn: (payload: { summary: string; details?: string }) =>
-      api.submitIssueReport(
-        {
-          source: "admin_dashboard",
-          summary: payload.summary,
-          details: payload.details,
-          page: window.location.pathname,
-          metadata: {
-            activeRideCount: ridesQuery.data?.length ?? 0,
-            pendingDriverApplications: driverApplicationsQuery.data?.length ?? 0
-          }
-        },
-        token!
-      ),
-    onSuccess: () => setIssueFeedback("Issue submitted. The engineering queue has it."),
-    onError: (error) => setIssueFeedback(error instanceof Error ? error.message : "Issue report failed")
-  });
-
   const rides = ridesQuery.data ?? [];
   const riderLeads = leadsQuery.data?.riderLeads ?? [];
   const driverInterests = leadsQuery.data?.driverInterests ?? [];
@@ -98,6 +77,7 @@ export function AdminDashboardPage() {
     needsBatching.reduce((total, snapshot) => total + snapshot.collectibleUnbatchedTotal, 0) +
     openBatches.reduce((total, batch) => total + batch.amount, 0) +
     overdueBatches.reduce((total, batch) => total + batch.amount, 0);
+  const requestFeatureUrl = `/request-feature?source=admin_dashboard&contextPath=${encodeURIComponent("/admin")}`;
 
   return (
     <div className="space-y-6">
@@ -121,24 +101,13 @@ export function AdminDashboardPage() {
               <p>{openBatches.length + overdueBatches.length} open dues batches can affect driver availability and dispatch.</p>
               <p>{communityQuery.data?.proposals.length ?? 0} community proposals are live right now.</p>
             </div>
-            <Button
-              variant="ghost"
-              className="mt-4"
-              disabled={issueReportMutation.isPending}
-              onClick={() => {
-                const summary = window.prompt("Describe the issue in one sentence.")?.trim();
-                if (!summary) {
-                  return;
-                }
-
-                const details = window.prompt("Optional details (steps, expected behavior).")?.trim();
-                issueReportMutation.mutate({ summary, details: details || undefined });
-              }}
+            <Link
+              to={requestFeatureUrl}
+              className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
             >
               <AlertTriangle className="mr-2 h-4 w-4" />
-              Report an issue
-            </Button>
-            {issueFeedback ? <p className="mt-2 text-xs text-ops-muted">{issueFeedback}</p> : null}
+              Request feature
+            </Link>
           </div>
         }
       />

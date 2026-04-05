@@ -98,7 +98,6 @@ export function DriverDashboardPage() {
   const [rateMode, setRateMode] = useState<"platform" | "custom">("platform");
   const [rateForm, setRateForm] = useState(emptyRateForm);
   const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<PaymentMethod[]>(paymentMethodOptions);
-  const [issueFeedback, setIssueFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profileQuery.data) {
@@ -232,29 +231,6 @@ export function DriverDashboardPage() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["driver-offers"] })
   });
 
-  const issueReportMutation = useMutation({
-    mutationFn: (payload: { summary: string; details?: string }) =>
-      api.submitIssueReport(
-        {
-          source: "driver_app",
-          summary: payload.summary,
-          details: payload.details,
-          page: window.location.pathname,
-          metadata: {
-            activeRideCount: activeRidesQuery.data?.length ?? 0,
-            offerCount: offersQuery.data?.length ?? 0
-          }
-        },
-        token!
-      ),
-    onSuccess: () => {
-      setIssueFeedback("Issue submitted. We will review it shortly.");
-    },
-    onError: (error) => {
-      setIssueFeedback(error instanceof Error ? error.message : "Issue report failed");
-    }
-  });
-
   useEffect(() => {
     if (!token) {
       return;
@@ -284,6 +260,7 @@ export function DriverDashboardPage() {
   const collector = duesQuery.data?.collector;
   const suspended = duesQuery.data?.blocked ?? false;
   const community = communityQuery.data;
+  const requestFeatureUrl = `/request-feature?source=driver_app&contextPath=${encodeURIComponent("/driver")}`;
 
   return (
     <div className="space-y-6">
@@ -319,24 +296,13 @@ export function DriverDashboardPage() {
               >
                 {profileQuery.data?.available ? "Set offline" : suspended ? "Clear dues to go available" : "Go available"}
               </Button>
-              <Button
-                variant="ghost"
-                className="mt-3"
-                disabled={issueReportMutation.isPending}
-                onClick={() => {
-                  const summary = window.prompt("Describe the issue in one sentence.")?.trim();
-                  if (!summary) {
-                    return;
-                  }
-
-                  const details = window.prompt("Optional details (steps, expected behavior).")?.trim();
-                  issueReportMutation.mutate({ summary, details: details || undefined });
-                }}
+              <Link
+                to={requestFeatureUrl}
+                className="mt-3 inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
               >
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                Report an issue
-              </Button>
-              {issueFeedback ? <p className="mt-2 text-xs text-ops-muted">{issueFeedback}</p> : null}
+                Request feature
+              </Link>
             </div>
           </div>
         }

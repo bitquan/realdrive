@@ -4,6 +4,7 @@ import {
   CarFront,
   CreditCard,
   LayoutDashboard,
+  Lightbulb,
   MessageSquare,
   QrCode,
   Route,
@@ -90,6 +91,15 @@ const sharedItems: ShellNavItem[] = [
     to: "/community",
     icon: MessageSquare,
     matchPatterns: ["/community"],
+    requiresAuth: true
+  },
+  {
+    id: "request-feature",
+    label: "Request feature",
+    shortLabel: "Feature",
+    to: "/request-feature",
+    icon: Lightbulb,
+    matchPatterns: ["/request-feature"],
     requiresAuth: true
   }
 ];
@@ -339,6 +349,16 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       title: "Community board",
       description: "Read, post, vote, and moderate proposals inside the same ops language as the rest of the app.",
       mapMode: "ambient",
+      mobileHeaderMode: "minimal"
+    }
+  },
+  {
+    patterns: ["/request-feature"],
+    frame: {
+      eyebrow: "Product",
+      title: "Request a feature",
+      description: "Share feature ideas directly with context so the engineering queue can pick them up quickly.",
+      mapMode: "off",
       mobileHeaderMode: "minimal"
     }
   },
