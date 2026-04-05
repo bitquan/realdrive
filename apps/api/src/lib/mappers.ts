@@ -658,6 +658,11 @@ export function mapRide(ride: RideWithRelations): Ride {
   const finalCustomerTotal = decimalToNumber(ride.finalCustomerTotal);
   const amountDue = finalCustomerTotal ?? estimatedCustomerTotal;
 
+  // SMS_RIDER_FEE / SMS_DRIVER_FEE are constants included in the totals above (for new rides).
+  // We surface them separately so the frontend can show a line-item breakdown.
+  const SMS_RIDER_FEE = 0.05;
+  const SMS_DRIVER_FEE = 0.05;
+
   return {
     id: ride.id,
     riderId: ride.riderId,
@@ -691,7 +696,9 @@ export function mapRide(ride: RideWithRelations): Ride {
       finalSubtotal,
       finalPlatformDue,
       finalCustomerTotal,
-      finalDriverNet: finalSubtotal
+      finalDriverNet: finalSubtotal,
+      smsRiderFee: SMS_RIDER_FEE,
+      smsDriverFee: SMS_DRIVER_FEE,
     },
     payment: {
       method: fromDbPaymentMethod(ride.paymentMethod),

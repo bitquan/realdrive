@@ -22,6 +22,7 @@ export const env = {
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID ?? "",
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN ?? "",
   twilioVerifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID ?? "",
+  twilioFromNumber: process.env.TWILIO_FROM_NUMBER ?? "",
   githubRepo: process.env.GITHUB_REPO ?? "",
   githubToken: process.env.GITHUB_TOKEN ?? "",
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",

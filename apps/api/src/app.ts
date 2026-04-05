@@ -60,6 +60,7 @@ import {
 import { createOtpService } from "./services/otp.js";
 import { calculateCustomerTotal, calculateFare, calculatePlatformDue, findPlatformPricingRule } from "./services/pricing.js";
 import { createRideService } from "./services/ride-service.js";
+import { createSmsService } from "./services/sms.js";
 
 function resolvePublicBaseUrl(request: FastifyRequest) {
   const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
@@ -119,6 +120,7 @@ export function buildApp() {
 
   const maps = createMapsService(env.mapboxToken);
   const otp = createOtpService();
+  const sms = createSmsService();
 
   app.register(cors, {
     origin: true,
@@ -156,12 +158,46 @@ export function buildApp() {
         for (const driverId of driverIds) {
           io.to(`user:${driverId}`).emit("ride.offer", ride);
         }
+        // SMS: look up each driver's phone and send offer notification (fire-and-forget)
+        void Promise.all(
+          driverIds.map(async (driverId) => {
+            try {
+              const driver = await store.getDriverAccount(driverId);
+              if (driver?.phone) {
+                await sms.notifyDriverNewRide(driver.phone, ride);
+              }
+            } catch (err) {
+              // Never block dispatch on SMS failure
+              app.log.warn({ err, driverId }, "SMS offer notification failed");
+            }
+          })
+        );
       },
       rideUpdated(ride) {
         io.to(`ride:${ride.id}`).emit("ride.status.changed", ride);
         io.to(`user:${ride.riderId}`).emit("ride.status.changed", ride);
         if (ride.driverId) {
           io.to(`user:${ride.driverId}`).emit("ride.status.changed", ride);
+        }
+
+        // SMS notifications based on status transition
+        const riderPhone = ride.rider?.phone ?? null;
+        const driverPhone = ride.driver?.phone ?? null;
+
+        if (ride.status === "offered") {
+          // Driver-side notifications are sent per-driver in rideOffered — see below.
+        } else if (ride.status === "accepted") {
+          if (riderPhone) sms.notifyRiderDriverAccepted(riderPhone, ride);
+        } else if (ride.status === "en_route") {
+          if (riderPhone) sms.notifyRiderDriverEnRoute(riderPhone, ride);
+        } else if (ride.status === "arrived") {
+          if (riderPhone) sms.notifyRiderDriverArrived(riderPhone, ride);
+        } else if (ride.status === "completed") {
+          if (riderPhone) sms.notifyRiderRideComplete(riderPhone, ride);
+          if (driverPhone) sms.notifyDriverRideComplete(driverPhone, ride);
+        } else if (ride.status === "canceled") {
+          if (riderPhone) sms.notifyRiderCanceled(riderPhone, ride);
+          if (driverPhone) sms.notifyDriverCanceled(driverPhone, ride);
         }
       },
       rideLocationUpdated(ride) {

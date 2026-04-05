@@ -228,7 +228,9 @@ export const ridePricingSnapshotSchema = z.object({
   finalSubtotal: z.number().nonnegative().nullable(),
   finalPlatformDue: z.number().nonnegative().nullable(),
   finalCustomerTotal: z.number().nonnegative().nullable(),
-  finalDriverNet: z.number().nonnegative().nullable()
+  finalDriverNet: z.number().nonnegative().nullable(),
+  smsRiderFee: z.number().nonnegative().optional(),
+  smsDriverFee: z.number().nonnegative().optional()
 });
 
 export const paymentRecordSchema = z.object({
