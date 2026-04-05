@@ -65,6 +65,10 @@ function BatchingRow({
     }
   });
 
+  const pendingAdCredit = snapshot.adProgram.pendingCreditTotal;
+  const appliedAdCredit = snapshot.adProgram.appliedCreditTotal;
+  const netReadyNow = Math.max(0, snapshot.collectibleUnbatchedTotal - pendingAdCredit);
+
   return (
     <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-surface/72 p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -86,10 +90,29 @@ function BatchingRow({
             {snapshot.collectibleUnbatchedCount} completed-trip dues ready for batching · last completed trip{" "}
             {snapshot.lastCompletedRideAt ? formatDateTime(snapshot.lastCompletedRideAt) : "not available"}
           </p>
+          <p className="mt-2 text-sm text-ops-muted">
+            Ad program {snapshot.adProgram.optedIn ? "opted in" : "not opted in"} · {snapshot.adProgram.scanCount} scans · {snapshot.adProgram.activeAdCount} active ads
+          </p>
         </div>
         <div className="text-right">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Ready now</p>
           <p className="mt-2 text-2xl font-bold tracking-[-0.03em] text-ops-text">{formatMoney(snapshot.collectibleUnbatchedTotal)}</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.2em] text-ops-muted">Net after pending credits {formatMoney(netReadyNow)}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Pending ad credit</p>
+          <p className="mt-2 text-xl font-bold text-ops-text">{formatMoney(pendingAdCredit)}</p>
+        </div>
+        <div className="rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Applied ad credit</p>
+          <p className="mt-2 text-xl font-bold text-ops-text">{formatMoney(appliedAdCredit)}</p>
+        </div>
+        <div className="rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Available scans</p>
+          <p className="mt-2 text-xl font-bold text-ops-text">{snapshot.adProgram.scanCount}</p>
         </div>
       </div>
 
@@ -132,9 +155,11 @@ function BatchingRow({
 
 function BatchEditor({
   batch,
+  pendingAdCredit,
   token
 }: {
   batch: PlatformDueBatch;
+  pendingAdCredit: number;
   token: string;
 }) {
   const queryClient = useQueryClient();
@@ -179,6 +204,23 @@ function BatchEditor({
     }
   });
 
+  const applyAdCreditsMutation = useMutation({
+    mutationFn: () =>
+      api.applyDriverAdCredits(
+        batch.driverId,
+        {
+          note: `Applied from dues workflow to ${batch.referenceCode}.`,
+          platformDueBatchId: batch.id
+        },
+        token
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin-dues"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-ads"] });
+      void queryClient.invalidateQueries({ queryKey: ["driver-dues"] });
+    }
+  });
+
   return (
     <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-surface/72 p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -196,12 +238,21 @@ function BatchEditor({
             Generated {formatDateTime(batch.generatedAt)} · due {formatDateTime(batch.dueAt)}
           </p>
         </div>
-        <p className="text-2xl font-bold tracking-[-0.03em] text-ops-text">{formatMoney(batch.amount)}</p>
+        <div className="text-right">
+          <p className="text-2xl font-bold tracking-[-0.03em] text-ops-text">{formatMoney(batch.netAmountDue)}</p>
+          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-ops-muted">
+            Gross {formatMoney(batch.amount)} · ad credit {formatMoney(batch.adCreditAppliedTotal)}
+          </p>
+        </div>
       </div>
 
       <div className="mt-4 rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/50 p-4 text-sm text-ops-muted">
         Drivers should put <span className="font-semibold text-ops-text">{batch.referenceCode}</span> in the payment title,
         note, or both. Cash and other offline payments require an admin note before reconciliation.
+      </div>
+
+      <div className="mt-4 rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm text-ops-muted">
+        Pending driver ad credit available: <span className="font-semibold text-ops-text">{formatMoney(pendingAdCredit)}</span>
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
@@ -246,12 +297,20 @@ function BatchEditor({
         </div>
       </div>
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex flex-wrap justify-end gap-3">
+        <Button
+          variant="outline"
+          disabled={applyAdCreditsMutation.isPending || pendingAdCredit <= 0 || batch.netAmountDue <= 0 || (batch.status !== "open" && batch.status !== "overdue")}
+          onClick={() => applyAdCreditsMutation.mutate()}
+        >
+          Apply ad credits to this batch
+        </Button>
         <Button disabled={mutation.isPending} onClick={() => mutation.mutate()}>
           Save batch
         </Button>
       </div>
       {mutation.error ? <p className="mt-3 text-sm text-ops-error">{mutation.error.message}</p> : null}
+      {applyAdCreditsMutation.error ? <p className="mt-3 text-sm text-ops-error">{applyAdCreditsMutation.error.message}</p> : null}
     </div>
   );
 }
@@ -428,8 +487,16 @@ export function AdminDuesPage() {
   );
 
   const readyTotal = filteredNeedsBatching.reduce((total, snapshot) => total + snapshot.collectibleUnbatchedTotal, 0);
-  const activeBatchTotal = filteredOpenBatches.reduce((total, batch) => total + batch.amount, 0);
-  const overdueBatchTotal = filteredOverdueBatches.reduce((total, batch) => total + batch.amount, 0);
+  const activeBatchTotal = filteredOpenBatches.reduce((total, batch) => total + batch.netAmountDue, 0);
+  const overdueBatchTotal = filteredOverdueBatches.reduce((total, batch) => total + batch.netAmountDue, 0);
+  const pendingAdCreditTotal = filteredNeedsBatching.reduce((total, snapshot) => total + snapshot.adProgram.pendingCreditTotal, 0);
+  const pendingCreditByDriverId = useMemo(
+    () =>
+      Object.fromEntries(
+        (duesQuery.data?.needsBatching ?? []).map((snapshot) => [snapshot.driver.id, snapshot.adProgram.pendingCreditTotal])
+      ) as Record<string, number>,
+    [duesQuery.data?.needsBatching]
+  );
 
   return (
     <div className="space-y-6">
@@ -456,7 +523,7 @@ export function AdminDuesPage() {
         <MetricCard label="Needs batching" value={formatMoney(readyTotal)} meta={`${filteredNeedsBatching.length} driver queues ready now`} icon={Wallet} tone="warning" />
         <MetricCard label="Open batches" value={formatMoney(activeBatchTotal)} meta={`${filteredOpenBatches.length} payable references live`} icon={CreditCard} />
         <MetricCard label="Overdue batches" value={formatMoney(overdueBatchTotal)} meta={`${filteredOverdueBatches.length} blocked driver batches`} icon={AlertTriangle} tone="danger" />
-        <MetricCard label="Resolved history" value={filteredHistory.length} meta="Paid, waived, or voided references" icon={Landmark} tone="success" />
+        <MetricCard label="Pending ad credit" value={formatMoney(pendingAdCreditTotal)} meta="Manual dues offset available" icon={Landmark} tone="success" />
       </MetricStrip>
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -519,7 +586,9 @@ export function AdminDuesPage() {
           <PanelSection title="Open batches" description="These dues codes are live and waiting for payment evidence.">
             <EntityList>
               {filteredOpenBatches.length ? (
-                filteredOpenBatches.map((batch) => <BatchEditor key={batch.id} batch={batch} token={token!} />)
+                filteredOpenBatches.map((batch) => (
+                  <BatchEditor key={batch.id} batch={batch} pendingAdCredit={pendingCreditByDriverId[batch.driverId] ?? 0} token={token!} />
+                ))
               ) : (
                 <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                   No open batches in this scope.
@@ -531,7 +600,9 @@ export function AdminDuesPage() {
           <PanelSection title="Overdue batches" description="These drivers stay blocked until the matching dues code is reconciled, reopened, waived, or voided.">
             <EntityList>
               {filteredOverdueBatches.length ? (
-                filteredOverdueBatches.map((batch) => <BatchEditor key={batch.id} batch={batch} token={token!} />)
+                filteredOverdueBatches.map((batch) => (
+                  <BatchEditor key={batch.id} batch={batch} pendingAdCredit={pendingCreditByDriverId[batch.driverId] ?? 0} token={token!} />
+                ))
               ) : (
                 <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
                   No overdue batches right now.
@@ -555,7 +626,12 @@ export function AdminDuesPage() {
                           {batch.paymentMethod ? `Method ${batch.paymentMethod}` : "No method recorded"} · updated {formatDateTime(batch.updatedAt)}
                         </p>
                       </div>
-                      <p className="font-semibold text-ops-text">{formatMoney(batch.amount)}</p>
+                      <div className="text-right">
+                        <p className="font-semibold text-ops-text">{formatMoney(batch.netAmountDue)}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-ops-muted">
+                          Gross {formatMoney(batch.amount)} · credit {formatMoney(batch.adCreditAppliedTotal)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))

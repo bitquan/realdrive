@@ -1,17 +1,33 @@
 import {
+  AdSubmissionStatus as DbAdSubmissionStatus,
   BenchmarkProvider as DbBenchmarkProvider,
+  DriverAdCreditStatus as DbDriverAdCreditStatus,
   PlatformDueBatchStatus as DbPlatformDueBatchStatus,
   Prisma,
   Role as DbRole,
   type IssueReport as DbIssueReport
 } from "@prisma/client";
 import type {
+  AdPricingSettings,
+  AdSubmission,
+  AdSubmissionMetrics,
+  AdSubmissionStatus,
+  AdVisitResolveResponse,
+  AdminAdsResponse,
+  AdminDriverAdCreditSummary,
+  AdminUpdateAdSubmissionInput,
+  ApplyDriverAdCreditsInput,
   BenchmarkProvider,
   CollectorAdminSummary,
+  CreateAdSubmissionInput,
+  DriverAdCreditSummary,
+  DriverAdProgramResponse,
   IssueReport,
   IssueReportStatus,
   NotificationDeliveryLog,
   NotificationPreference,
+  PublicAdDisplayResponse,
+  UpdateAdPricingSettingsInput,
   UpdateNotificationPreferenceInput,
   UpsertPushSubscriptionInput,
   PlatformRateBenchmarkRule,
@@ -38,7 +54,7 @@ import type {
   Store,
   UpdateRideAdminPatch
 } from "../services/types.js";
-import { createCommunityAccessToken, createReferralCode } from "./codes.js";
+import { createCommunityAccessToken, createPublicTrackingToken, createReferralCode } from "./codes.js";
 import { prisma } from "./db.js";
 import {
   persistDriverDocumentUpload,
@@ -62,6 +78,7 @@ import {
   mapRide,
   mapRiderLead,
   mapSessionUser,
+  toIso,
   toDbCommunityVoteChoice,
   toDbDriverApprovalStatus,
   toDbDriverDocumentStatus,
@@ -290,10 +307,47 @@ const platformDueBatchInclude = {
   collectorAdmin: {
     select: collectorSummarySelect
   },
+  adCredits: {
+    select: {
+      amount: true,
+      status: true
+    }
+  },
   dues: {
     include: platformDueInclude,
     orderBy: {
       createdAt: "asc"
+    }
+  }
+} as const;
+
+const adDriverSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  driverProfile: {
+    select: {
+      available: true
+    }
+  }
+} as const;
+
+const adSubmissionInclude = {
+  assignedDriver: {
+    select: adDriverSelect
+  },
+  scans: {
+    select: {
+      id: true,
+      creditEligible: true,
+      blockedReason: true
+    }
+  },
+  credits: {
+    select: {
+      amount: true,
+      status: true
     }
   }
 } as const;
@@ -320,6 +374,252 @@ function toCollectorSummary(
     email: user.email,
     phone: user.phone,
     referralCode: user.referralCode ?? null
+  };
+}
+
+function fromDbAdSubmissionStatus(status: DbAdSubmissionStatus): AdSubmissionStatus {
+  return status.toLowerCase() as AdSubmissionStatus;
+}
+
+function toDbAdSubmissionStatus(status: AdSubmissionStatus): DbAdSubmissionStatus {
+  return status.toUpperCase() as DbAdSubmissionStatus;
+}
+
+function fromDbDriverAdCreditStatus(status: DbDriverAdCreditStatus) {
+  return status.toLowerCase() as "pending" | "applied" | "void";
+}
+
+function toAdDriverSummary(
+  user:
+    | {
+        id: string;
+        name: string;
+        email: string | null;
+        phone: string | null;
+        driverProfile?: { available: boolean } | null;
+      }
+    | null
+    | undefined
+) {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    available: user.driverProfile?.available ?? false
+  };
+}
+
+function toFixedMoney(value: number) {
+  return Number(value.toFixed(2));
+}
+
+const DEFAULT_AD_SLOT_MULTIPLIERS = [
+  { slotRank: 1, multiplier: 1.5 },
+  { slotRank: 2, multiplier: 1 },
+  { slotRank: 3, multiplier: 0.85 }
+] as const;
+
+function normalizeAdSlotMultipliers(value: Prisma.JsonValue | null | undefined) {
+  if (!Array.isArray(value)) {
+    return [...DEFAULT_AD_SLOT_MULTIPLIERS];
+  }
+
+  const normalized = value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return null;
+      }
+
+      const slotRank = Number((entry as Record<string, unknown>).slotRank);
+      const multiplier = Number((entry as Record<string, unknown>).multiplier);
+      if (!Number.isInteger(slotRank) || slotRank < 1 || !Number.isFinite(multiplier) || multiplier <= 0) {
+        return null;
+      }
+
+      return { slotRank, multiplier: toFixedMoney(multiplier) };
+    })
+    .filter((entry): entry is { slotRank: number; multiplier: number } => Boolean(entry))
+    .sort((left, right) => left.slotRank - right.slotRank);
+
+  return normalized.length ? normalized : [...DEFAULT_AD_SLOT_MULTIPLIERS];
+}
+
+function getAdSlotMultiplier(slotMultipliers: Array<{ slotRank: number; multiplier: number }>, slotRank: number) {
+  return slotMultipliers.find((entry) => entry.slotRank === slotRank)?.multiplier ?? 1;
+}
+
+function calculateAdPricing(input: {
+  baseDailyPrice: Prisma.Decimal | number;
+  requestedDays: number;
+  slotRank: number;
+  slotMultipliers: Array<{ slotRank: number; multiplier: number }>;
+}) {
+  const multiplier = getAdSlotMultiplier(input.slotMultipliers, input.slotRank);
+  const dailyPrice = toFixedMoney(Number(input.baseDailyPrice) * multiplier);
+
+  return {
+    dailyPrice,
+    totalPrice: toFixedMoney(dailyPrice * input.requestedDays)
+  };
+}
+
+function mapAdPricingSettingsRecord(settings: {
+  baseDailyPrice: Prisma.Decimal | number;
+  defaultDriverCreditPerScan: Prisma.Decimal | number;
+  slotMultipliers?: Prisma.JsonValue | null;
+  dedupeWindowMinutes: number;
+  updatedAt: Date;
+}): AdPricingSettings {
+  return {
+    baseDailyPrice: Number(settings.baseDailyPrice),
+    defaultDriverCreditPerScan: Number(settings.defaultDriverCreditPerScan),
+    slotMultipliers: normalizeAdSlotMultipliers(settings.slotMultipliers),
+    dedupeWindowMinutes: settings.dedupeWindowMinutes,
+    updatedAt: settings.updatedAt.toISOString()
+  };
+}
+
+function normalizeFingerprintPart(value?: string | null) {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .slice(0, 160);
+}
+
+function buildAdScanFingerprint(input: { ipAddress?: string | null; userAgent?: string | null; redirectToken: string }) {
+  const ipAddress = normalizeFingerprintPart(input.ipAddress);
+  const userAgent = normalizeFingerprintPart(input.userAgent);
+  if (!ipAddress && !userAgent) {
+    return `token:${input.redirectToken}`;
+  }
+
+  return `${ipAddress}|${userAgent}|${input.redirectToken}`;
+}
+
+function mapAdSubmissionRecord(
+  submission: {
+    id: string;
+    businessName: string;
+    contactName: string;
+    email: string;
+    phone: string | null;
+    headline: string;
+    body: string;
+    callToAction: string | null;
+    targetUrl: string;
+    imageFileName: string;
+    imageMimeType: string;
+    imageDataUrl: string;
+    requestedDays: number;
+    dailyPrice: Prisma.Decimal | number;
+    totalPrice: Prisma.Decimal | number;
+    displaySeconds: number;
+    slotRank: number;
+    driverCreditPerScan: Prisma.Decimal | number;
+    status: DbAdSubmissionStatus;
+    redirectToken: string;
+    assignedDriverId: string | null;
+    paymentNote: string | null;
+    adminNote: string | null;
+    approvedAt: Date | null;
+    paymentConfirmedAt: Date | null;
+    publishedAt: Date | null;
+    startsAt: Date | null;
+    endsAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    assignedDriver?: {
+      id: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+      driverProfile?: { available: boolean } | null;
+    } | null;
+    scans?: Array<{ id: string; creditEligible: boolean; blockedReason: string | null }>;
+    credits?: Array<{ amount: Prisma.Decimal | number; status: DbDriverAdCreditStatus }>;
+  }
+): AdSubmission {
+  const pendingCreditTotal = toFixedMoney(
+    (submission.credits ?? [])
+      .filter((credit) => fromDbDriverAdCreditStatus(credit.status) === "pending")
+      .reduce((sum, credit) => sum + Number(credit.amount), 0)
+  );
+  const appliedCreditTotal = toFixedMoney(
+    (submission.credits ?? [])
+      .filter((credit) => fromDbDriverAdCreditStatus(credit.status) === "applied")
+      .reduce((sum, credit) => sum + Number(credit.amount), 0)
+  );
+  const metrics: AdSubmissionMetrics = {
+    scanCount: submission.scans?.length ?? 0,
+    eligibleScanCount: (submission.scans ?? []).filter((scan) => scan.creditEligible).length,
+    blockedDuplicateCount: (submission.scans ?? []).filter((scan) => !scan.creditEligible && scan.blockedReason === "duplicate_window").length,
+    pendingCreditTotal,
+    appliedCreditTotal
+  };
+
+  return {
+    id: submission.id,
+    businessName: submission.businessName,
+    contactName: submission.contactName,
+    email: submission.email,
+    phone: submission.phone,
+    headline: submission.headline,
+    body: submission.body,
+    callToAction: submission.callToAction,
+    targetUrl: submission.targetUrl,
+    imageFileName: submission.imageFileName,
+    imageMimeType: submission.imageMimeType,
+    imageDataUrl: submission.imageDataUrl,
+    requestedDays: submission.requestedDays,
+    dailyPrice: Number(submission.dailyPrice),
+    totalPrice: Number(submission.totalPrice),
+    displaySeconds: submission.displaySeconds,
+    slotRank: submission.slotRank,
+    driverCreditPerScan: Number(submission.driverCreditPerScan),
+    status: fromDbAdSubmissionStatus(submission.status),
+    redirectToken: submission.redirectToken,
+    assignedDriverId: submission.assignedDriverId,
+    paymentNote: submission.paymentNote,
+    adminNote: submission.adminNote,
+    approvedAt: toIso(submission.approvedAt),
+    paymentConfirmedAt: toIso(submission.paymentConfirmedAt),
+    publishedAt: toIso(submission.publishedAt),
+    startsAt: toIso(submission.startsAt),
+    endsAt: toIso(submission.endsAt),
+    createdAt: submission.createdAt.toISOString(),
+    updatedAt: submission.updatedAt.toISOString(),
+    assignedDriver: toAdDriverSummary(submission.assignedDriver),
+    metrics
+  };
+}
+
+function summarizeDriverAdCredits(input: {
+  scans: Array<{ id: string }>;
+  credits: Array<{ amount: Prisma.Decimal | number; status: DbDriverAdCreditStatus }>;
+  activeAdCount: number;
+}): DriverAdCreditSummary {
+  const pendingTotal = toFixedMoney(
+    input.credits
+      .filter((credit) => fromDbDriverAdCreditStatus(credit.status) === "pending")
+      .reduce((sum, credit) => sum + Number(credit.amount), 0)
+  );
+  const appliedTotal = toFixedMoney(
+    input.credits
+      .filter((credit) => fromDbDriverAdCreditStatus(credit.status) === "applied")
+      .reduce((sum, credit) => sum + Number(credit.amount), 0)
+  );
+
+  return {
+    scanCount: input.scans.length,
+    pendingTotal,
+    appliedTotal,
+    availableOffsetTotal: pendingTotal,
+    activeAdCount: input.activeAdCount
   };
 }
 
@@ -558,6 +858,19 @@ async function ensureCollectorPayoutSettingsRecord(
     update: {},
     create: {
       adminId
+    }
+  });
+}
+
+async function ensureAdPricingSettingsRecord(tx: Prisma.TransactionClient | typeof prisma = prisma) {
+  const existing = await tx.adPricingSettings.findFirst();
+  if (existing) {
+    return existing;
+  }
+
+  return tx.adPricingSettings.create({
+    data: {
+      slotMultipliers: DEFAULT_AD_SLOT_MULTIPLIERS as unknown as Prisma.InputJsonValue
     }
   });
 }
@@ -892,7 +1205,7 @@ async function buildDriverDueSnapshotInternal(
     throw new Error("Driver not found");
   }
 
-  const [unbatchedDues, batches] = await Promise.all([
+  const [unbatchedDues, batches, adProgram, adScans, adCredits, activeAds] = await Promise.all([
     tx.platformDue.findMany({
       where: {
         driverId,
@@ -906,6 +1219,27 @@ async function buildDriverDueSnapshotInternal(
     tx.platformDueBatch.findMany({
       where: { driverId },
       orderBy: [{ status: "asc" }, { generatedAt: "desc" }]
+    }),
+    tx.driverAdProgramEnrollment.findUnique({
+      where: { driverId }
+    }),
+    tx.adScanEvent.findMany({
+      where: { driverId },
+      select: { id: true }
+    }),
+    tx.driverAdCredit.findMany({
+      where: { driverId },
+      select: {
+        amount: true,
+        status: true
+      }
+    }),
+    tx.adSubmission.count({
+      where: {
+        assignedDriverId: driverId,
+        status: DbAdSubmissionStatus.PUBLISHED,
+        AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: new Date() } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }] }]
+      }
     })
   ]);
 
@@ -928,7 +1262,18 @@ async function buildDriverDueSnapshotInternal(
     openBatchTotal: openBatches.reduce((total, batch) => total + Number(batch.amount), 0),
     overdueBatchCount: overdueBatches.length,
     overdueBatchTotal: overdueBatches.reduce((total, batch) => total + Number(batch.amount), 0),
-    lastCompletedRideAt
+    lastCompletedRideAt,
+    adProgram: {
+      optedIn: adProgram?.optedIn ?? false,
+      scanCount: adScans.length,
+      pendingCreditTotal: toFixedMoney(
+        adCredits.filter((credit) => fromDbDriverAdCreditStatus(credit.status) === "pending").reduce((total, credit) => total + Number(credit.amount), 0)
+      ),
+      appliedCreditTotal: toFixedMoney(
+        adCredits.filter((credit) => fromDbDriverAdCreditStatus(credit.status) === "applied").reduce((total, credit) => total + Number(credit.amount), 0)
+      ),
+      activeAdCount: activeAds
+    }
   });
 }
 
@@ -2949,6 +3294,483 @@ export const store: Store = {
     return interests.map(mapDriverInterest);
   },
 
+  async createAdSubmission(input: CreateAdSubmissionInput) {
+    const pricing = await ensureAdPricingSettingsRecord();
+    const slotRank = input.slotRank ?? 2;
+    const priceSnapshot = calculateAdPricing({
+      baseDailyPrice: pricing.baseDailyPrice,
+      requestedDays: input.requestedDays,
+      slotRank,
+      slotMultipliers: normalizeAdSlotMultipliers(pricing.slotMultipliers)
+    });
+
+    const submission = await prisma.adSubmission.create({
+      data: {
+        businessName: input.businessName.trim(),
+        contactName: input.contactName.trim(),
+        email: input.email.trim().toLowerCase(),
+        phone: input.phone?.trim() || null,
+        headline: input.headline.trim(),
+        body: input.body.trim(),
+        callToAction: input.callToAction?.trim() || null,
+        targetUrl: input.targetUrl,
+        imageFileName: input.image.fileName,
+        imageMimeType: input.image.mimeType,
+        imageDataUrl: `data:${input.image.mimeType};base64,${input.image.contentBase64}`,
+        requestedDays: input.requestedDays,
+        dailyPrice: priceSnapshot.dailyPrice,
+        totalPrice: priceSnapshot.totalPrice,
+        slotRank,
+        driverCreditPerScan: pricing.defaultDriverCreditPerScan,
+        redirectToken: createPublicTrackingToken()
+      },
+      include: adSubmissionInclude
+    });
+
+    return mapAdSubmissionRecord(submission);
+  },
+
+  async listAdminAds(): Promise<AdminAdsResponse> {
+    const [submissions, drivers, pricingSettings] = await Promise.all([
+      prisma.adSubmission.findMany({
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        include: adSubmissionInclude
+      }),
+      prisma.user.findMany({
+        where: {
+          OR: [{ role: DbRole.DRIVER }, { roles: { has: DbRole.DRIVER } }]
+        },
+        orderBy: { name: "asc" },
+        select: {
+          ...adDriverSelect,
+          driverAdProgram: {
+            select: {
+              optedIn: true
+            }
+          },
+          adScans: {
+            select: {
+              id: true
+            }
+          },
+          adCredits: {
+            select: {
+              amount: true,
+              status: true
+            }
+          },
+          assignedAds: {
+            where: {
+              status: DbAdSubmissionStatus.PUBLISHED,
+              OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }]
+            },
+            select: {
+              id: true
+            }
+          }
+        }
+      }),
+      ensureAdPricingSettingsRecord()
+    ]);
+
+    const driverCredits: AdminDriverAdCreditSummary[] = drivers
+      .map((driver) => {
+        const summary = summarizeDriverAdCredits({
+          scans: driver.adScans,
+          credits: driver.adCredits,
+          activeAdCount: driver.assignedAds.length
+        });
+
+        return {
+          driver: toAdDriverSummary(driver)!,
+          optedIn: driver.driverAdProgram?.optedIn ?? false,
+          scanCount: summary.scanCount,
+          pendingTotal: summary.pendingTotal,
+          appliedTotal: summary.appliedTotal,
+          activeAdCount: summary.activeAdCount
+        };
+      })
+      .filter((summary) => summary.optedIn || summary.scanCount > 0 || summary.activeAdCount > 0 || summary.pendingTotal > 0 || summary.appliedTotal > 0);
+
+    return {
+      submissions: submissions.map(mapAdSubmissionRecord),
+      driverCredits,
+      pricingSettings: mapAdPricingSettingsRecord(pricingSettings)
+    };
+  },
+
+  async getAdPricingSettings() {
+    return mapAdPricingSettingsRecord(await ensureAdPricingSettingsRecord());
+  },
+
+  async updateAdPricingSettings(input: UpdateAdPricingSettingsInput) {
+    const existing = await ensureAdPricingSettingsRecord();
+    const mergedSlotMultipliers = input.slotMultipliers
+      ? normalizeAdSlotMultipliers(input.slotMultipliers as unknown as Prisma.JsonValue)
+      : normalizeAdSlotMultipliers(existing.slotMultipliers);
+    const updated = await prisma.adPricingSettings.update({
+      where: { id: existing.id },
+      data: {
+        baseDailyPrice: input.baseDailyPrice ?? undefined,
+        defaultDriverCreditPerScan: input.defaultDriverCreditPerScan ?? undefined,
+        slotMultipliers: input.slotMultipliers ? (mergedSlotMultipliers as unknown as Prisma.InputJsonValue) : undefined,
+        dedupeWindowMinutes: input.dedupeWindowMinutes ?? undefined
+      }
+    });
+
+    return mapAdPricingSettingsRecord(updated);
+  },
+
+  async updateAdSubmission(submissionId: string, input: AdminUpdateAdSubmissionInput) {
+    const [current, pricingSettings] = await Promise.all([
+      prisma.adSubmission.findUnique({
+      where: { id: submissionId }
+      }),
+      ensureAdPricingSettingsRecord()
+    ]);
+
+    if (!current) {
+      throw new Error("Ad submission not found");
+    }
+
+    const nextStatus = input.status ? toDbAdSubmissionStatus(input.status) : current.status;
+    const assignedDriverId = input.assignedDriverId === undefined ? current.assignedDriverId : input.assignedDriverId;
+
+    if (nextStatus === DbAdSubmissionStatus.PUBLISHED) {
+      if (!assignedDriverId) {
+        throw new Error("Assign a driver before publishing this ad.");
+      }
+
+      if (!current.paymentConfirmedAt && current.status !== DbAdSubmissionStatus.PAID && input.status !== "paid") {
+        throw new Error("Confirm payment before publishing this ad.");
+      }
+    }
+
+    const now = new Date();
+    const startsAt = input.startsAt === undefined ? current.startsAt : input.startsAt ? new Date(input.startsAt) : null;
+    const endsAt = input.endsAt === undefined ? current.endsAt : input.endsAt ? new Date(input.endsAt) : null;
+    const nextSlotRank = input.slotRank ?? current.slotRank;
+    const priceSnapshot = calculateAdPricing({
+      baseDailyPrice: pricingSettings.baseDailyPrice,
+      requestedDays: current.requestedDays,
+      slotRank: nextSlotRank,
+      slotMultipliers: normalizeAdSlotMultipliers(pricingSettings.slotMultipliers)
+    });
+    const submission = await prisma.adSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: nextStatus,
+        assignedDriverId,
+        paymentNote: input.paymentNote === undefined ? current.paymentNote : input.paymentNote,
+        adminNote: input.adminNote === undefined ? current.adminNote : input.adminNote,
+        displaySeconds: input.displaySeconds ?? current.displaySeconds,
+        slotRank: nextSlotRank,
+        dailyPrice: input.slotRank !== undefined ? priceSnapshot.dailyPrice : current.dailyPrice,
+        totalPrice: input.slotRank !== undefined ? priceSnapshot.totalPrice : current.totalPrice,
+        driverCreditPerScan: input.driverCreditPerScan ?? current.driverCreditPerScan,
+        startsAt:
+          nextStatus === DbAdSubmissionStatus.PUBLISHED
+            ? startsAt ?? current.startsAt ?? now
+            : startsAt,
+        endsAt:
+          nextStatus === DbAdSubmissionStatus.PUBLISHED
+            ? endsAt ?? current.endsAt ?? new Date((startsAt ?? current.startsAt ?? now).getTime() + current.requestedDays * 24 * 60 * 60 * 1000)
+            : endsAt,
+        approvedAt:
+          nextStatus === DbAdSubmissionStatus.APPROVED && !current.approvedAt
+            ? now
+            : current.approvedAt,
+        paymentConfirmedAt:
+          nextStatus === DbAdSubmissionStatus.PAID && !current.paymentConfirmedAt
+            ? now
+            : current.paymentConfirmedAt,
+        publishedAt:
+          nextStatus === DbAdSubmissionStatus.PUBLISHED && !current.publishedAt
+            ? now
+            : nextStatus === DbAdSubmissionStatus.EXPIRED
+              ? current.publishedAt
+              : current.publishedAt
+      },
+      include: adSubmissionInclude
+    });
+
+    return mapAdSubmissionRecord(submission);
+  },
+
+  async getDriverAdProgram(driverId: string): Promise<DriverAdProgramResponse> {
+    const [enrollment, activeAds, scans, credits] = await Promise.all([
+      prisma.driverAdProgramEnrollment.upsert({
+        where: { driverId },
+        update: {},
+        create: { driverId, optedIn: false }
+      }),
+      prisma.adSubmission.findMany({
+        where: {
+          assignedDriverId: driverId,
+          status: DbAdSubmissionStatus.PUBLISHED,
+          AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: new Date() } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }] }]
+        },
+        orderBy: [{ slotRank: "asc" }, { publishedAt: "desc" }],
+        select: {
+          id: true,
+          businessName: true,
+          headline: true,
+          slotRank: true,
+          displaySeconds: true,
+          status: true,
+          startsAt: true,
+          endsAt: true,
+          publishedAt: true
+        }
+      }),
+      prisma.adScanEvent.findMany({
+        where: { driverId },
+        select: { id: true }
+      }),
+      prisma.driverAdCredit.findMany({
+        where: { driverId },
+        select: {
+          amount: true,
+          status: true
+        }
+      })
+    ]);
+
+    return {
+      enrollment: {
+        driverId: enrollment.driverId,
+        optedIn: enrollment.optedIn,
+        createdAt: enrollment.createdAt.toISOString(),
+        updatedAt: enrollment.updatedAt.toISOString()
+      },
+      summary: summarizeDriverAdCredits({
+        scans,
+        credits,
+        activeAdCount: activeAds.length
+      }),
+      activeAds: activeAds.map((ad) => ({
+        id: ad.id,
+        businessName: ad.businessName,
+        headline: ad.headline,
+        slotRank: ad.slotRank,
+        displaySeconds: ad.displaySeconds,
+        status: fromDbAdSubmissionStatus(ad.status),
+        startsAt: toIso(ad.startsAt),
+        endsAt: toIso(ad.endsAt),
+        publishedAt: toIso(ad.publishedAt)
+      }))
+    };
+  },
+
+  async updateDriverAdProgram(driverId: string, optedIn: boolean) {
+    await prisma.driverAdProgramEnrollment.upsert({
+      where: { driverId },
+      update: { optedIn },
+      create: { driverId, optedIn }
+    });
+
+    return this.getDriverAdProgram(driverId);
+  },
+
+  async getPublicAdDisplay(referralCode: string, baseUrl: string): Promise<PublicAdDisplayResponse> {
+    const driver = await prisma.user.findFirst({
+      where: {
+        referralCode,
+        OR: [{ role: DbRole.DRIVER }, { roles: { has: DbRole.DRIVER } }]
+      },
+      select: {
+        id: true,
+        name: true,
+        referralCode: true,
+        driverAdProgram: {
+          select: {
+            optedIn: true
+          }
+        }
+      }
+    });
+
+    if (!driver?.referralCode) {
+      throw new Error("Driver ad display not found");
+    }
+
+    const items = driver.driverAdProgram?.optedIn
+      ? await prisma.adSubmission.findMany({
+          where: {
+            assignedDriverId: driver.id,
+            status: DbAdSubmissionStatus.PUBLISHED,
+            AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: new Date() } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }] }]
+          },
+          orderBy: [{ slotRank: "asc" }, { publishedAt: "desc" }]
+        })
+      : [];
+
+    return {
+      driverName: driver.name,
+      referralCode: driver.referralCode,
+      optedIn: driver.driverAdProgram?.optedIn ?? false,
+      items: items.map((item) => ({
+        id: item.id,
+        businessName: item.businessName,
+        headline: item.headline,
+        body: item.body,
+        callToAction: item.callToAction,
+        targetUrl: item.targetUrl,
+        qrUrl: `${baseUrl.replace(/\/$/, "")}/ads/visit/${item.redirectToken}`,
+        imageDataUrl: item.imageDataUrl,
+        displaySeconds: item.displaySeconds,
+        slotRank: item.slotRank
+      }))
+    };
+  },
+
+  async resolveAdVisit(redirectToken: string, metadata): Promise<AdVisitResolveResponse> {
+    const [submission, pricingSettings] = await Promise.all([
+      prisma.adSubmission.findFirst({
+        where: {
+          redirectToken,
+          status: DbAdSubmissionStatus.PUBLISHED,
+          AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: new Date() } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }] }]
+        }
+      }),
+      ensureAdPricingSettingsRecord()
+    ]);
+
+    if (!submission || !submission.assignedDriverId) {
+      throw new Error("Ad destination not found");
+    }
+
+    const fingerprint = buildAdScanFingerprint({
+      ipAddress: metadata?.ipAddress ?? null,
+      userAgent: metadata?.userAgent ?? null,
+      redirectToken
+    });
+    const dedupeSince = new Date(Date.now() - pricingSettings.dedupeWindowMinutes * 60 * 1000);
+
+    await prisma.$transaction(async (tx) => {
+      const duplicateRecent = await tx.adScanEvent.findFirst({
+        where: {
+          submissionId: submission.id,
+          fingerprint,
+          creditEligible: true,
+          createdAt: { gte: dedupeSince }
+        },
+        select: { id: true }
+      });
+
+      const creditEligible = !duplicateRecent;
+      const scan = await tx.adScanEvent.create({
+        data: {
+          submissionId: submission.id,
+          driverId: submission.assignedDriverId!,
+          redirectToken,
+          ipAddress: metadata?.ipAddress ?? null,
+          fingerprint,
+          creditEligible,
+          blockedReason: creditEligible ? null : "duplicate_window",
+          referrer: metadata?.referrer ?? null,
+          userAgent: metadata?.userAgent ?? null
+        }
+      });
+
+      const enrollment = await tx.driverAdProgramEnrollment.findUnique({
+        where: { driverId: submission.assignedDriverId! }
+      });
+
+      if (creditEligible && enrollment?.optedIn && Number(submission.driverCreditPerScan) > 0) {
+        await tx.driverAdCredit.create({
+          data: {
+            driverId: submission.assignedDriverId!,
+            submissionId: submission.id,
+            scanEventId: scan.id,
+            amount: submission.driverCreditPerScan
+          }
+        });
+      }
+    });
+
+    return {
+      destinationUrl: submission.targetUrl,
+      businessName: submission.businessName,
+      headline: submission.headline
+    };
+  },
+
+  async applyDriverAdCredits(driverId: string, input: ApplyDriverAdCreditsInput) {
+    if (!input.platformDueBatchId) {
+      throw new Error("Select an open due batch before applying ad credits.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const batch = await tx.platformDueBatch.findFirst({
+        where: {
+          driverId,
+          ...(input.platformDueBatchId ? { id: input.platformDueBatchId } : {}),
+          status: {
+            in: [DbPlatformDueBatchStatus.OPEN, DbPlatformDueBatchStatus.OVERDUE]
+          }
+        },
+        include: {
+          adCredits: {
+            where: { status: DbDriverAdCreditStatus.APPLIED },
+            select: { amount: true }
+          }
+        }
+      });
+
+      if (!batch) {
+        throw new Error("Open due batch not found for this driver.");
+      }
+
+      const alreadyAppliedTotal = batch.adCredits.reduce((sum: number, credit: { amount: Prisma.Decimal | number }) => sum + Number(credit.amount), 0);
+      let remainingCapacity = toFixedMoney(Number(batch.amount) - alreadyAppliedTotal);
+
+      if (remainingCapacity <= 0) {
+        throw new Error("This due batch already has enough applied ad credit.");
+      }
+
+      const pendingCredits = await tx.driverAdCredit.findMany({
+        where: {
+          driverId,
+          status: DbDriverAdCreditStatus.PENDING
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          amount: true
+        }
+      });
+
+      const appliedIds: string[] = [];
+      for (const credit of pendingCredits) {
+        const amount = Number(credit.amount);
+        if (amount <= remainingCapacity + 0.0001) {
+          appliedIds.push(credit.id);
+          remainingCapacity = toFixedMoney(remainingCapacity - amount);
+        }
+      }
+
+      if (!appliedIds.length) {
+        throw new Error("No pending ad credits fit within the remaining due balance for that batch.");
+      }
+
+      await tx.driverAdCredit.updateMany({
+        where: {
+          id: { in: appliedIds }
+        },
+        data: {
+          status: DbDriverAdCreditStatus.APPLIED,
+          note: input.note ?? null,
+          appliedPlatformDueId: input.appliedPlatformDueId ?? null,
+          appliedPlatformDueBatchId: input.platformDueBatchId,
+          appliedAt: new Date()
+        }
+      });
+    });
+
+    return this.getDriverAdProgram(driverId);
+  },
+
   async listAdminRides() {
     const rides = await prisma.ride.findMany({
       orderBy: { createdAt: "desc" },
@@ -3806,7 +4628,22 @@ export const store: Store = {
     const whereCreated = since ? { createdAt: { gte: since } } : {};
     const whereCompleted = since ? { completedAt: { gte: since } } : { completedAt: { not: null } };
 
-    const [totalRides, completedRides, canceledRides, requestedRides, approvedDrivers, pendingDrivers, availableDrivers, allDrivers, allRiders, newRiders, platformDues] = await Promise.all([
+    const [
+      totalRides,
+      completedRides,
+      canceledRides,
+      requestedRides,
+      approvedDrivers,
+      pendingDrivers,
+      availableDrivers,
+      allDrivers,
+      allRiders,
+      newRiders,
+      platformDues,
+      adSubmissions,
+      adScans,
+      driverAdCredits
+    ] = await Promise.all([
       prisma.ride.count({ where: whereCreated }),
       prisma.ride.count({ where: { status: "COMPLETED", ...whereCompleted } }),
       prisma.ride.count({ where: { status: "CANCELED", ...whereCreated } }),
@@ -3820,6 +4657,28 @@ export const store: Store = {
       prisma.platformDue.findMany({
         where: whereCreated,
         select: { amount: true, status: true }
+      }),
+      prisma.adSubmission.findMany({
+        where: since ? { createdAt: { gte: since } } : undefined,
+        select: {
+          status: true,
+          totalPrice: true,
+          paymentConfirmedAt: true
+        }
+      }),
+      prisma.adScanEvent.findMany({
+        where: since ? { createdAt: { gte: since } } : undefined,
+        select: {
+          creditEligible: true,
+          blockedReason: true
+        }
+      }),
+      prisma.driverAdCredit.findMany({
+        where: since ? { createdAt: { gte: since } } : undefined,
+        select: {
+          amount: true,
+          status: true
+        }
       })
     ]);
 
@@ -3879,6 +4738,27 @@ export const store: Store = {
     }
     const ridesPerDay = Object.entries(perDayMap).map(([date, count]) => ({ date, count }));
 
+    const adRevenueCollected = toFixedMoney(
+      adSubmissions
+        .filter((submission) => submission.paymentConfirmedAt)
+        .reduce((sum, submission) => sum + Number(submission.totalPrice), 0)
+    );
+    const adRevenuePending = toFixedMoney(
+      adSubmissions
+        .filter((submission) => submission.status === DbAdSubmissionStatus.APPROVED || submission.status === DbAdSubmissionStatus.PAYMENT_PENDING)
+        .reduce((sum, submission) => sum + Number(submission.totalPrice), 0)
+    );
+    const pendingDriverCredits = toFixedMoney(
+      driverAdCredits
+        .filter((credit) => credit.status === DbDriverAdCreditStatus.PENDING)
+        .reduce((sum, credit) => sum + Number(credit.amount), 0)
+    );
+    const appliedDriverCredits = toFixedMoney(
+      driverAdCredits
+        .filter((credit) => credit.status === DbDriverAdCreditStatus.APPLIED)
+        .reduce((sum, credit) => sum + Number(credit.amount), 0)
+    );
+
     return {
       period,
       revenue: {
@@ -3903,6 +4783,18 @@ export const store: Store = {
         newInPeriod: newRiders
       },
       topDrivers,
+      ads: {
+        submissions: adSubmissions.length,
+        awaitingPayment: adSubmissions.filter((submission) => submission.status === DbAdSubmissionStatus.APPROVED || submission.status === DbAdSubmissionStatus.PAYMENT_PENDING).length,
+        published: adSubmissions.filter((submission) => submission.status === DbAdSubmissionStatus.PUBLISHED).length,
+        scanCount: adScans.length,
+        eligibleScanCount: adScans.filter((scan) => scan.creditEligible).length,
+        duplicateBlockedCount: adScans.filter((scan) => !scan.creditEligible && scan.blockedReason === "duplicate_window").length,
+        pendingDriverCredits,
+        appliedDriverCredits,
+        pendingRevenue: adRevenuePending,
+        collectedRevenue: adRevenueCollected
+      },
       ridesPerDay
     };
   },

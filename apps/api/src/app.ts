@@ -10,6 +10,8 @@ import { z } from "zod";
 import {
   acceptAdminInviteSchema,
   adminLoginSchema,
+  adminUpdateAdSubmissionSchema,
+  applyDriverAdCreditsSchema,
   adminReviewDriverDocumentSchema,
   adminSetupInputSchema,
   adminReconcilePlatformDueBatchSchema,
@@ -29,6 +31,7 @@ import {
   createCommunityCommentSchema,
   createCommunityProposalSchema,
   createAdminInviteSchema,
+  createAdSubmissionSchema,
   createIssueReportSchema,
   createMarketConfigSchema,
   createMarketRegionSchema,
@@ -52,6 +55,8 @@ import {
   updatePlatformRateBenchmarksSchema,
   updatePlatformPayoutSettingsSchema,
   updatePlatformRatesSchema,
+  updateDriverAdProgramSchema,
+  updateAdPricingSettingsSchema,
   updateRideStatusSchema,
   upsertPushSubscriptionSchema
 } from "@shared/contracts";
@@ -215,6 +220,56 @@ export function buildApp() {
       enabled: push.isEnabled(),
       vapidPublicKey: push.publicVapidKey() || null
     };
+  });
+
+  app.post("/public/ads/submissions", async (request, reply) => {
+    const parsed = createAdSubmissionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const submission = await store.createAdSubmission(parsed.data);
+    await store.addAuditLog({
+      action: "adSubmission.created",
+      entityType: "adSubmission",
+      entityId: submission.id,
+      metadata: {
+        businessName: submission.businessName,
+        requestedDays: submission.requestedDays
+      }
+    });
+
+    return reply.status(201).send({ submission });
+  });
+
+  app.get("/public/ads/pricing", async () => {
+    return {
+      pricing: await store.getAdPricingSettings()
+    };
+  });
+
+  app.get("/public/ads/display/:referralCode", async (request, reply) => {
+    const referralCode = (request.params as { referralCode: string }).referralCode;
+
+    try {
+      return await store.getPublicAdDisplay(referralCode, resolvePublicBaseUrl(request));
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  app.get("/public/ads/visit/:redirectToken", async (request, reply) => {
+    const redirectToken = (request.params as { redirectToken: string }).redirectToken;
+
+    try {
+      return await store.resolveAdVisit(redirectToken, {
+        ipAddress: request.ip,
+        referrer: typeof request.headers.referer === "string" ? request.headers.referer : null,
+        userAgent: typeof request.headers["user-agent"] === "string" ? request.headers["user-agent"] : null
+      });
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   function resolveOptionalUserIdFromAuthHeader(request: FastifyRequest): string | null {
@@ -1574,6 +1629,19 @@ export function buildApp() {
     };
   });
 
+  app.get("/driver/ad-program", { preHandler: requireRole("driver") }, async (request) => {
+    return store.getDriverAdProgram(request.userContext.id);
+  });
+
+  app.put("/driver/ad-program", { preHandler: requireRole("driver") }, async (request, reply) => {
+    const parsed = updateDriverAdProgramSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    return reply.send(await store.updateDriverAdProgram(request.userContext.id, parsed.data.optedIn));
+  });
+
   app.get("/driver/offers", { preHandler: requireRole("driver") }, async (request) => {
     return store.listDriverOffers(request.userContext.id);
   });
@@ -1684,6 +1752,75 @@ export function buildApp() {
       adminUsers,
       ownedByDefault: true
     };
+  });
+
+  app.get("/admin/ads", { preHandler: requireRole("admin") }, async () => {
+    return store.listAdminAds();
+  });
+
+  app.get("/admin/ads/pricing", { preHandler: requireRole("admin") }, async () => {
+    return await store.getAdPricingSettings();
+  });
+
+  app.put("/admin/ads/pricing", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = updateAdPricingSettingsSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const pricing = await store.updateAdPricingSettings(parsed.data);
+    await store.addAuditLog({
+      actorId: request.userContext.id,
+      action: "adPricing.updated",
+      entityType: "adPricingSettings",
+      entityId: "global",
+      metadata: parsed.data
+    });
+    return reply.send(pricing);
+  });
+
+  app.patch("/admin/ads/:submissionId", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminUpdateAdSubmissionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const submissionId = (request.params as { submissionId: string }).submissionId;
+      const submission = await store.updateAdSubmission(submissionId, parsed.data);
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "adSubmission.updated",
+        entityType: "adSubmission",
+        entityId: submission.id,
+        metadata: parsed.data
+      });
+      return reply.send(submission);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  app.post("/admin/drivers/:driverId/ad-credits/apply", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = applyDriverAdCreditsSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const driverId = (request.params as { driverId: string }).driverId;
+      const program = await store.applyDriverAdCredits(driverId, parsed.data);
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "driverAdCredits.applied",
+        entityType: "driver",
+        entityId: driverId,
+        metadata: parsed.data
+      });
+      return reply.send(program);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.post("/admin/dues/generate/:driverId", { preHandler: requireRole("admin") }, async (request, reply) => {

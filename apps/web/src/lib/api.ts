@@ -1,14 +1,20 @@
 import type {
   AcceptAdminInviteInput,
+  AdPricingSettings,
+  AdSubmission,
+  AdSubmissionResponse,
+  AdVisitResolveResponse,
   AddressSuggestion,
   AdminInvite,
   AdminInvitesResponse,
+  AdminAdsResponse,
   AdminTeamResponse,
   AdminDuesResponse,
   AdminActivityResponse,
   AdminAuditLogsResponse,
   AdminLeadsResponse,
   AdminLogin,
+  AdminUpdateAdSubmissionInput,
   AdminReconcilePlatformDueBatchInput,
   AdminReviewDriverDocumentInput,
   AdminSetupInput,
@@ -39,12 +45,14 @@ import type {
   CommunityProposal,
   CommunityVoteInput,
   CreateIssueReportInput,
+  CreateAdSubmissionInput,
   CreateMarketConfigInput,
   CreateCommunityCommentInput,
   CreateCommunityProposalInput,
   CreateDriverRoleInput,
   CreateRideInput,
   DriverAccount,
+  DriverAdProgramResponse,
   DriverDispatchSettings,
   DriverIdleLocationInput,
   DriverDuesResponse,
@@ -81,9 +89,14 @@ import type {
   ShareInfo,
   CreateAdminInviteInput,
   TrackSiteHeartbeatInput,
+  ApplyDriverAdCreditsInput,
   UpdatePlatformPayoutSettingsInput,
   UpdatePlatformRateBenchmarksInput,
   UpdatePlatformRatesInput,
+  UpdateAdPricingSettingsInput,
+  UpdateDriverAdProgramInput,
+  PublicAdDisplayResponse,
+  PublicAdPricingResponse,
   UpdateRideStatusInput
 } from "@shared/contracts";
 
@@ -251,6 +264,21 @@ export const api = {
       body: JSON.stringify(input)
     });
   },
+  createAdSubmission(input: CreateAdSubmissionInput) {
+    return apiFetch<AdSubmissionResponse>("/public/ads/submissions", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+  },
+  getPublicAdPricing() {
+    return apiFetch<PublicAdPricingResponse>("/public/ads/pricing");
+  },
+  getPublicAdDisplay(referralCode: string) {
+    return apiFetch<PublicAdDisplayResponse>(`/public/ads/display/${referralCode}`);
+  },
+  resolveAdVisit(redirectToken: string) {
+    return apiFetch<AdVisitResolveResponse>(`/public/ads/visit/${redirectToken}`);
+  },
   getNotificationPreferences(token: string) {
     return apiFetch<NotificationPreferencesResponse>("/me/notification-preferences", undefined, token);
   },
@@ -382,6 +410,15 @@ export const api = {
   getDriverDues(token: string) {
     return apiFetch<DriverDuesResponse>("/driver/dues", undefined, token);
   },
+  getDriverAdProgram(token: string) {
+    return apiFetch<DriverAdProgramResponse>("/driver/ad-program", undefined, token);
+  },
+  updateDriverAdProgram(input: UpdateDriverAdProgramInput, token: string) {
+    return apiFetch<DriverAdProgramResponse>("/driver/ad-program", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
   listDriverOffers(token: string) {
     return apiFetch<Ride[]>("/driver/offers", undefined, token);
   },
@@ -436,6 +473,30 @@ export const api = {
   },
   listAdminDues(token: string) {
     return apiFetch<AdminDuesResponse>("/admin/dues", undefined, token);
+  },
+  listAdminAds(token: string) {
+    return apiFetch<AdminAdsResponse>("/admin/ads", undefined, token);
+  },
+  getAdminAdPricing(token: string) {
+    return apiFetch<AdPricingSettings>("/admin/ads/pricing", undefined, token);
+  },
+  updateAdminAdPricing(input: UpdateAdPricingSettingsInput, token: string) {
+    return apiFetch<AdPricingSettings>("/admin/ads/pricing", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  updateAdminAd(submissionId: string, input: AdminUpdateAdSubmissionInput, token: string) {
+    return apiFetch<AdSubmission>(`/admin/ads/${submissionId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  applyDriverAdCredits(driverId: string, input: ApplyDriverAdCreditsInput, token: string) {
+    return apiFetch<DriverAdProgramResponse>(`/admin/drivers/${driverId}/ad-credits/apply`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
   },
   generateDueBatch(driverId: string, token: string) {
     return apiFetch<PlatformDueBatch>(`/admin/dues/generate/${driverId}`, {

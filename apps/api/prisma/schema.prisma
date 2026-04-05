@@ -111,6 +111,22 @@ enum DriverOnboardingDocumentStatus {
   REJECTED
 }
 
+enum AdSubmissionStatus {
+  SUBMITTED
+  APPROVED
+  PAYMENT_PENDING
+  PAID
+  PUBLISHED
+  REJECTED
+  EXPIRED
+}
+
+enum DriverAdCreditStatus {
+  PENDING
+  APPLIED
+  VOID
+}
+
 enum RidePricingSource {
   PLATFORM_MARKET
   DRIVER_CUSTOM
@@ -166,6 +182,10 @@ model User {
   siteVisits            SiteVisit[]
   roadmapFeatureVotes   RoadmapFeatureVote[]
   featureRequests       FeatureRequest[]
+  driverAdProgram       DriverAdProgramEnrollment? @relation("DriverAdProgramUser")
+  assignedAds           AdSubmission[]             @relation("AssignedDriverAds")
+  adScans               AdScanEvent[]              @relation("DriverAdScans")
+  adCredits             DriverAdCredit[]           @relation("DriverAdCredits")
 }
 
 model RiderProfile {
@@ -430,6 +450,7 @@ model PlatformDueBatch {
   driver           User                   @relation("PlatformDueBatchDrivers", fields: [driverId], references: [id], onDelete: Cascade)
   collectorAdmin   User?                  @relation("PlatformDueBatchCollectors", fields: [collectorAdminId], references: [id], onDelete: SetNull)
   dues             PlatformDue[]
+  adCredits        DriverAdCredit[]
 }
 
 model PlatformPayoutSettings {
@@ -442,6 +463,107 @@ model PlatformPayoutSettings {
   otherInstructions String?
   updatedAt        DateTime @updatedAt
   admin            User?    @relation("CollectorPayoutSettings", fields: [adminId], references: [id], onDelete: SetNull)
+}
+
+model DriverAdProgramEnrollment {
+  id        String   @id @default(cuid())
+  driverId   String   @unique
+  optedIn   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  driver    User     @relation("DriverAdProgramUser", fields: [driverId], references: [id], onDelete: Cascade)
+}
+
+model AdPricingSettings {
+  id                        String   @id @default(cuid())
+  baseDailyPrice            Decimal  @default(10) @db.Decimal(10, 2)
+  defaultDriverCreditPerScan Decimal @default(0.25) @db.Decimal(10, 2)
+  slotMultipliers           Json?
+  dedupeWindowMinutes       Int      @default(30)
+  updatedAt                 DateTime @updatedAt
+}
+
+model AdSubmission {
+  id                  String           @id @default(cuid())
+  businessName        String
+  contactName         String
+  email               String
+  phone               String?
+  headline            String
+  body                String
+  callToAction        String?
+  targetUrl           String
+  imageFileName       String
+  imageMimeType       String
+  imageDataUrl        String
+  requestedDays       Int
+  dailyPrice          Decimal          @db.Decimal(10, 2)
+  totalPrice          Decimal          @db.Decimal(10, 2)
+  displaySeconds      Int              @default(10)
+  slotRank            Int              @default(2)
+  driverCreditPerScan Decimal          @default(0) @db.Decimal(10, 2)
+  status              AdSubmissionStatus @default(SUBMITTED)
+  redirectToken       String           @unique
+  assignedDriverId    String?
+  paymentNote         String?
+  adminNote           String?
+  approvedAt          DateTime?
+  paymentConfirmedAt  DateTime?
+  publishedAt         DateTime?
+  startsAt            DateTime?
+  endsAt              DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  assignedDriver      User?            @relation("AssignedDriverAds", fields: [assignedDriverId], references: [id], onDelete: SetNull)
+  scans               AdScanEvent[]
+  credits             DriverAdCredit[]
+
+  @@index([status, assignedDriverId])
+  @@index([assignedDriverId, publishedAt])
+}
+
+model AdScanEvent {
+  id            String   @id @default(cuid())
+  submissionId  String
+  driverId      String
+  redirectToken String
+  ipAddress     String?
+  fingerprint   String?
+  creditEligible Boolean @default(true)
+  blockedReason String?
+  referrer      String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  submission    AdSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  driver        User     @relation("DriverAdScans", fields: [driverId], references: [id], onDelete: Cascade)
+  credits       DriverAdCredit[]
+
+  @@index([submissionId, createdAt])
+  @@index([driverId, createdAt])
+  @@index([submissionId, fingerprint, createdAt])
+}
+
+model DriverAdCredit {
+  id                  String              @id @default(cuid())
+  driverId            String
+  submissionId        String
+  scanEventId         String?             @unique
+  amount              Decimal             @db.Decimal(10, 2)
+  status              DriverAdCreditStatus @default(PENDING)
+  note                String?
+  appliedPlatformDueId String?
+  appliedAt           DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  driver              User                @relation("DriverAdCredits", fields: [driverId], references: [id], onDelete: Cascade)
+  submission          AdSubmission        @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  scanEvent           AdScanEvent?        @relation(fields: [scanEventId], references: [id], onDelete: SetNull)
+  appliedPlatformDueBatchId String?
+  appliedPlatformDueBatch PlatformDueBatch? @relation(fields: [appliedPlatformDueBatchId], references: [id], onDelete: SetNull)
+
+  @@index([driverId, status, createdAt])
+  @@index([appliedPlatformDueBatchId, status])
+  @@index([submissionId, createdAt])
 }
 
 model AdminInvite {

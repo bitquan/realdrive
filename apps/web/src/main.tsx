@@ -9,6 +9,9 @@ import { useAuth } from "@/providers/auth-provider";
 import { roleHome, userHasRole } from "@/lib/utils";
 
 const HomePage = lazy(() => import("@/pages/home-page").then((module) => ({ default: module.HomePage })));
+const AdvertisePage = lazy(() => import("@/pages/advertise-page").then((module) => ({ default: module.AdvertisePage })));
+const AdsDisplayPage = lazy(() => import("@/pages/ads-display-page").then((module) => ({ default: module.AdsDisplayPage })));
+const AdsVisitPage = lazy(() => import("@/pages/ads-visit-page").then((module) => ({ default: module.AdsVisitPage })));
 const PublicTrackPage = lazy(() => import("@/pages/public-track-page").then((module) => ({ default: module.PublicTrackPage })));
 const RideHistoryPage = lazy(() => import("@/pages/ride-history-page").then((module) => ({ default: module.RideHistoryPage })));
 const RideDetailsPage = lazy(() => import("@/pages/ride-details-page").then((module) => ({ default: module.RideDetailsPage })));
@@ -25,6 +28,8 @@ const AdminDriversPage = lazy(() => import("@/pages/admin-drivers-page").then((m
 const AdminReportingPage = lazy(() => import("@/pages/admin-reporting-page").then((module) => ({ default: module.AdminReportingPage })));
 const AdminRegionsPage = lazy(() => import("@/pages/admin-regions-page").then((module) => ({ default: module.AdminRegionsPage })));
 const AdminApiKeysPage = lazy(() => import("@/pages/admin-api-keys-page").then((module) => ({ default: module.AdminApiKeysPage })));
+const AdminAdsPage = lazy(() => import("@/pages/admin-ads-page").then((module) => ({ default: module.AdminAdsPage })));
+const AdminAdAnalyticsPage = lazy(() => import("@/pages/admin-ad-analytics-page").then((module) => ({ default: module.AdminAdAnalyticsPage })));
 const AdminPricingPage = lazy(() => import("@/pages/admin-pricing-page").then((module) => ({ default: module.AdminPricingPage })));
 const AdminSharePage = lazy(() => import("@/pages/admin-share-page").then((module) => ({ default: module.AdminSharePage })));
 const AdminDuesPage = lazy(() => import("@/pages/admin-dues-page").then((module) => ({ default: module.AdminDuesPage })));
@@ -106,6 +111,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<PageLoader><HomePage /></PageLoader>} />
+            <Route path="/advertise" element={<PageLoader><AdvertisePage /></PageLoader>} />
+            <Route path="/ads/display/:referralCode" element={<PageLoader><AdsDisplayPage /></PageLoader>} />
+            <Route path="/ads/visit/:redirectToken" element={<PageLoader><AdsVisitPage /></PageLoader>} />
             <Route path="/track/:token" element={<PageLoader><PublicTrackPage /></PageLoader>} />
             <Route path="/drive-with-us" element={<PageLoader><DriverInterestPage /></PageLoader>} />
             <Route path="/driver/signup" element={<PageLoader><DriverInterestPage /></PageLoader>} />
@@ -234,6 +242,22 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminApiKeysPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/ads/analytics"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminAdAnalyticsPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/ads"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminAdsPage /></PageLoader>
                 </RequireRole>
               }
             />

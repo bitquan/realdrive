@@ -103,6 +103,32 @@ export function AdminReportingPage() {
             </MetricStrip>
           </PanelSection>
 
+          <PanelSection title="Ads">
+            <MetricStrip>
+              <MetricCard label="Ad Revenue Collected" value={formatCurrency(report.ads.collectedRevenue)} icon={DollarSign} tone="success" />
+              <MetricCard label="Ad Revenue Pending" value={formatCurrency(report.ads.pendingRevenue)} icon={DollarSign} tone="warning" />
+              <MetricCard label="Submissions" value={String(report.ads.submissions)} icon={Car} />
+              <MetricCard label="Published" value={String(report.ads.published)} icon={Car} tone="primary" />
+            </MetricStrip>
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-3xl border border-ops-border-soft bg-ops-panel/45 p-4">
+                <p className="text-xs uppercase tracking-widest text-ops-muted">Scans</p>
+                <p className="mt-2 text-2xl font-semibold text-ops-text">{report.ads.scanCount}</p>
+                <p className="mt-1 text-sm text-ops-muted">Eligible {report.ads.eligibleScanCount}</p>
+              </div>
+              <div className="rounded-3xl border border-ops-border-soft bg-ops-panel/45 p-4">
+                <p className="text-xs uppercase tracking-widest text-ops-muted">Duplicate blocked</p>
+                <p className="mt-2 text-2xl font-semibold text-ops-text">{report.ads.duplicateBlockedCount}</p>
+                <p className="mt-1 text-sm text-ops-muted">Protected from repeat-credit abuse</p>
+              </div>
+              <div className="rounded-3xl border border-ops-border-soft bg-ops-panel/45 p-4">
+                <p className="text-xs uppercase tracking-widest text-ops-muted">Driver credits</p>
+                <p className="mt-2 text-2xl font-semibold text-ops-text">{formatCurrency(report.ads.pendingDriverCredits)}</p>
+                <p className="mt-1 text-sm text-ops-muted">Applied {formatCurrency(report.ads.appliedDriverCredits)}</p>
+              </div>
+            </div>
+          </PanelSection>
+
           <PanelSection title="Rides">
             <MetricStrip>
               <MetricCard label="Total" value={String(report.rides.total)} icon={Car} />

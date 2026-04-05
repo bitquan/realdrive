@@ -12,6 +12,8 @@ export const driverApprovalStatusSchema = z.enum(["pending", "approved", "reject
 export const driverPricingModeSchema = z.enum(["platform", "custom"]);
 export const driverDocumentTypeSchema = z.enum(["insurance", "registration", "background_check", "mvr"]);
 export const driverDocumentStatusSchema = z.enum(["pending", "approved", "rejected"]);
+export const adSubmissionStatusSchema = z.enum(["submitted", "approved", "payment_pending", "paid", "published", "rejected", "expired"]);
+export const driverAdCreditStatusSchema = z.enum(["pending", "applied", "void"]);
 export const dispatchModeSchema = z.enum(["local", "service_area", "nationwide"]);
 export const ridePricingSourceSchema = z.enum(["platform_market", "driver_custom", "admin_override"]);
 export const communityVoteChoiceSchema = z.enum(["yes", "no"]);
@@ -110,6 +112,12 @@ export const driverDocumentUploadSchema = z.object({
   type: driverDocumentTypeSchema,
   fileName: z.string().min(1).max(180),
   mimeType: z.string().min(3).max(120),
+  contentBase64: z.string().min(16).max(12_000_000)
+});
+
+export const adAssetUploadSchema = z.object({
+  fileName: z.string().min(1).max(180),
+  mimeType: z.string().regex(/^image\//i, "Ad creative must be an image."),
   contentBase64: z.string().min(16).max(12_000_000)
 });
 
@@ -347,6 +355,19 @@ export const platformPayoutSettingsSchema = z.object({
   updatedAt: z.string().nullable()
 });
 
+export const adPricingSettingsSchema = z.object({
+  baseDailyPrice: z.number().nonnegative(),
+  defaultDriverCreditPerScan: z.number().nonnegative(),
+  slotMultipliers: z.array(
+    z.object({
+      slotRank: z.number().int().positive(),
+      multiplier: z.number().positive().max(100)
+    })
+  ),
+  dedupeWindowMinutes: z.number().int().min(1).max(1440),
+  updatedAt: z.string().nullable()
+});
+
 export const platformDueDriverSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -393,6 +414,8 @@ export const platformDueBatchSchema = z.object({
   driverId: z.string(),
   collectorAdminId: z.string().nullable(),
   amount: z.number().nonnegative(),
+  adCreditAppliedTotal: z.number().nonnegative(),
+  netAmountDue: z.number().nonnegative(),
   status: platformDueBatchStatusSchema,
   paymentMethod: duePaymentMethodSchema.nullable(),
   observedTitle: z.string().nullable(),
@@ -417,7 +440,14 @@ export const driverDueSnapshotSchema = z.object({
   openBatchTotal: z.number().nonnegative(),
   overdueBatchCount: z.number().int().nonnegative(),
   overdueBatchTotal: z.number().nonnegative(),
-  lastCompletedRideAt: z.string().nullable()
+  lastCompletedRideAt: z.string().nullable(),
+  adProgram: z.object({
+    optedIn: z.boolean(),
+    scanCount: z.number().int().nonnegative(),
+    pendingCreditTotal: z.number().nonnegative(),
+    appliedCreditTotal: z.number().nonnegative(),
+    activeAdCount: z.number().int().nonnegative()
+  })
 });
 
 export const overdueDriverSummarySchema = z.object({
@@ -427,6 +457,177 @@ export const overdueDriverSummarySchema = z.object({
   phone: z.string().nullable(),
   overdueAmount: z.number().nonnegative(),
   overdueCount: z.number().int().nonnegative()
+});
+
+export const adSubmissionMetricsSchema = z.object({
+  scanCount: z.number().int().nonnegative(),
+  eligibleScanCount: z.number().int().nonnegative(),
+  blockedDuplicateCount: z.number().int().nonnegative(),
+  pendingCreditTotal: z.number().nonnegative(),
+  appliedCreditTotal: z.number().nonnegative()
+});
+
+export const adSubmissionSchema = z.object({
+  id: z.string(),
+  businessName: z.string(),
+  contactName: z.string(),
+  email: z.string().email(),
+  phone: z.string().nullable(),
+  headline: z.string(),
+  body: z.string(),
+  callToAction: z.string().nullable(),
+  targetUrl: z.string().url(),
+  imageFileName: z.string(),
+  imageMimeType: z.string(),
+  imageDataUrl: z.string(),
+  requestedDays: z.number().int().positive(),
+  dailyPrice: z.number().nonnegative(),
+  totalPrice: z.number().nonnegative(),
+  displaySeconds: z.number().int().min(5),
+  slotRank: z.number().int().positive(),
+  driverCreditPerScan: z.number().nonnegative(),
+  status: adSubmissionStatusSchema,
+  redirectToken: z.string(),
+  assignedDriverId: z.string().nullable(),
+  paymentNote: z.string().nullable(),
+  adminNote: z.string().nullable(),
+  approvedAt: z.string().nullable(),
+  paymentConfirmedAt: z.string().nullable(),
+  publishedAt: z.string().nullable(),
+  startsAt: z.string().nullable(),
+  endsAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  assignedDriver: platformDueDriverSummarySchema.nullable(),
+  metrics: adSubmissionMetricsSchema
+});
+
+export const createAdSubmissionSchema = z.object({
+  businessName: z.string().min(2).max(120),
+  contactName: z.string().min(2).max(120),
+  email: z.string().email(),
+  phone: z.string().min(8).max(30).optional(),
+  headline: z.string().min(4).max(120),
+  body: z.string().min(10).max(1000),
+  callToAction: z.string().min(2).max(80).optional(),
+  targetUrl: z.string().url(),
+  requestedDays: z.number().int().min(1).max(31),
+  slotRank: z.number().int().min(1).max(99).optional(),
+  image: adAssetUploadSchema
+});
+
+export const adminUpdateAdSubmissionSchema = z.object({
+  status: adSubmissionStatusSchema.optional(),
+  assignedDriverId: z.string().nullable().optional(),
+  paymentNote: z.string().max(1000).nullable().optional(),
+  adminNote: z.string().max(1000).nullable().optional(),
+  displaySeconds: z.number().int().min(5).max(60).optional(),
+  slotRank: z.number().int().min(1).max(99).optional(),
+  driverCreditPerScan: z.number().min(0).max(100).optional(),
+  startsAt: z.string().datetime().nullable().optional(),
+  endsAt: z.string().datetime().nullable().optional()
+});
+
+export const driverAdProgramEnrollmentSchema = z.object({
+  driverId: z.string(),
+  optedIn: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const updateDriverAdProgramSchema = z.object({
+  optedIn: z.boolean()
+});
+
+export const driverAdCreditSummarySchema = z.object({
+  scanCount: z.number().int().nonnegative(),
+  pendingTotal: z.number().nonnegative(),
+  appliedTotal: z.number().nonnegative(),
+  availableOffsetTotal: z.number().nonnegative(),
+  activeAdCount: z.number().int().nonnegative()
+});
+
+export const driverAdProgramActiveAdSchema = z.object({
+  id: z.string(),
+  businessName: z.string(),
+  headline: z.string(),
+  slotRank: z.number().int().positive(),
+  displaySeconds: z.number().int().min(5),
+  status: adSubmissionStatusSchema,
+  startsAt: z.string().nullable(),
+  endsAt: z.string().nullable(),
+  publishedAt: z.string().nullable()
+});
+
+export const driverAdProgramResponseSchema = z.object({
+  enrollment: driverAdProgramEnrollmentSchema,
+  summary: driverAdCreditSummarySchema,
+  activeAds: z.array(driverAdProgramActiveAdSchema)
+});
+
+export const adminDriverAdCreditSummarySchema = z.object({
+  driver: platformDueDriverSummarySchema,
+  optedIn: z.boolean(),
+  scanCount: z.number().int().nonnegative(),
+  pendingTotal: z.number().nonnegative(),
+  appliedTotal: z.number().nonnegative(),
+  activeAdCount: z.number().int().nonnegative()
+});
+
+export const adminAdsResponseSchema = z.object({
+  submissions: z.array(adSubmissionSchema),
+  driverCredits: z.array(adminDriverAdCreditSummarySchema),
+  pricingSettings: adPricingSettingsSchema
+});
+
+export const updateAdPricingSettingsSchema = z.object({
+  baseDailyPrice: z.number().nonnegative().max(10000).optional(),
+  defaultDriverCreditPerScan: z.number().nonnegative().max(1000).optional(),
+  slotMultipliers: z.array(
+    z.object({
+      slotRank: z.number().int().min(1).max(99),
+      multiplier: z.number().positive().max(100)
+    })
+  ).max(12).optional(),
+  dedupeWindowMinutes: z.number().int().min(1).max(1440).optional()
+}).refine((value) => Object.values(value).some((entry) => entry !== undefined), {
+  message: "At least one pricing field is required."
+});
+
+export const applyDriverAdCreditsSchema = z.object({
+  note: z.string().max(1000).nullable().optional(),
+  appliedPlatformDueId: z.string().nullable().optional(),
+  platformDueBatchId: z.string().nullable().optional()
+});
+
+export const adVisitResolveResponseSchema = z.object({
+  destinationUrl: z.string().url(),
+  businessName: z.string(),
+  headline: z.string()
+});
+
+export const adDisplayItemSchema = z.object({
+  id: z.string(),
+  businessName: z.string(),
+  headline: z.string(),
+  body: z.string(),
+  callToAction: z.string().nullable(),
+  targetUrl: z.string().url(),
+  qrUrl: z.string().url(),
+  imageDataUrl: z.string(),
+  displaySeconds: z.number().int().min(5),
+  slotRank: z.number().int().positive()
+});
+
+export const publicAdDisplayResponseSchema = z.object({
+  driverName: z.string(),
+  referralCode: z.string(),
+  optedIn: z.boolean(),
+  items: z.array(adDisplayItemSchema)
+});
+
+export const publicAdPricingResponseSchema = z.object({
+  pricing: adPricingSettingsSchema
 });
 
 export const communityEligibilitySchema = z.object({
@@ -811,6 +1012,18 @@ export const adminReportOverviewSchema = z.object({
     rideCount: z.number().int().nonnegative(),
     revenue: z.number().nonnegative()
   })),
+  ads: z.object({
+    submissions: z.number().int().nonnegative(),
+    awaitingPayment: z.number().int().nonnegative(),
+    published: z.number().int().nonnegative(),
+    scanCount: z.number().int().nonnegative(),
+    eligibleScanCount: z.number().int().nonnegative(),
+    duplicateBlockedCount: z.number().int().nonnegative(),
+    pendingDriverCredits: z.number().nonnegative(),
+    appliedDriverCredits: z.number().nonnegative(),
+    pendingRevenue: z.number().nonnegative(),
+    collectedRevenue: z.number().nonnegative()
+  }),
   ridesPerDay: z.array(z.object({
     date: z.string(),
     count: z.number().int().nonnegative()
@@ -1043,6 +1256,10 @@ export const issueReportResponseSchema = z.object({
   report: issueReportSchema
 });
 
+export const adSubmissionResponseSchema = z.object({
+  submission: adSubmissionSchema
+});
+
 export const pushSubscriptionKeysSchema = z.object({
   p256dh: z.string().min(8),
   auth: z.string().min(8)
@@ -1156,6 +1373,8 @@ export type DriverApprovalStatus = z.infer<typeof driverApprovalStatusSchema>;
 export type DriverPricingMode = z.infer<typeof driverPricingModeSchema>;
 export type DriverDocumentType = z.infer<typeof driverDocumentTypeSchema>;
 export type DriverDocumentStatus = z.infer<typeof driverDocumentStatusSchema>;
+export type AdSubmissionStatus = z.infer<typeof adSubmissionStatusSchema>;
+export type DriverAdCreditStatus = z.infer<typeof driverAdCreditStatusSchema>;
 export type DispatchMode = z.infer<typeof dispatchModeSchema>;
 export type RidePricingSource = z.infer<typeof ridePricingSourceSchema>;
 export type CommunityVoteChoice = z.infer<typeof communityVoteChoiceSchema>;
@@ -1173,6 +1392,7 @@ export type PricingRule = z.infer<typeof pricingRuleSchema>;
 export type DriverRateRule = z.infer<typeof driverRateRuleSchema>;
 export type DriverRateCard = z.infer<typeof driverRateCardSchema>;
 export type DriverDocumentUpload = z.infer<typeof driverDocumentUploadSchema>;
+export type AdAssetUpload = z.infer<typeof adAssetUploadSchema>;
 export type DriverOnboardingDocument = z.infer<typeof driverOnboardingDocumentSchema>;
 export type DriverDocumentReviewSummary = z.infer<typeof driverDocumentReviewSummarySchema>;
 export type SessionUser = z.infer<typeof sessionUserSchema>;
@@ -1188,10 +1408,28 @@ export type CommunityAccessLink = z.infer<typeof communityAccessLinkSchema>;
 export type RiderLead = z.infer<typeof riderLeadSchema>;
 export type DriverInterest = z.infer<typeof driverInterestSchema>;
 export type PlatformPayoutSettings = z.infer<typeof platformPayoutSettingsSchema>;
+export type AdPricingSettings = z.infer<typeof adPricingSettingsSchema>;
 export type PlatformDue = z.infer<typeof platformDueSchema>;
 export type PlatformDueBatch = z.infer<typeof platformDueBatchSchema>;
 export type DriverDueSnapshot = z.infer<typeof driverDueSnapshotSchema>;
 export type OverdueDriverSummary = z.infer<typeof overdueDriverSummarySchema>;
+export type AdSubmissionMetrics = z.infer<typeof adSubmissionMetricsSchema>;
+export type AdSubmission = z.infer<typeof adSubmissionSchema>;
+export type CreateAdSubmissionInput = z.infer<typeof createAdSubmissionSchema>;
+export type AdminUpdateAdSubmissionInput = z.infer<typeof adminUpdateAdSubmissionSchema>;
+export type DriverAdProgramEnrollment = z.infer<typeof driverAdProgramEnrollmentSchema>;
+export type UpdateDriverAdProgramInput = z.infer<typeof updateDriverAdProgramSchema>;
+export type DriverAdCreditSummary = z.infer<typeof driverAdCreditSummarySchema>;
+export type DriverAdProgramActiveAd = z.infer<typeof driverAdProgramActiveAdSchema>;
+export type DriverAdProgramResponse = z.infer<typeof driverAdProgramResponseSchema>;
+export type AdminDriverAdCreditSummary = z.infer<typeof adminDriverAdCreditSummarySchema>;
+export type AdminAdsResponse = z.infer<typeof adminAdsResponseSchema>;
+export type UpdateAdPricingSettingsInput = z.infer<typeof updateAdPricingSettingsSchema>;
+export type ApplyDriverAdCreditsInput = z.infer<typeof applyDriverAdCreditsSchema>;
+export type AdVisitResolveResponse = z.infer<typeof adVisitResolveResponseSchema>;
+export type AdDisplayItem = z.infer<typeof adDisplayItemSchema>;
+export type PublicAdDisplayResponse = z.infer<typeof publicAdDisplayResponseSchema>;
+export type PublicAdPricingResponse = z.infer<typeof publicAdPricingResponseSchema>;
 export type CommunityEligibility = z.infer<typeof communityEligibilitySchema>;
 export type CommunityAuthor = z.infer<typeof communityAuthorSchema>;
 export type CommunityProposal = z.infer<typeof communityProposalSchema>;
@@ -1283,6 +1521,7 @@ export type AdminTeamResponse = z.infer<typeof adminTeamResponseSchema>;
 export type CommunityBoardResponse = z.infer<typeof communityBoardResponseSchema>;
 export type CommunityCommentsResponse = z.infer<typeof communityCommentsResponseSchema>;
 export type IssueReportResponse = z.infer<typeof issueReportResponseSchema>;
+export type AdSubmissionResponse = z.infer<typeof adSubmissionResponseSchema>;
 export type NotificationPreferencesResponse = z.infer<typeof notificationPreferencesResponseSchema>;
 export type NotificationDeliveryLogsResponse = z.infer<typeof notificationDeliveryLogsResponseSchema>;
 export type TrackSiteHeartbeatInput = z.infer<typeof trackSiteHeartbeatSchema>;

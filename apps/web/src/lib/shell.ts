@@ -10,6 +10,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Lightbulb,
+  Megaphone,
   MessageSquare,
   QrCode,
   Route,
@@ -212,6 +213,22 @@ const adminItems: ShellNavItem[] = [
     roles: ["admin"]
   },
   {
+    id: "admin-ads",
+    label: "Ads",
+    to: "/admin/ads",
+    icon: Megaphone,
+    matchPatterns: ["/admin/ads"],
+    roles: ["admin"]
+  },
+  {
+    id: "admin-ad-analytics",
+    label: "Ad analytics",
+    to: "/admin/ads/analytics",
+    icon: BarChart3,
+    matchPatterns: ["/admin/ads/analytics"],
+    roles: ["admin"]
+  },
+  {
     id: "admin-pricing",
     label: "Pricing",
     to: "/admin/pricing",
@@ -396,6 +413,16 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     }
   },
   {
+    patterns: ["/admin/ads"],
+    frame: {
+      eyebrow: "Admin",
+      title: "Ad operations",
+      description: "Approve submissions, publish driver-assigned screens, and track dues-offset credit from scans.",
+      mapMode: "off",
+      actions: [{ label: "Share kit", to: "/admin/share", icon: QrCode, variant: "secondary" }]
+    }
+  },
+  {
     patterns: ["/driver"],
     frame: {
       eyebrow: "Driver",
@@ -413,6 +440,37 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       layout: "immersive",
       mapMode: "immersive",
       actions: [{ label: "Dashboard", to: "/driver", icon: Route, variant: "secondary" }]
+    }
+  },
+  {
+    patterns: ["/ads/display/:referralCode"],
+    frame: {
+      eyebrow: "Ads",
+      title: "Driver ad display",
+      description: "Fullscreen display page for the driver flyer plus approved paid ad rotation.",
+      layout: "immersive",
+      mapMode: "off",
+      mobileHeaderMode: "minimal"
+    }
+  },
+  {
+    patterns: ["/ads/visit/:redirectToken"],
+    frame: {
+      eyebrow: "Ads",
+      title: "Visit redirect",
+      description: "Logs the ad visit and forwards the scan to the advertiser destination.",
+      mapMode: "off",
+      mobileHeaderMode: "minimal"
+    }
+  },
+  {
+    patterns: ["/advertise"],
+    frame: {
+      eyebrow: "Advertise",
+      title: "Advertise on RealDrive",
+      description: "Submit one image creative for manual review, payment confirmation, and driver screen rotation.",
+      mapMode: "off",
+      mobileHeaderMode: "minimal"
     }
   },
   {

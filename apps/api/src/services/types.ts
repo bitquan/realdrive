@@ -1,9 +1,14 @@
 import type {
   AcceptAdminInviteInput,
+  AdSubmission,
+  AdVisitResolveResponse,
   AddressSuggestion,
   AdminInvite,
   AdminActivityResponse,
+  AdminAdsResponse,
   AdminSetupStatusResponse,
+  AdminUpdateAdSubmissionInput,
+  ApplyDriverAdCreditsInput,
   AdminUpdatePlatformDueBatchInput,
   AdminReviewDriverDocumentInput,
   AdminAuditLog,
@@ -18,11 +23,14 @@ import type {
   CommunityEligibility,
   CommunityProposal,
   CreateAdminInviteInput,
+  CreateAdSubmissionInput,
   CreateCommunityCommentInput,
   CreateCommunityProposalInput,
   CreateDriverRoleInput,
+  AdPricingSettings,
   DriverDueSnapshot,
   DriverAccount,
+  DriverAdProgramResponse,
   DriverBootstrapInput,
   DriverOnboardingDocument,
   DriverDispatchSettings,
@@ -58,7 +66,9 @@ import type {
   RiderLeadInput,
   RouteLocation,
   SessionUser,
-  ShareInfo
+  ShareInfo,
+  PublicAdDisplayResponse,
+  UpdateAdPricingSettingsInput
 } from "@shared/contracts";
 
 export interface DriverCandidate extends DriverAccount {
@@ -250,6 +260,14 @@ export interface Store {
   ): Promise<RiderLead>;
   listRiderLeads(): Promise<RiderLead[]>;
   createDriverInterest(input: DriverInterestInput): Promise<DriverInterest>;
+  createAdSubmission(input: CreateAdSubmissionInput): Promise<AdSubmission>;
+  listAdminAds(): Promise<AdminAdsResponse>;
+  updateAdSubmission(submissionId: string, input: AdminUpdateAdSubmissionInput): Promise<AdSubmission>;
+  getDriverAdProgram(driverId: string): Promise<DriverAdProgramResponse>;
+  updateDriverAdProgram(driverId: string, optedIn: boolean): Promise<DriverAdProgramResponse>;
+  getPublicAdDisplay(referralCode: string, baseUrl: string): Promise<PublicAdDisplayResponse>;
+  resolveAdVisit(redirectToken: string, metadata?: { ipAddress?: string | null; referrer?: string | null; userAgent?: string | null }): Promise<AdVisitResolveResponse>;
+  applyDriverAdCredits(driverId: string, input: ApplyDriverAdCreditsInput): Promise<DriverAdProgramResponse>;
   listDriverInterests(): Promise<DriverInterest[]>;
   listAdminRides(): Promise<Ride[]>;
   listDrivers(): Promise<DriverAccount[]>;
@@ -388,6 +406,8 @@ export interface Store {
 
   // Broadcast notification targets
   listUserIdsForBroadcast(roles: Array<"rider" | "driver">): Promise<string[]>;
+  getAdPricingSettings(): Promise<AdPricingSettings>;
+  updateAdPricingSettings(input: UpdateAdPricingSettingsInput): Promise<AdPricingSettings>;
 }
 
 export interface MapsService {

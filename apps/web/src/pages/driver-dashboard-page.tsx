@@ -70,6 +70,11 @@ export function DriverDashboardPage() {
     queryFn: () => api.getDriverDues(token!),
     enabled: Boolean(token)
   });
+  const adProgramQuery = useQuery({
+    queryKey: ["driver-ad-program"],
+    queryFn: () => api.getDriverAdProgram(token!),
+    enabled: Boolean(token)
+  });
   const communityQuery = useQuery({
     queryKey: ["community-board"],
     queryFn: () => api.listCommunityProposals(token!),
@@ -231,6 +236,11 @@ export function DriverDashboardPage() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["driver-offers"] })
   });
 
+  const adProgramMutation = useMutation({
+    mutationFn: (optedIn: boolean) => api.updateDriverAdProgram({ optedIn }, token!),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["driver-ad-program"] })
+  });
+
   useEffect(() => {
     if (!token) {
       return;
@@ -260,6 +270,7 @@ export function DriverDashboardPage() {
   const collector = duesQuery.data?.collector;
   const suspended = duesQuery.data?.blocked ?? false;
   const community = communityQuery.data;
+  const adProgram = adProgramQuery.data;
   const requestFeatureUrl = `/request-feature?source=driver_app&contextPath=${encodeURIComponent("/driver")}`;
 
   return (
@@ -860,6 +871,54 @@ export function DriverDashboardPage() {
 
           {shareQuery.data ? (
             <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ad dues offset</CardTitle>
+                  <CardDescription>
+                    Opt in if you want paid ad scans tracked for manual dues offset. If scans do not happen, dues stay the same.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-4xl border border-ops-border-soft p-4">
+                      <p className="text-sm text-ops-muted">Program</p>
+                      <p className="mt-2 text-2xl font-extrabold">{adProgram?.enrollment.optedIn ? "On" : "Off"}</p>
+                    </div>
+                    <div className="rounded-4xl border border-ops-border-soft p-4">
+                      <p className="text-sm text-ops-muted">Pending offset</p>
+                      <p className="mt-2 text-2xl font-extrabold">{formatMoney(adProgram?.summary.pendingTotal ?? 0)}</p>
+                    </div>
+                    <div className="rounded-4xl border border-ops-border-soft p-4">
+                      <p className="text-sm text-ops-muted">Tracked scans</p>
+                      <p className="mt-2 text-2xl font-extrabold">{adProgram?.summary.scanCount ?? 0}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/55 p-4 text-sm text-ops-muted">
+                    <p>
+                      Available ads: <span className="font-semibold text-ops-text">{adProgram?.summary.activeAdCount ?? 0}</span>
+                    </p>
+                    <p className="mt-2">
+                      Applied credits: <span className="font-semibold text-ops-text">{formatMoney(adProgram?.summary.appliedTotal ?? 0)}</span>
+                    </p>
+                    <p className="mt-2">
+                      Launch screen: <span className="font-semibold text-ops-text">/ads/display/{shareQuery.data.referralCode}</span>
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button disabled={adProgramMutation.isPending} onClick={() => adProgramMutation.mutate(!adProgram?.enrollment.optedIn)}>
+                      {adProgram?.enrollment.optedIn ? "Disable ad program" : "Enable ad program"}
+                    </Button>
+                    <Link
+                      to={`/ads/display/${shareQuery.data.referralCode}`}
+                      className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-ops-panel px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-surface"
+                    >
+                      Open fullscreen display
+                    </Link>
+                  </div>
+                  {adProgramMutation.error ? <p className="text-sm text-ops-error">{adProgramMutation.error.message}</p> : null}
+                </CardContent>
+              </Card>
+
               <ShareQrCard
                 title="Your driver referral QR"
                 description="Share this rider-growth link from the driver side. It still points riders back to the booking flow."

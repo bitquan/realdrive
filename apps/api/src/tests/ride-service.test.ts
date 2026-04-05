@@ -269,7 +269,14 @@ function createStore(stubs: Partial<Store>): Store {
       openBatchTotal: 0,
       overdueBatchCount: 0,
       overdueBatchTotal: 0,
-      lastCompletedRideAt: null
+      lastCompletedRideAt: null,
+      adProgram: {
+        optedIn: false,
+        scanCount: 0,
+        pendingCreditTotal: 0,
+        appliedCreditTotal: 0,
+        activeAdCount: 0
+      }
     }),
     listDriverDueSnapshots: async () => [],
     createDueBatchForDriver: notImplemented,
@@ -319,6 +326,104 @@ function createStore(stubs: Partial<Store>): Store {
     recordLocation: async () => makeRide({ status: "en_route", driverId: driver.id, driver }),
     listRiderLeads: async () => [],
     createDriverInterest: notImplemented,
+    createAdSubmission: notImplemented,
+    listAdminAds: async () => ({
+      submissions: [],
+      driverCredits: [],
+      pricingSettings: {
+        baseDailyPrice: 10,
+        defaultDriverCreditPerScan: 0.25,
+        slotMultipliers: [
+          { slotRank: 1, multiplier: 1.5 },
+          { slotRank: 2, multiplier: 1 },
+          { slotRank: 3, multiplier: 0.85 }
+        ],
+        dedupeWindowMinutes: 30,
+        updatedAt: new Date().toISOString()
+      }
+    }),
+    getAdPricingSettings: async () => ({
+      baseDailyPrice: 10,
+      defaultDriverCreditPerScan: 0.25,
+      slotMultipliers: [
+        { slotRank: 1, multiplier: 1.5 },
+        { slotRank: 2, multiplier: 1 },
+        { slotRank: 3, multiplier: 0.85 }
+      ],
+      dedupeWindowMinutes: 30,
+      updatedAt: new Date().toISOString()
+    }),
+    updateAdPricingSettings: async () => ({
+      baseDailyPrice: 10,
+      defaultDriverCreditPerScan: 0.25,
+      slotMultipliers: [
+        { slotRank: 1, multiplier: 1.5 },
+        { slotRank: 2, multiplier: 1 },
+        { slotRank: 3, multiplier: 0.85 }
+      ],
+      dedupeWindowMinutes: 30,
+      updatedAt: new Date().toISOString()
+    }),
+    updateAdSubmission: notImplemented,
+    getDriverAdProgram: async () => ({
+      enrollment: {
+        driverId: driver.id,
+        optedIn: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      summary: {
+        scanCount: 0,
+        pendingTotal: 0,
+        appliedTotal: 0,
+        availableOffsetTotal: 0,
+        activeAdCount: 0
+      },
+      activeAds: []
+    }),
+    updateDriverAdProgram: async () => ({
+      enrollment: {
+        driverId: driver.id,
+        optedIn: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      summary: {
+        scanCount: 0,
+        pendingTotal: 0,
+        appliedTotal: 0,
+        availableOffsetTotal: 0,
+        activeAdCount: 0
+      },
+      activeAds: []
+    }),
+    getPublicAdDisplay: async () => ({
+      driverName: driver.name,
+      referralCode: "DRIV1234",
+      optedIn: false,
+      items: []
+    }),
+    resolveAdVisit: async () => ({
+      destinationUrl: "https://example.com",
+      businessName: "Example",
+      headline: "Example ad"
+    }),
+    applyDriverAdCredits: async () => ({
+      enrollment: {
+        driverId: driver.id,
+        optedIn: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      summary: {
+        scanCount: 0,
+        pendingTotal: 0,
+        appliedTotal: 0,
+        availableOffsetTotal: 0,
+        activeAdCount: 0
+      },
+      activeAds: []
+    }),
     listDriverInterests: async () => [],
     listAdminRides: async () => [],
     listAdminUsers: async () => [],
@@ -392,6 +497,18 @@ function createStore(stubs: Partial<Store>): Store {
       drivers: { total: 0, approved: 0, available: 0, pendingApproval: 0 },
       riders: { total: 0, newInPeriod: 0 },
       topDrivers: [],
+      ads: {
+        submissions: 0,
+        awaitingPayment: 0,
+        published: 0,
+        scanCount: 0,
+        eligibleScanCount: 0,
+        duplicateBlockedCount: 0,
+        pendingDriverCredits: 0,
+        appliedDriverCredits: 0,
+        pendingRevenue: 0,
+        collectedRevenue: 0
+      },
       ridesPerDay: []
     }),
     orderDriverBgCheck: async (driverId) => ({ ...driverAccount, id: driverId }),

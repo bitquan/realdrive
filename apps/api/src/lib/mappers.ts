@@ -864,6 +864,12 @@ type PlatformDueBatchRecord = Prisma.PlatformDueBatchGetPayload<{
         referralCode: true;
       };
     };
+    adCredits: {
+      select: {
+        amount: true;
+        status: true;
+      };
+    };
     dues: {
       include: {
         driver: {
@@ -885,12 +891,21 @@ type PlatformDueBatchRecord = Prisma.PlatformDueBatchGetPayload<{
 }>;
 
 export function mapPlatformDueBatch(batch: PlatformDueBatchRecord): PlatformDueBatch {
+  const adCreditAppliedTotal = Number(
+    batch.adCredits
+      .filter((credit) => credit.status === "APPLIED")
+      .reduce((sum, credit) => sum + Number(credit.amount), 0)
+      .toFixed(2)
+  );
+
   return {
     id: batch.id,
     referenceCode: batch.referenceCode,
     driverId: batch.driverId,
     collectorAdminId: batch.collectorAdminId,
     amount: Number(batch.amount),
+    adCreditAppliedTotal,
+    netAmountDue: Number(Math.max(0, Number(batch.amount) - adCreditAppliedTotal).toFixed(2)),
     status: fromDbPlatformDueBatchStatus(batch.status),
     paymentMethod: batch.paymentMethod ? fromDbDuePaymentMethod(batch.paymentMethod) : null,
     observedTitle: batch.observedTitle,
@@ -935,6 +950,13 @@ export function mapDriverDueSnapshot(input: {
   overdueBatchCount: number;
   overdueBatchTotal: number;
   lastCompletedRideAt: Date | null;
+  adProgram: {
+    optedIn: boolean;
+    scanCount: number;
+    pendingCreditTotal: number;
+    appliedCreditTotal: number;
+    activeAdCount: number;
+  };
 }): DriverDueSnapshot {
   return {
     driver: input.driver,
@@ -945,7 +967,14 @@ export function mapDriverDueSnapshot(input: {
     openBatchTotal: Number(input.openBatchTotal.toFixed(2)),
     overdueBatchCount: input.overdueBatchCount,
     overdueBatchTotal: Number(input.overdueBatchTotal.toFixed(2)),
-    lastCompletedRideAt: toIso(input.lastCompletedRideAt)
+    lastCompletedRideAt: toIso(input.lastCompletedRideAt),
+    adProgram: {
+      optedIn: input.adProgram.optedIn,
+      scanCount: input.adProgram.scanCount,
+      pendingCreditTotal: Number(input.adProgram.pendingCreditTotal.toFixed(2)),
+      appliedCreditTotal: Number(input.adProgram.appliedCreditTotal.toFixed(2)),
+      activeAdCount: input.adProgram.activeAdCount
+    }
   };
 }
 
