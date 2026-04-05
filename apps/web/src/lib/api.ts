@@ -529,7 +529,8 @@ export const api = {
   },
   applyPlatformRatesAuto(token: string) {
     return apiFetch<PlatformRateAutoApplyResponse>("/admin/platform-rates/auto-apply", {
-      method: "POST"
+      method: "POST",
+      body: JSON.stringify({})
     }, token);
   },
   listCommunityProposals(token: string) {
