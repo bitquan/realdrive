@@ -89,6 +89,16 @@ export async function createGitHubIssueForReport(report: IssueReport, config: { 
     throw new Error("GitHub issue sync is not configured");
   }
 
+  const isFeatureRequest = report.metadata?.kind === "feature_request";
+
+  const labels = [
+    "source:in-app-report",
+    `role:${report.reporterRole}`,
+    ...(isFeatureRequest ? ["feature:request"] : ["user-reported"]),
+  ];
+
+  const titlePrefix = isFeatureRequest ? "[Feature]" : `[${sourceLabel(report.source)}]`;
+
   const response = await fetch(`https://api.github.com/repos/${config.githubRepo}/issues`, {
     method: "POST",
     headers: {
@@ -98,9 +108,9 @@ export async function createGitHubIssueForReport(report: IssueReport, config: { 
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      title: `[${sourceLabel(report.source)}] ${report.summary}`,
+      title: `${titlePrefix} ${report.summary}`,
       body: buildGithubIssueBody(report),
-      labels: ["realdrive", "user-reported", `role:${report.reporterRole}`]
+      labels,
     })
   });
 

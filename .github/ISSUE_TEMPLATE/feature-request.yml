@@ -1,0 +1,102 @@
+name: Feature Request
+description: Suggest a new feature for the RealDrive platform
+title: "[Feature] "
+labels:
+  - "feature:request"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking time to improve RealDrive. Your submission will be reviewed by AI
+        against the [feature policy](../../docs/feature-policy.md) and then by the platform owner.
+        
+        Features that benefit drivers, riders, and the community — without exploiting any party — are
+        most likely to be approved. Read the policy before submitting.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One line — what should the platform do?
+      placeholder: "As a driver, I want to see a weekly earnings breakdown so I can plan my schedule."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Who is affected and how? Be specific.
+      placeholder: "Drivers have no visibility into how their earnings vary by day or time. This makes it hard to decide when to drive."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What should the platform actually do? Describe the UX or behaviour change.
+      placeholder: "Add a weekly earnings chart to the driver dashboard showing gross, platform due, and net per day."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: who_benefits
+    attributes:
+      label: Who benefits most?
+      multiple: true
+      options:
+        - Drivers
+        - Riders
+        - Admins
+        - The whole community
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Platform area
+      description: Which part of the platform does this change?
+      options:
+        - Rider app
+        - Driver app
+        - Admin dashboard
+        - Community board
+        - API / backend
+        - Infrastructure / ops
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Estimated scope
+      description: Your best guess — the team will re-estimate.
+      options:
+        - "Small — UI tweak, copy change, or minor logic adjustment"
+        - "Medium — new page, new API endpoint, or changed flow"
+        - "Large — new system, major flow redesign, or multiple surfaces"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Did you think of other ways to solve this? Why is your proposal better?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: policy_agreement
+    attributes:
+      label: Policy confirmation
+      description: Please confirm before submitting.
+      options:
+        - label: This feature benefits the community — not one party at the expense of others.
+          required: true
+        - label: This feature does not involve hidden fees, price exploitation, surveillance, or data extraction.
+          required: true
+        - label: I have read the [platform feature policy](../../docs/feature-policy.md).
+          required: true

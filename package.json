@@ -15,6 +15,7 @@
     "lint": "pnpm -r lint",
     "ops:health": "node scripts/ops/health-check.mjs",
     "ops:digest": "node scripts/ops/daily-digest.mjs",
+    "ops:labels": "node scripts/ops/setup-labels.mjs",
     "db:generate": "pnpm --filter @realdrive/api prisma:generate",
     "db:migrate": "pnpm --filter @realdrive/api prisma:migrate",
     "db:seed": "pnpm --filter @realdrive/api prisma:seed"

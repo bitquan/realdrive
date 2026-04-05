@@ -1,0 +1,189 @@
+name: Feature Triage
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  triage:
+    name: AI Guardrail Check
+    runs-on: ubuntu-latest
+    # Only run when the feature:request label is applied
+    if: github.event.label.name == 'feature:request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run AI triage
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const issue = context.payload.issue;
+            const { title, body, number } = issue;
+
+            // Load the feature policy from the repo
+            const policyPath = path.join(process.env.GITHUB_WORKSPACE, 'docs', 'feature-policy.md');
+            const policy = fs.readFileSync(policyPath, 'utf8');
+
+            const systemPrompt = `You are the automated feature triage bot for RealDrive, a community-owned rideshare cooperative.
+            
+            Evaluate the incoming feature request against the platform's feature policy and respond ONLY with valid JSON.
+            Do not include markdown fences, explanations, or anything outside the JSON object.
+
+            Feature policy:
+            ${policy}
+
+            Response format (strict JSON, no other text):
+            {
+              "verdict": "looks-good" | "needs-review" | "flagged",
+              "alignment_score": <integer 1-10>,
+              "abuse_risk": "low" | "medium" | "high",
+              "complexity": "small" | "medium" | "large",
+              "guardrail_violations": ["<violation name>"],
+              "summary": "<2-3 sentence analysis of the request and how it aligns with the platform>",
+              "recommendation": "<1-2 sentence recommendation for the owner>"
+            }
+
+            Scoring rules:
+            - verdict "looks-good": alignment_score >= 7 AND abuse_risk == "low"
+            - verdict "needs-review": alignment_score 4-6 OR abuse_risk == "medium"
+            - verdict "flagged": alignment_score < 4 OR abuse_risk == "high" OR any guardrail_violations detected`;
+
+            let triageResult;
+
+            try {
+              const response = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'gpt-4o-mini',
+                  messages: [
+                    { role: 'system', content: systemPrompt },
+                    {
+                      role: 'user',
+                      content: `Feature Request Title: ${title}\n\nDescription:\n${body || '(no description provided)'}`,
+                    },
+                  ],
+                  max_tokens: 700,
+                  temperature: 0.2,
+                }),
+              });
+
+              if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`GitHub Models API error ${response.status}: ${errText}`);
+              }
+
+              const data = await response.json();
+              const raw = data.choices[0].message.content.trim();
+
+              // Strip markdown fences if model includes them despite instructions
+              const cleaned = raw.replace(/^```json?\n?/, '').replace(/\n?```$/, '').trim();
+              triageResult = JSON.parse(cleaned);
+            } catch (err) {
+              core.warning(`AI triage failed: ${err.message}`);
+              triageResult = {
+                verdict: 'needs-review',
+                alignment_score: null,
+                abuse_risk: 'unknown',
+                complexity: 'unknown',
+                guardrail_violations: [],
+                summary: 'Automated AI triage could not complete. Manual review is required.',
+                recommendation: 'Please evaluate this request manually against docs/feature-policy.md.',
+              };
+            }
+
+            // Map verdict to label
+            const labelMap = {
+              'looks-good': 'triage:looks-good',
+              'needs-review': 'triage:needs-review',
+              'flagged': 'triage:flagged',
+            };
+            const triageLabel = labelMap[triageResult.verdict] || 'triage:needs-review';
+
+            // Apply triage label (ignore 404 if label doesn't exist yet)
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: number,
+                labels: [triageLabel],
+              });
+            } catch (err) {
+              core.warning(`Could not apply label ${triageLabel}: ${err.message}`);
+            }
+
+            // Build comment
+            const verdictEmoji = {
+              'looks-good': '✅',
+              'needs-review': '🔍',
+              'flagged': '🚩',
+            }[triageResult.verdict] || '🔍';
+
+            const riskEmoji = {
+              low: '🟢',
+              medium: '🟡',
+              high: '🔴',
+              unknown: '⚪',
+            }[triageResult.abuse_risk] || '⚪';
+
+            const violationsList = triageResult.guardrail_violations?.length
+              ? triageResult.guardrail_violations.map(v => `- ${v}`).join('\n')
+              : '_None detected_';
+
+            const alignDisplay = triageResult.alignment_score != null
+              ? `${triageResult.alignment_score} / 10`
+              : '_unavailable_';
+
+            const comment = [
+              `## ${verdictEmoji} AI Feature Triage`,
+              ``,
+              `| Field | Result |`,
+              `|---|---|`,
+              `| Verdict | \`${triageResult.verdict}\` |`,
+              `| Alignment | ${alignDisplay} |`,
+              `| Abuse risk | ${riskEmoji} \`${triageResult.abuse_risk}\` |`,
+              `| Complexity | \`${triageResult.complexity}\` |`,
+              ``,
+              `### Analysis`,
+              `${triageResult.summary}`,
+              ``,
+              `### Guardrail violations`,
+              `${violationsList}`,
+              ``,
+              `### Recommendation`,
+              `${triageResult.recommendation}`,
+              ``,
+              `---`,
+              `_Evaluated against [docs/feature-policy.md](docs/feature-policy.md) · Automated by \`feature-triage.yml\`_`,
+              ``,
+              `> **Owner actions:**`,
+              `> - ✅ Approve → comment \`/approve <your reason>\``,
+              `> - ❌ Reject → comment \`/reject <your reason>\``,
+              `> - 🚩 Flagged features require a reason to override — this is visible to the community.`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              body: comment,
+            });
+
+            core.info(`Triage complete: verdict=${triageResult.verdict}, label=${triageLabel}`);

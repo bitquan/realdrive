@@ -1,0 +1,357 @@
+name: Feature Approve
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  # ─── Comment command handler: /approve or /reject ───────────────────────────
+  handle-command:
+    name: Handle slash command
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issue_comment' &&
+      (startsWith(github.event.comment.body, '/approve') ||
+       startsWith(github.event.comment.body, '/reject'))
+
+    steps:
+      - name: Process command
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const comment = context.payload.comment;
+            const issue   = context.payload.issue;
+            const commenter = comment.user.login;
+            const commentBody = comment.body.trim();
+
+            // ── Permission check: require write or admin access ──────────────
+            let canApprove = false;
+            try {
+              const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: commenter,
+              });
+              canApprove = ['admin', 'write'].includes(perm.permission);
+            } catch {
+              canApprove = false;
+            }
+
+            if (!canApprove) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `⛔ @${commenter} — only contributors with write access can approve or reject features.`,
+              });
+              core.setFailed('Unauthorized');
+              return;
+            }
+
+            // ── Parse command ────────────────────────────────────────────────
+            const isApprove = commentBody.startsWith('/approve');
+            const isReject  = commentBody.startsWith('/reject');
+            const command   = isApprove ? '/approve' : '/reject';
+            const reason    = commentBody.slice(command.length).trim();
+
+            // Enforce reason when the issue is flagged
+            const currentLabels = issue.labels.map(l => l.name);
+            const isFlagged = currentLabels.includes('triage:flagged');
+
+            if (!reason) {
+              const extra = isFlagged
+                ? '\n\n> ⚠️ This feature was **flagged** by AI triage. A reason is required to override.'
+                : '';
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Please include a reason: \`${command} <your reason>\`${extra}`,
+              });
+              return;
+            }
+
+            if (isApprove) {
+              await approveFeature({ github, context, core, issue, reason, commenter });
+            } else {
+              await rejectFeature({ github, context, core, issue, reason, commenter });
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            async function approveFeature({ github, context, core, issue, reason, commenter }) {
+              const { number, title } = issue;
+
+              // Apply status:approved, remove conflicting labels
+              const labelsToRemove = ['triage:flagged', 'triage:needs-review', 'status:rejected'];
+              for (const label of labelsToRemove) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: number,
+                    name: label,
+                  });
+                } catch { /* label not present, ignore */ }
+              }
+
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  labels: ['status:approved'],
+                });
+              } catch (err) {
+                core.warning(`Could not apply status:approved: ${err.message}`);
+              }
+
+              // Post approval comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: number,
+                body: [
+                  `## ✅ Feature Approved`,
+                  ``,
+                  `**Approved by:** @${commenter}`,
+                  `**Reason:** ${reason}`,
+                  ``,
+                  `This feature has been added to the [public roadmap](https://github.com/${context.repo.owner}/${context.repo.repo}/issues?q=label%3Aroadmap%3Aindex).`,
+                  ``,
+                  `_The community has been notified._`,
+                ].join('\n'),
+              });
+
+              // Sync to public roadmap
+              await syncToRoadmap({ github, context, core, issue, reason, commenter });
+            }
+
+            async function rejectFeature({ github, context, core, issue, reason, commenter }) {
+              const { number } = issue;
+
+              const labelsToRemove = ['triage:looks-good', 'status:approved'];
+              for (const label of labelsToRemove) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: number,
+                    name: label,
+                  });
+                } catch { /* ignore */ }
+              }
+
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  labels: ['status:rejected'],
+                });
+              } catch (err) {
+                core.warning(`Could not apply status:rejected: ${err.message}`);
+              }
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: number,
+                body: [
+                  `## ❌ Feature Request Closed`,
+                  ``,
+                  `**Reviewed by:** @${commenter}`,
+                  `**Reason:** ${reason}`,
+                  ``,
+                  `This request does not align with the current platform direction. See [docs/feature-policy.md](docs/feature-policy.md) for what is in scope.`,
+                  ``,
+                  `Feel free to revise and resubmit if the situation changes.`,
+                ].join('\n'),
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: number,
+                state: 'closed',
+                state_reason: 'not_planned',
+              });
+            }
+
+            async function syncToRoadmap({ github, context, core, issue, reason, commenter }) {
+              const { number, title, labels, html_url } = issue;
+
+              // Detect area from issue labels
+              const areaLabels = ['area:rider', 'area:driver', 'area:admin', 'area:community', 'area:api', 'area:infra'];
+              const area = labels.find(l => areaLabels.includes(l.name))?.name?.replace('area:', '') || 'platform';
+
+              const today = new Date().toISOString().split('T')[0];
+              const newEntry = [
+                `- [ ] **[${title}](${html_url})** · ${area} · Approved ${today}`,
+                `  > Reason: ${reason}`,
+                ``,
+              ].join('\n');
+
+              // Find or create the roadmap tracking issue
+              const { data: roadmapIssues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: 'roadmap:index',
+                state: 'open',
+              });
+
+              if (roadmapIssues.length > 0) {
+                // Append to existing roadmap issue
+                const roadmapIssue = roadmapIssues[0];
+                const currentBody = roadmapIssue.body || '';
+                const marker = '<!-- ROADMAP_FEATURES_START -->';
+                const insertAt = currentBody.indexOf(marker);
+
+                let updatedBody;
+                if (insertAt !== -1) {
+                  updatedBody =
+                    currentBody.slice(0, insertAt + marker.length) +
+                    '\n' +
+                    newEntry +
+                    currentBody.slice(insertAt + marker.length);
+                } else {
+                  updatedBody = currentBody + '\n' + newEntry;
+                }
+
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: roadmapIssue.number,
+                  body: updatedBody,
+                });
+
+                core.info(`Appended #${number} to roadmap issue #${roadmapIssue.number}`);
+              } else {
+                // Create the roadmap issue for the first time
+                const roadmapBody = [
+                  `# 📍 RealDrive Public Roadmap`,
+                  ``,
+                  `Community-approved features from the [feature request process](../../docs/feature-policy.md).`,
+                  `Each entry links to the original request and includes the owner's approval reason.`,
+                  ``,
+                  `> **Legend:** ☐ Planned · ✅ Completed · ❌ Cancelled`,
+                  ``,
+                  `<!-- ROADMAP_FEATURES_START -->`,
+                  newEntry,
+                  `<!-- ROADMAP_FEATURES_END -->`,
+                  ``,
+                  `---`,
+                  `_Maintained automatically by \`feature-approve.yml\` · [Feature policy](../../docs/feature-policy.md)_`,
+                ].join('\n');
+
+                const { data: newRoadmap } = await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: '📍 RealDrive Public Roadmap',
+                  body: roadmapBody,
+                  labels: ['roadmap:index'],
+                });
+
+                core.info(`Created roadmap issue #${newRoadmap.number}`);
+
+                // Pin the roadmap issue
+                try {
+                  await github.graphql(`
+                    mutation PinIssue($issueId: ID!) {
+                      pinIssue(input: { issueId: $issueId }) { issue { number } }
+                    }
+                  `, { issueId: newRoadmap.node_id });
+                } catch (err) {
+                  core.warning(`Could not pin roadmap issue: ${err.message}`);
+                }
+              }
+            }
+
+  # ─── Label-based handler: status:approved or status:rejected ────────────────
+  handle-label:
+    name: Handle approval label
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issues' &&
+      (github.event.label.name == 'status:approved' ||
+       github.event.label.name == 'status:rejected')
+
+    steps:
+      - name: Process label
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const sender = context.payload.sender.login;
+            const issue  = context.payload.issue;
+            const label  = context.payload.label.name;
+
+            // Permission check
+            let canApprove = false;
+            try {
+              const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: sender,
+              });
+              canApprove = ['admin', 'write'].includes(perm.permission);
+            } catch {
+              canApprove = false;
+            }
+
+            if (!canApprove) {
+              core.warning(`${sender} does not have write access — label ignored`);
+              return;
+            }
+
+            if (label === 'status:approved') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: [
+                  `## ✅ Feature Approved`,
+                  ``,
+                  `**Approved by:** @${sender} _(via label)_`,
+                  ``,
+                  `> 💡 Tip: For approved features — especially flagged ones — use \`/approve <reason>\` instead of the label`,
+                  `> so your reasoning is recorded in the roadmap.`,
+                  ``,
+                  `This feature will be added to the public roadmap. Leave an \`/approve <reason>\` comment to include`,
+                  `your reasoning, or the roadmap will show "Approved by label."`,
+                ].join('\n'),
+              });
+            } else if (label === 'status:rejected') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: [
+                  `## ❌ Feature Request Closed`,
+                  ``,
+                  `**Reviewed by:** @${sender} _(via label)_`,
+                  ``,
+                  `This request does not align with the current platform direction.`,
+                  `See [docs/feature-policy.md](docs/feature-policy.md) for what is in scope.`,
+                ].join('\n'),
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned',
+              });
+            }
