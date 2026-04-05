@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DriverDispatchSettings, PaymentMethod, Ride, RideType } from "@shared/contracts";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowRight, MapPinned, Route } from "lucide-react";
-import { BottomActionBar, DataField, EntityList } from "@/components/layout/ops-layout";
+import { AlertTriangle, MapPinned, Route } from "lucide-react";
+import { BottomActionBar, DataField } from "@/components/layout/ops-layout";
+import { DriverActiveRideCard } from "@/components/driver-home/DriverActiveRideCard";
+import { DriverEarningsMini } from "@/components/driver-home/DriverEarningsMini";
+import { DriverLiveOfferCard } from "@/components/driver-home/DriverLiveOfferCard";
+import { DriverOfferInbox } from "@/components/driver-home/DriverOfferInbox";
+import { DriverStatusBar } from "@/components/driver-home/DriverStatusBar";
+import { DriverToolsSection } from "@/components/driver-home/DriverToolsSection";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { HeadrestPrintTemplate } from "@/components/share/headrest-print-template";
 import { ShareQrCard } from "@/components/share/share-qr-card";
@@ -31,22 +37,6 @@ function getRidePricing(ride: Ride) {
     platformDue: ride.pricing.finalPlatformDue ?? ride.pricing.estimatedPlatformDue,
     customerTotal: ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal
   };
-}
-
-function formatDriverStage(status: Ride["status"]) {
-  if (status === "en_route") {
-    return "Arriving";
-  }
-
-  if (status === "arrived") {
-    return "At pickup";
-  }
-
-  if (status === "in_progress") {
-    return "In trip";
-  }
-
-  return status.replaceAll("_", " ");
 }
 
 function formatDispatchSummary(settings: DriverDispatchSettings | undefined) {
@@ -87,51 +77,6 @@ function getOfferCountdown(ride: Ride, now: number) {
   const seconds = totalSeconds % 60;
 
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-function DriverStatusBar({
-  available,
-  suspended,
-  blockedReason,
-  dispatchSummary,
-  availabilityPending,
-  onToggleAvailability
-}: {
-  available: boolean;
-  suspended: boolean;
-  blockedReason: string | null;
-  dispatchSummary: string;
-  availabilityPending: boolean;
-  onToggleAvailability: () => void;
-}) {
-  const statusLabel = suspended ? "Blocked" : available ? "Online" : "Offline";
-  const statusDetail = blockedReason ?? (available ? "Visible for live dispatch." : "Sign on to start receiving nearby jobs.");
-
-  return (
-    <section className="sticky top-3 z-20 rounded-[1.7rem] border border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(12,16,23,0.96),rgba(8,11,16,0.94))] px-4 py-3.5 shadow-elevated backdrop-blur md:top-4 md:px-5 md:py-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className={suspended ? "border-ops-destructive/28 bg-ops-destructive/12 text-ops-destructive" : available ? "border-ops-success/28 bg-ops-success/12 text-ops-success" : "border-ops-border-soft bg-ops-panel/80 text-ops-text"}>
-              {statusLabel}
-            </Badge>
-            <Badge className="border-ops-border-soft bg-ops-panel/82 text-ops-text">{dispatchSummary}</Badge>
-          </div>
-          <p className="mt-2 text-sm text-ops-muted">{statusDetail}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant={available ? "outline" : "default"}
-            disabled={availabilityPending || (!available && suspended)}
-            onClick={onToggleAvailability}
-          >
-            {available ? "Go offline" : suspended ? "Blocked from sign-on" : "Go online"}
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
 }
 
 function DriverMapSurface({
@@ -196,263 +141,6 @@ function DriverMapSurface({
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
-}
-
-function DriverLiveOfferCard({
-  offer,
-  suspended,
-  countdown,
-  acceptMutation,
-  declineMutation,
-  mobile
-}: {
-  offer: Ride | null;
-  suspended: boolean;
-  countdown: string | null;
-  acceptMutation: {
-    isPending: boolean;
-    mutate: (rideId: string) => void;
-  };
-  declineMutation: {
-    isPending: boolean;
-    mutate: (rideId: string) => void;
-  };
-  mobile?: boolean;
-}) {
-  if (!offer) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Live offer</CardTitle>
-          <CardDescription>New jobs appear here first, with the inbox just one tap away.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-[1.5rem] border border-dashed border-ops-border p-5 text-sm text-ops-muted">
-            No live offer right now. Stay online and keep the map open.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const pricing = getRidePricing(offer);
-
-  return (
-    <Card className="overflow-hidden border-ops-primary/24 shadow-glow">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle>Live offer</CardTitle>
-            <CardDescription className="mt-2">Accepting moves straight into the active trip flow.</CardDescription>
-          </div>
-          <Badge className="border-ops-warning/30 bg-ops-warning/10 text-ops-warning">{countdown ?? "Queued"}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Pickup</p>
-          <p className="mt-2 text-lg font-semibold text-ops-text">{offer.pickup.address}</p>
-          <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Dropoff</p>
-          <p className="mt-2 text-sm text-ops-muted">{offer.dropoff.address}</p>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <DataField label="Estimated payout" value={formatMoney(pricing.subtotal)} subtle={`Customer total ${formatMoney(pricing.customerTotal)}`} />
-          <DataField label="Trip size" value={`${offer.estimatedMiles} miles`} subtle={`${offer.estimatedMinutes} minutes · ${formatPaymentMethod(offer.payment.method)}`} />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Ride type</p>
-            <p className="mt-3 text-base font-semibold text-ops-text">{offer.rideType.toUpperCase()}</p>
-          </div>
-          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Platform due</p>
-            <p className="mt-3 text-base font-semibold text-ops-text">{formatMoney(pricing.platformDue)}</p>
-          </div>
-        </div>
-
-        <div className={`gap-3 ${mobile ? "hidden xl:flex" : "flex"}`}>
-          <Button className="flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(offer.id)}>
-            {acceptMutation.isPending ? "Accepting..." : "Accept and open trip"}
-          </Button>
-          <Button variant="outline" className="flex-1" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(offer.id)}>
-            Decline
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DriverOfferInbox({
-  offers,
-  suspended,
-  available,
-  now,
-  acceptMutation,
-  declineMutation
-}: {
-  offers: Ride[];
-  suspended: boolean;
-  available: boolean;
-  now: number;
-  acceptMutation: {
-    isPending: boolean;
-    mutate: (rideId: string) => void;
-  };
-  declineMutation: {
-    isPending: boolean;
-    mutate: (rideId: string) => void;
-  };
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Offer inbox</CardTitle>
-        <CardDescription>All pending offers stay in one place, ordered from newest to oldest.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {offers.length ? (
-          <EntityList>
-            {offers.map((ride) => {
-              const pricing = getRidePricing(ride);
-              const countdown = getOfferCountdown(ride, now);
-
-              return (
-                <div key={ride.id} className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/40 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-ops-text">{ride.pickup.address}</p>
-                      <p className="mt-1 truncate text-sm text-ops-muted">{ride.dropoff.address}</p>
-                    </div>
-                    <Badge className="border-ops-border-soft bg-ops-panel/80 text-ops-text">{countdown ?? "Queued"}</Badge>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <DataField label="Payout" value={formatMoney(pricing.subtotal)} subtle={`Customer total ${formatMoney(pricing.customerTotal)}`} />
-                    <DataField label="Trip size" value={`${ride.estimatedMiles} miles`} subtle={`${ride.estimatedMinutes} minutes · ${formatPaymentMethod(ride.payment.method)}`} />
-                  </div>
-
-                  <div className="mt-4 flex gap-3">
-                    <Button className="flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
-                      {acceptMutation.isPending ? "Accepting..." : "Accept"}
-                    </Button>
-                    <Button variant="outline" className="flex-1" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
-                      Decline
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </EntityList>
-        ) : (
-          <div className="rounded-[1.45rem] border border-dashed border-ops-border p-5 text-sm text-ops-muted">
-            {available ? "No offers in the inbox right now." : "Go online to start receiving jobs in the inbox."}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function DriverActiveRideCard({ ride, emphasize }: { ride: Ride | null; emphasize?: boolean }) {
-  if (!ride) {
-    return (
-      <Card className={emphasize ? "border-ops-primary/30 shadow-soft" : undefined}>
-        <CardHeader>
-          <CardTitle>Active ride</CardTitle>
-          <CardDescription>The current trip always stays one tap away from home.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-[1.45rem] border border-dashed border-ops-border p-5 text-sm text-ops-muted">
-            No ride in progress. The next accepted job will appear here.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const pricing = getRidePricing(ride);
-
-  return (
-    <Card className={emphasize ? "border-ops-primary/30 shadow-soft" : undefined}>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle>Active ride</CardTitle>
-            <CardDescription className="mt-2">Resume the live trip flow without leaving home.</CardDescription>
-          </div>
-          <Badge>{formatDriverStage(ride.status)}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <p className="text-lg font-semibold text-ops-text">{ride.rider.name}</p>
-          <p className="mt-1 text-sm text-ops-muted">{ride.pickup.address}</p>
-          <p className="mt-1 text-sm text-ops-muted">To {ride.dropoff.address}</p>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <DataField label="Current stage" value={formatDriverStage(ride.status)} subtle={`${ride.estimatedMiles} miles · ${ride.estimatedMinutes} minutes`} />
-          <DataField label="Driver subtotal" value={formatMoney(pricing.subtotal)} subtle={`Trip payment ${formatPaymentMethod(ride.payment.method)}`} />
-        </div>
-
-        <Link
-          to={`/driver/rides/${ride.id}`}
-          className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-ops-primary/40 bg-ops-primary px-4 text-sm font-semibold text-white transition hover:bg-[#6887ff]"
-        >
-          Resume trip
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DriverEarningsMini({ projectedTotal, jobsInFlow }: { projectedTotal: number; jobsInFlow: number }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Projected live earnings</CardTitle>
-        <CardDescription>Quick visibility for the work already in motion.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <DataField label="Projected total" value={formatMoney(projectedTotal)} subtle="Active trips plus the current top offer" />
-        <DataField label="Jobs in flow" value={jobsInFlow} subtle="Accepted rides plus the current live offer" />
-      </CardContent>
-    </Card>
-  );
-}
-
-function DriverToolsSection({
-  open,
-  onToggle,
-  outstandingTotal,
-  children
-}: {
-  open: boolean;
-  onToggle: () => void;
-  outstandingTotal: number;
-  children: ReactNode;
-}) {
-  return (
-    <Card className="overflow-hidden border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(12,16,22,0.98),rgba(8,11,16,0.96))] shadow-panel">
-      <CardHeader>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Driver tools</CardTitle>
-            <CardDescription className="mt-2">Account and platform tools stay available, but no longer crowd the live work surface.</CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className="border-ops-border-soft bg-ops-panel/75 text-ops-text">Dues {formatMoney(outstandingTotal)}</Badge>
-            <Button variant="outline" onClick={onToggle}>{open ? "Hide tools" : "Open tools"}</Button>
-          </div>
-        </div>
-      </CardHeader>
-      {open ? <CardContent className="space-y-6">{children}</CardContent> : null}
     </Card>
   );
 }
