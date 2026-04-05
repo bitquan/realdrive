@@ -231,6 +231,15 @@ export const api = {
       token
     );
   },
+  sendTestPushNotification(token: string) {
+    return apiFetch<{ ok: true; push: { sentCount: number; failedCount: number; pushEnabled: boolean } }>(
+      "/me/notifications/test-push",
+      {
+        method: "POST"
+      },
+      token
+    );
+  },
   listNotificationDeliveryLogs(token: string, limit = 20) {
     const params = new URLSearchParams({ limit: String(limit) });
     return apiFetch<NotificationDeliveryLogsResponse>(`/me/notification-delivery-logs?${params.toString()}`, undefined, token);

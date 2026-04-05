@@ -1097,6 +1097,26 @@ export function buildApp() {
     });
   });
 
+  app.post("/me/notifications/test-push", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
+    const pushResult = await sendPushForUser({
+      userId: request.userContext.id,
+      rideId: null,
+      eventKey: "manual_test",
+      title: "RealDrive test notification",
+      body: "Push is connected for this device.",
+      url: "/notifications"
+    });
+
+    return {
+      ok: true,
+      push: {
+        sentCount: pushResult.sentCount,
+        failedCount: pushResult.failedCount,
+        pushEnabled: pushResult.pushEnabled
+      }
+    };
+  });
+
   app.get("/me/notification-delivery-logs", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
     const limit = Number((request.query as { limit?: string }).limit ?? "20");
     const logs = await store.listNotificationDeliveryLogs(request.userContext.id, Number.isFinite(limit) ? limit : 20);

@@ -76,11 +76,30 @@ export function NotificationPreferencesPage() {
     }
   });
 
+  const testPushMutation = useMutation({
+    mutationFn: async () => api.sendTestPushNotification(token!),
+    onSuccess: (result) => {
+      if (result.push.sentCount > 0) {
+        setFeedback("Test push sent. If app is closed, check your device notifications. If app is open, check notification center and OS alerts.");
+      } else if (!result.push.pushEnabled) {
+        setFeedback("Push is disabled in your preferences. Enable push first.");
+      } else {
+        setFeedback("Push test ran but no active subscription was found for this browser. Tap Enable push on this browser first.");
+      }
+
+      void queryClient.invalidateQueries({ queryKey: PREF_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: LOGS_QUERY_KEY });
+    },
+    onError: (error) => {
+      setFeedback(error instanceof Error ? error.message : "Failed to send test push notification.");
+    }
+  });
+
   const preferences = prefQuery.data?.preferences;
   const logs = logsQuery.data?.logs ?? [];
 
   const loading = prefQuery.isLoading || logsQuery.isLoading;
-  const pushBusy = enablePushMutation.isPending || disablePushMutation.isPending;
+  const pushBusy = enablePushMutation.isPending || disablePushMutation.isPending || testPushMutation.isPending;
 
   const pushStatus = useMemo(() => {
     if (!prefQuery.data) {
@@ -118,6 +137,10 @@ export function NotificationPreferencesPage() {
                   <Button disabled={pushBusy} onClick={() => enablePushMutation.mutate()}>
                     {enablePushMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bell className="mr-2 h-4 w-4" />}
                     Enable push on this browser
+                  </Button>
+                  <Button variant="outline" disabled={pushBusy} onClick={() => testPushMutation.mutate()}>
+                    {testPushMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bell className="mr-2 h-4 w-4" />}
+                    Send test push
                   </Button>
                   <Button variant="ghost" disabled={pushBusy} onClick={() => disablePushMutation.mutate()}>
                     {disablePushMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellOff className="mr-2 h-4 w-4" />}
