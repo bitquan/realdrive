@@ -8,6 +8,7 @@ From the repo root:
 pnpm lint
 pnpm test
 pnpm build
+pnpm screenshots
 ```
 
 ## Current Automated Tests
@@ -32,6 +33,7 @@ Current status:
 - Frontend test runner is configured
 - Baseline React Testing Library + jsdom setup is in place
 - Current web test file: `apps/web/src/components/ui/button.test.tsx`
+- Playwright screenshot coverage is configured for major stable public screens, shared feedback screens, and admin/driver dashboards
 
 ## Manual QA Checklist
 
@@ -112,7 +114,7 @@ Detailed walkthrough:
 - Database-backed tests for Prisma store behavior
 - WebSocket event tests
 - Frontend component and route tests (expand from baseline)
-- Full end-to-end browser tests with Playwright
+- Expand Playwright from screenshot coverage into interactive trip and map-heavy flows
 
 ## Quality Risks To Watch
 

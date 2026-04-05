@@ -13,3 +13,5 @@ apps/web/src/*.js
 apps/web/src/**/*.js
 apps/api/prisma/dev.db
 apps/api/prisma/dev.db-journal
+apps/web/playwright-report
+apps/web/test-results

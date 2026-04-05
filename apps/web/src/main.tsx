@@ -151,18 +151,18 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               </RequireDriverTablet>
             }
           />
-          <Route element={<AppShell />}>
-            <Route path="/" element={<PageLoader><HomePage /></PageLoader>} />
-            <Route path="/advertise" element={<PageLoader><AdvertisePage /></PageLoader>} />
-            <Route path="/track/:token" element={<PageLoader><PublicTrackPage /></PageLoader>} />
-            <Route path="/drive-with-us" element={<PageLoader><DriverInterestPage /></PageLoader>} />
-            <Route path="/driver/signup" element={<PageLoader><DriverInterestPage /></PageLoader>} />
-            <Route path="/share/:referralCode" element={<PageLoader><ShareRedirectPage /></PageLoader>} />
-            <Route path="/sms-consent" element={<PageLoader><SmsConsentPage /></PageLoader>} />
-            <Route path="/sms-help" element={<PageLoader><SmsHelpPage /></PageLoader>} />
-            <Route path="/community/join/:token" element={<PageLoader><CommunityJoinPage /></PageLoader>} />
+          <Route path="/" element={<AppShell />}>
+            <Route index element={<PageLoader><HomePage /></PageLoader>} />
+            <Route path="advertise" element={<PageLoader><AdvertisePage /></PageLoader>} />
+            <Route path="track/:token" element={<PageLoader><PublicTrackPage /></PageLoader>} />
+            <Route path="drive-with-us" element={<PageLoader><DriverInterestPage /></PageLoader>} />
+            <Route path="driver/signup" element={<PageLoader><DriverInterestPage /></PageLoader>} />
+            <Route path="share/:referralCode" element={<PageLoader><ShareRedirectPage /></PageLoader>} />
+            <Route path="sms-consent" element={<PageLoader><SmsConsentPage /></PageLoader>} />
+            <Route path="sms-help" element={<PageLoader><SmsHelpPage /></PageLoader>} />
+            <Route path="community/join/:token" element={<PageLoader><CommunityJoinPage /></PageLoader>} />
             <Route
-              path="/community"
+              path="community"
               element={
                 <RequireAuth>
                   <PageLoader><CommunityPage /></PageLoader>
@@ -170,7 +170,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/request-feature"
+              path="request-feature"
               element={
                 <RequireAuth>
                   <PageLoader><RequestFeaturePage /></PageLoader>
@@ -178,7 +178,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/report-bug"
+              path="report-bug"
               element={
                 <RequireAuth>
                   <PageLoader><ReportBugPage /></PageLoader>
@@ -186,7 +186,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/notifications"
+              path="notifications"
               element={
                 <RequireAuth>
                   <PageLoader><NotificationPreferencesPage /></PageLoader>
@@ -194,7 +194,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/roadmap"
+              path="roadmap"
               element={
                 <RequireAuth>
                   <PageLoader><RoadmapPage /></PageLoader>
@@ -202,7 +202,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/rider/rides"
+              path="rider/rides"
               element={
                 <RequireRole role="rider">
                   <PageLoader><RideHistoryPage /></PageLoader>
@@ -210,18 +210,18 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/rider/rides/:rideId"
+              path="rider/rides/:rideId"
               element={
                 <RequireRole role="rider">
                   <PageLoader><RideDetailsPage /></PageLoader>
                 </RequireRole>
               }
             />
-            <Route path="/driver/login" element={<PageLoader><DriverLoginPage /></PageLoader>} />
-            <Route path="/admin/setup" element={<PageLoader><AdminSetupPage /></PageLoader>} />
-            <Route path="/admin/invite/:token" element={<PageLoader><AdminInviteAcceptPage /></PageLoader>} />
+            <Route path="driver/login" element={<PageLoader><DriverLoginPage /></PageLoader>} />
+            <Route path="admin/setup" element={<PageLoader><AdminSetupPage /></PageLoader>} />
+            <Route path="admin/invite/:token" element={<PageLoader><AdminInviteAcceptPage /></PageLoader>} />
             <Route
-              path="/driver"
+              path="driver"
               element={
                 <RequireRole role="driver">
                   <PageLoader><DriverDashboardPage /></PageLoader>
@@ -229,16 +229,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/driver/rides/:rideId"
+              path="driver/rides/:rideId"
               element={
                 <RequireRole role="driver">
                   <PageLoader><DriverRidePage /></PageLoader>
                 </RequireRole>
               }
             />
-            <Route path="/admin/login" element={<PageLoader><AdminLoginPage /></PageLoader>} />
+            <Route path="admin/login" element={<PageLoader><AdminLoginPage /></PageLoader>} />
             <Route
-              path="/admin"
+              path="admin"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDashboardPage /></PageLoader>
@@ -246,7 +246,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/dispatch"
+              path="admin/dispatch"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDispatchPage /></PageLoader>
@@ -254,7 +254,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/team"
+              path="admin/team"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminTeamPage /></PageLoader>
@@ -262,7 +262,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/drivers"
+              path="admin/drivers"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDriversPage /></PageLoader>
@@ -270,7 +270,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/reports"
+              path="admin/reports"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminReportingPage /></PageLoader>
@@ -278,7 +278,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/regions"
+              path="admin/regions"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminRegionsPage /></PageLoader>
@@ -286,7 +286,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/api-keys"
+              path="admin/api-keys"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminApiKeysPage /></PageLoader>
@@ -294,7 +294,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/ads/analytics"
+              path="admin/ads/analytics"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminAdAnalyticsPage /></PageLoader>
@@ -302,7 +302,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/ads"
+              path="admin/ads"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminAdsPage /></PageLoader>
@@ -310,7 +310,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/pricing"
+              path="admin/pricing"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminPricingPage /></PageLoader>
@@ -318,7 +318,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/share"
+              path="admin/share"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminSharePage /></PageLoader>
@@ -326,7 +326,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/help"
+              path="admin/help"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminHelpPage /></PageLoader>
@@ -334,7 +334,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/dues"
+              path="admin/dues"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDuesPage /></PageLoader>
@@ -342,7 +342,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/data"
+              path="admin/data"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDataPage /></PageLoader>
@@ -350,7 +350,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
             <Route
-              path="/admin/audit"
+              path="admin/audit"
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminAuditPage /></PageLoader>

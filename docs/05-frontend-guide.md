@@ -149,7 +149,7 @@ Current public UX direction:
 - The live map requires Mapbox to be configured
 - The community board is intentionally simple: one board, yes/no voting, and flat comments only
 - The driver status progression screen works, but the current UI does not yet expose every operational action from the API
-- There are no frontend Vitest or Playwright tests yet
+- Frontend automated coverage is still light, but Playwright screenshot coverage now exists for major stable screens and dashboards
 
 ## Recommended Frontend Conventions
 

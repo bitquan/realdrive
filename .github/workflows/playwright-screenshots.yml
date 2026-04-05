@@ -1,0 +1,82 @@
+name: Playwright Screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  DATABASE_URL: postgresql://realdrive:realdrive@127.0.0.1:5434/realdrive?schema=public
+  JWT_SECRET: playwright-local-secret
+  CLIENT_ORIGIN: http://127.0.0.1:4173
+  PUBLIC_BASE_URL: http://127.0.0.1:4173
+  LAUNCH_MODE: marketplace
+  MAPBOX_TOKEN: ""
+  VITE_API_URL: http://127.0.0.1:4005
+  VITE_MAPBOX_TOKEN: ""
+  PLAYWRIGHT_API_URL: http://127.0.0.1:4005
+  PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+
+jobs:
+  screenshots:
+    name: Capture Screenshots
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: realdrive
+          POSTGRES_USER: realdrive
+          POSTGRES_PASSWORD: realdrive
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd="pg_isready -U realdrive -d realdrive"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm --filter @realdrive/web exec playwright install --with-deps chromium
+
+      - name: Apply database migrations
+        run: pnpm --filter @realdrive/api exec prisma migrate deploy
+
+      - name: Seed database
+        run: pnpm db:seed
+
+      - name: Capture screenshots
+        run: pnpm screenshots
+
+      - name: Upload screenshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
+          if-no-files-found: warn

@@ -112,9 +112,17 @@ Build only the web app:
 pnpm --filter @realdrive/web build
 ```
 
+Run Playwright screenshot coverage:
+
+```bash
+pnpm screenshots
+```
+
 ## CI Pipeline
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
+
+Screenshot artifact workflow: `.github/workflows/playwright-screenshots.yml`
 
 Runs on `push` and `pull_request` to `main`:
 
@@ -197,6 +205,13 @@ After a fresh reset:
 - Bug reports do not require an error code; the form captures summary, actual behavior, expected behavior, and reproduction steps
 - Backend issue intake routes through `POST /issues/report`
 
+## Screenshot Runbook
+
+- Playwright captures major stable public and authenticated screens first
+- Current coverage includes public entry pages, shared feedback forms, and admin/driver dashboards
+- Results are written to `apps/web/test-results` and `apps/web/playwright-report`
+- CI uploads screenshot artifacts from `.github/workflows/playwright-screenshots.yml`
+
 ## Rider OTP In Development
 
 If Twilio is not configured:
@@ -247,6 +262,14 @@ Check:
 - The intended web project is `realdrive-web`
 - The intended production alias is `https://realdrive-web.vercel.app`
 - Local `.vercel/` folders are temporary and should not be committed
+
+## Playwright auth setup fails
+
+Check:
+
+- The Playwright API server is reachable on `http://127.0.0.1:4005`
+- PostgreSQL is running and migrations are applied
+- If your local DB already has a different admin account, set `PLAYWRIGHT_ADMIN_EMAIL` and `PLAYWRIGHT_ADMIN_PASSWORD` before running screenshots
 
 ## Push Notifications Runbook
 
