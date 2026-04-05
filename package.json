@@ -10,6 +10,7 @@
     "dev": "pnpm --parallel --filter @realdrive/api --filter @realdrive/web dev",
     "dev:api": "pnpm --filter @realdrive/api dev",
     "dev:web": "pnpm --filter @realdrive/web dev",
+    "dev:auto-pricing-worker": "pnpm --filter @realdrive/api dev:worker:auto-pricing",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",

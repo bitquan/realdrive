@@ -40,6 +40,26 @@ pnpm dev:api
 pnpm dev:web
 ```
 
+## Start Auto-Pricing Worker (Optional)
+
+Use a separate process for benchmark auto-apply scheduling.
+
+Required env vars in `apps/api/.env`:
+
+- `PLATFORM_RATE_AUTO_APPLY_ENABLED="true"`
+- `PLATFORM_RATE_AUTO_APPLY_RUNNER="worker"`
+
+Run worker:
+
+```bash
+pnpm dev:auto-pricing-worker
+```
+
+Notes:
+
+- When runner is `worker`, API manual auto-apply endpoint still works.
+- The API process will skip its internal scheduler to avoid double-runs.
+
 ## Prisma Commands
 
 Generate client:
@@ -85,6 +105,18 @@ Run TypeScript checks:
 ```bash
 pnpm lint
 ```
+
+## CI Pipeline
+
+GitHub Actions workflow: `.github/workflows/ci.yml`
+
+Runs on `push` and `pull_request` to `main`:
+
+- Install dependencies
+- Generate Prisma client
+- Run lint/type checks
+- Run tests
+- Build all packages
 
 ## Demo Data Runbook
 

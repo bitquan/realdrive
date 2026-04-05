@@ -7,6 +7,10 @@
 ✅ **Auto-Apply Scheduler** - Automatic or manual rate undercut application
 ✅ **SEO Baseline** - Meta tags, robots.txt, sitemap.xml for search visibility
 ✅ **Deployment Documentation** - Comprehensive Render/Vercel setup guide
+✅ **Driver Document Upload Flow** - End-to-end upload, storage, admin review, and file retrieval
+✅ **CI Baseline** - GitHub Actions runs API tests and type/build checks on push/PR
+✅ **Background Worker Option** - Auto-pricing scheduler can run in dedicated worker process
+✅ **Payment Integration Foundation** - Stripe checkout-link endpoint with audit logging
 
 See:
 - [Admin Pricing & Benchmarks Documentation](./16-admin-pricing-benchmarks.md)
@@ -17,13 +21,12 @@ See:
 
 ### Not Production-Ready Yet
 
-- Payments are tracked only as manual/off-platform records
+- Payments are still partially manual (Stripe checkout link exists, but webhook settlement automation is not complete)
 - Secrets are loaded from environment (use secret managers in heavily-regulated contexts)
 - Some domain errors could map to cleaner `4xx` responses
-- There is no CI/CD pipeline (only GitHub → Render auto-deploy)
-- There is no background worker separation (scheduler runs in main API process)
+- CI does not yet gate production deploys with required status checks and environment promotion rules
+- Worker infrastructure exists for auto-pricing, but other scheduled jobs still run in API process
 - There are no frontend tests (API has unit test coverage)
-- No file upload support (for driver documents, ID verification, etc.)
 
 ### Current Product Limitations
 
@@ -31,7 +34,6 @@ See:
 - English-only UI
 - No native mobile apps
 - Push notifications depend on browser/device subscription and platform support (iOS web constraints)
-- No driver document review workflow (no upload, storage, or verification flow)
 - No admin audit UI (audit records ARE stored but not viewable)
 - No advanced dispatch heuristics beyond local radius, service-area state match, and nationwide fan-out
 - Benchmark snapshots are manual entry only (no API scraping; requires human input to Admin Pricing)
@@ -76,7 +78,7 @@ See:
 
 ### Devops
 
-- **CI/CD Pipeline**: Add GitHub Actions for linting, testing, and pre-deploy validation
+- **CI/CD Hardening**: Add required checks, preview environments, and release gates (build/test CI already exists)
 - **Database Migrations**: Add rollback strategy and automated test migrations
 - **Monitoring**: Add APM (e.g., Datadog, New Relic) for performance tracking
 - **Secrets Rotation**: Implement automatic secret rotation for API keys, JWT secret

@@ -106,6 +106,7 @@ Add these to Render dashboard for the `realdrive-api` service.
 | `PLATFORM_RATE_AUTO_APPLY_ENABLED` | `false` | Enable benchmark auto-apply scheduler |
 | `PLATFORM_RATE_AUTO_APPLY_MINUTES` | `60` | How often to run auto-apply (minutes) |
 | `PLATFORM_RATE_UNDERCUT_AMOUNT` | `0.05` | Amount to undercut competitor rates ($) |
+| `PLATFORM_RATE_AUTO_APPLY_RUNNER` | `api` | `api` or `worker` (set `worker` for dedicated process) |
 
 ### Analytics & Configuration Variables
 
@@ -123,6 +124,11 @@ Add these to Render dashboard for the `realdrive-api` service.
 - `TWILIO_AUTH_TOKEN` - SMS auth
 - `TWILIO_VERIFY_SERVICE_SID` - OTP service ID (must start with `VA`)
 - `TWILIO_FROM_NUMBER` - SMS sender number or messaging service
+
+**Stripe (Payment Integration Foundation)**
+- `STRIPE_SECRET_KEY` - Stripe secret key (`sk_...`)
+- `STRIPE_SUCCESS_URL` - Redirect after successful checkout
+- `STRIPE_CANCEL_URL` - Redirect after cancelled checkout
 
 **Web Push**
 - `WEB_PUSH_VAPID_PUBLIC_KEY` - Browser push public key
@@ -297,6 +303,33 @@ If `PLATFORM_RATE_AUTO_APPLY_ENABLED=true`, a scheduler runs every `PLATFORM_RAT
 - Applies new platform pricing rules
 - Requires manual benchmark snapshots in Admin Pricing
 - See [Admin Pricing & Benchmarks](./16-admin-pricing-benchmarks.md) for details
+
+Runner mode behavior:
+
+- `PLATFORM_RATE_AUTO_APPLY_RUNNER=api` (default): scheduler runs in API service
+- `PLATFORM_RATE_AUTO_APPLY_RUNNER=worker`: scheduler runs in dedicated worker process only
+
+For worker mode on Render, add a second Background Worker service using command:
+
+```bash
+pnpm --filter @realdrive/api dev:worker:auto-pricing
+```
+
+## Payment Integration Foundation
+
+The API exposes Stripe checkout-session creation endpoint:
+
+- `POST /payments/checkout-link` (driver/admin auth)
+
+Purpose:
+
+- Generate Stripe hosted checkout links for dues or ride-related payments
+- Record audit logs for checkout-link creation events
+
+Current scope:
+
+- Checkout-link generation is integrated
+- Full webhook settlement reconciliation remains a next step
 
 ## Scaling Recommendations
 

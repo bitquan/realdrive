@@ -69,6 +69,8 @@ Purpose:
 Purpose:
 
 - Create a real pending driver account with email/password
+- Requires a full 4-document upload packet in request body (`insurance`, `registration`, `background_check`, `mvr`)
+- Persists files to configured `DRIVER_DOCUMENT_UPLOAD_DIR` and creates review records for admin workflow
 
 ### `POST /driver/auth/login`
 
@@ -387,6 +389,19 @@ Purpose:
 
 - Approve or reject a driver account
 
+### `PATCH /admin/drivers/:id/documents/:documentId`
+
+Purpose:
+
+- Approve or reject one uploaded driver onboarding document
+- Record reviewer/admin note and update driver readiness state
+
+### `GET /admin/drivers/:id/documents/:documentId/file`
+
+Purpose:
+
+- Stream one uploaded driver document file to admin reviewer
+
 ### `PATCH /admin/drivers/:id`
 
 Purpose:
@@ -405,11 +420,43 @@ Purpose:
 
 - Update state-based platform market rates
 
+### `GET /admin/platform-rates/benchmarks`
+
+Purpose:
+
+- Fetch saved Uber/Lyft benchmark snapshots used for auto-pricing
+
+### `PUT /admin/platform-rates/benchmarks`
+
+Purpose:
+
+- Upsert Uber/Lyft benchmark snapshots for one or more markets
+
+### `GET /admin/platform-rates/auto-status`
+
+Purpose:
+
+- Return auto-pricing status, runner mode (`api` or `worker`), benchmark counts, and last run/error state
+
+### `POST /admin/platform-rates/auto-apply`
+
+Purpose:
+
+- Trigger immediate benchmark undercut pricing update manually
+
 ### `PUT /admin/pricing`
 
 Purpose:
 
 - Replace pricing rule values
+
+### `POST /payments/checkout-link`
+
+Purpose:
+
+- Create Stripe hosted checkout session links for dues/ride-related payment collection
+- Store audit logs for payment-link creation activity
+- Requires driver or admin auth
 
 ## Community
 

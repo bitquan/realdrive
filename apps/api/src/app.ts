@@ -66,7 +66,8 @@ import { calculateCustomerTotal, calculateFare, calculatePlatformDue, findPlatfo
 import { createPushService } from "./services/push.js";
 import { createRideService } from "./services/ride-service.js";
 import { createSmsService } from "./services/sms.js";
-import { buildUndercutRules } from "./services/platform-rate-auto.js";
+import { applyAutoPlatformRates as runAutoPlatformRates } from "./services/platform-rate-auto-runner.js";
+import { createStripeCheckoutLink } from "./services/payments.js";
 
 function resolvePublicBaseUrl(request: FastifyRequest) {
   const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
@@ -129,6 +130,7 @@ export function buildApp() {
   const sms = createSmsService();
   const push = createPushService();
   const autoApplyIntervalMinutes = Math.max(1, Math.floor(env.platformRateAutoApplyMinutes));
+  const autoApplyRunnerMode = env.platformRateAutoApplyRunner === "worker" ? "worker" : "api";
   const undercutAmount = Math.max(0, Number(env.platformRateUndercutAmount.toFixed(2)));
 
   const autoRateState: {
@@ -142,67 +144,11 @@ export function buildApp() {
   };
 
   async function applyAutoPlatformRates(trigger: "manual" | "scheduled" | "startup") {
-    const snapshotRules = await store.listPlatformRateBenchmarks();
-    const uberRules = snapshotRules
-      .filter((rule) => rule.provider === "uber")
-      .map((rule) => ({
-        marketKey: rule.marketKey,
-        rideType: rule.rideType,
-        baseFare: rule.baseFare,
-        perMile: rule.perMile,
-        perMinute: rule.perMinute,
-        multiplier: rule.multiplier
-      }));
-    const lyftRules = snapshotRules
-      .filter((rule) => rule.provider === "lyft")
-      .map((rule) => ({
-        marketKey: rule.marketKey,
-        rideType: rule.rideType,
-        baseFare: rule.baseFare,
-        perMile: rule.perMile,
-        perMinute: rule.perMinute,
-        multiplier: rule.multiplier
-      }));
-
-    if (!uberRules.length || !lyftRules.length) {
-      throw new Error("Save Uber and Lyft benchmark snapshots in Admin Pricing to enable auto-apply");
-    }
-
-    const computedRules = buildUndercutRules(uberRules, lyftRules, undercutAmount);
-
-    if (!computedRules.length) {
-      throw new Error("No usable pricing rules computed from benchmark snapshots");
-    }
-
-    await store.replacePlatformPricingRules(computedRules);
-
-    const nowIso = new Date().toISOString();
-    autoRateState.lastRunAt = nowIso;
-    autoRateState.lastAppliedRuleCount = computedRules.length;
+    const result = await runAutoPlatformRates(store, trigger);
+    autoRateState.lastRunAt = result.runAt;
+    autoRateState.lastAppliedRuleCount = result.appliedRuleCount;
     autoRateState.lastError = null;
-
-    await store.addAuditLog({
-      action: "pricing.auto_apply.completed",
-      entityType: "platformRates",
-      entityId: "auto",
-      metadata: {
-        trigger,
-        appliedRuleCount: computedRules.length,
-        uberSourceRules: uberRules.length,
-        lyftSourceRules: lyftRules.length,
-        undercutAmount
-      }
-    });
-
-    return {
-      appliedRuleCount: computedRules.length,
-      sourceRuleCount: {
-        uber: uberRules.length,
-        lyft: lyftRules.length
-      },
-      runAt: nowIso,
-      undercutAmount
-    };
+    return result;
   }
 
   app.register(cors, {
@@ -215,7 +161,7 @@ export function buildApp() {
   });
 
   let autoApplyInterval: NodeJS.Timeout | null = null;
-  if (env.platformRateAutoApplyEnabled) {
+  if (env.platformRateAutoApplyEnabled && autoApplyRunnerMode === "api") {
     const runScheduled = async (trigger: "scheduled" | "startup") => {
       try {
         await applyAutoPlatformRates(trigger);
@@ -2127,14 +2073,62 @@ export function buildApp() {
 
     return {
       enabled: env.platformRateAutoApplyEnabled,
+      runnerMode: autoApplyRunnerMode,
       intervalMinutes: autoApplyIntervalMinutes,
       undercutAmount,
-      uberFeedConfigured: uberSnapshots > 0 || Boolean(env.uberRateFeedUrl),
-      lyftFeedConfigured: lyftSnapshots > 0 || Boolean(env.lyftRateFeedUrl),
+      uberFeedConfigured: uberSnapshots > 0,
+      lyftFeedConfigured: lyftSnapshots > 0,
+      benchmarkCounts: {
+        uber: uberSnapshots,
+        lyft: lyftSnapshots
+      },
       lastRunAt: autoRateState.lastRunAt,
       lastAppliedRuleCount: autoRateState.lastAppliedRuleCount,
       lastError: autoRateState.lastError
     };
+  });
+
+  app.post("/payments/checkout-link", { preHandler: requireRole("driver", "admin") }, async (request, reply) => {
+    const schema = z.object({
+      amountCents: z.number().int().positive().max(5_000_000),
+      description: z.string().min(3).max(120),
+      dueId: z.string().optional(),
+      rideId: z.string().optional()
+    });
+
+    const parsed = schema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const checkout = await createStripeCheckoutLink({
+        amountCents: parsed.data.amountCents,
+        description: parsed.data.description,
+        metadata: {
+          userId: request.userContext.id,
+          dueId: parsed.data.dueId ?? "",
+          rideId: parsed.data.rideId ?? ""
+        }
+      });
+
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "payment.checkout_link.created",
+        entityType: "payment",
+        entityId: checkout.sessionId,
+        metadata: {
+          provider: checkout.provider,
+          amountCents: parsed.data.amountCents,
+          dueId: parsed.data.dueId,
+          rideId: parsed.data.rideId
+        }
+      });
+
+      return reply.send(checkout);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.post("/admin/platform-rates/auto-apply", { preHandler: requireRole("admin") }, async (_request, reply) => {

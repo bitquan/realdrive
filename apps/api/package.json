@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:worker:auto-pricing": "tsx watch src/workers/auto-pricing-worker.ts",
     "build": "tsup src/index.ts --format esm --dts",
     "lint": "tsc --noEmit",
     "test": "vitest run",
