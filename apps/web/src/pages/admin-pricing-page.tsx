@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
 type RateForm = Record<RideType, { baseFare: string; perMile: string; perMinute: string; multiplier: string }>;
@@ -60,6 +61,11 @@ export function AdminPricingPage() {
   const pricingQuery = useQuery({
     queryKey: ["admin-platform-rates"],
     queryFn: () => api.listPlatformRates(token!)
+  });
+  const autoStatusQuery = useQuery({
+    queryKey: ["admin-platform-rates-auto-status"],
+    queryFn: () => api.getPlatformRateAutoStatus(token!),
+    enabled: Boolean(token)
   });
   const [markets, setMarkets] = useState<Record<string, RateForm>>({});
   const [newMarketKey, setNewMarketKey] = useState("");
@@ -118,6 +124,14 @@ export function AdminPricingPage() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["admin-platform-rates"] })
   });
 
+  const autoApplyMutation = useMutation({
+    mutationFn: () => api.applyPlatformRatesAuto(token!),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-platform-rates"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-platform-rates-auto-status"] });
+    }
+  });
+
   const marketCount = Object.keys(markets).length;
   const defaultRuleCount = useMemo(() => Object.values(markets.DEFAULT ?? {}).length, [markets]);
 
@@ -137,6 +151,46 @@ export function AdminPricingPage() {
       </MetricStrip>
 
       <PanelSection title="Market rate cards" description="Configure state-based pricing and keep DEFAULT as the fallback for unmatched pickups.">
+        <div className="mb-6 rounded-[1.6rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-ops-text">Auto benchmark mode</p>
+              <p className="mt-1 text-sm text-ops-muted">
+                {autoStatusQuery.data?.enabled
+                  ? `Enabled every ${autoStatusQuery.data.intervalMinutes} min` 
+                  : "Disabled (manual trigger only)"}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => autoApplyMutation.mutate()}
+              disabled={autoApplyMutation.isPending || !autoStatusQuery.data?.uberFeedConfigured || !autoStatusQuery.data?.lyftFeedConfigured}
+            >
+              {autoApplyMutation.isPending ? "Applying..." : "Auto-apply now from live feeds"}
+            </Button>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-ops-border-soft/90 bg-ops-panel/40 p-3 text-sm text-ops-muted">
+              Uber feed: {autoStatusQuery.data?.uberFeedConfigured ? "configured" : "missing"}
+            </div>
+            <div className="rounded-xl border border-ops-border-soft/90 bg-ops-panel/40 p-3 text-sm text-ops-muted">
+              Lyft feed: {autoStatusQuery.data?.lyftFeedConfigured ? "configured" : "missing"}
+            </div>
+            <div className="rounded-xl border border-ops-border-soft/90 bg-ops-panel/40 p-3 text-sm text-ops-muted">
+              Undercut amount: ${autoStatusQuery.data?.undercutAmount?.toFixed(2) ?? "0.05"}
+            </div>
+            <div className="rounded-xl border border-ops-border-soft/90 bg-ops-panel/40 p-3 text-sm text-ops-muted">
+              Last run: {autoStatusQuery.data?.lastRunAt ? formatDateTime(autoStatusQuery.data.lastRunAt) : "never"}
+            </div>
+          </div>
+
+          {autoStatusQuery.data?.lastError ? (
+            <p className="mt-3 text-sm text-ops-error">Last auto-run error: {autoStatusQuery.data.lastError}</p>
+          ) : null}
+          {autoApplyMutation.error ? <p className="mt-3 text-sm text-ops-error">{autoApplyMutation.error.message}</p> : null}
+        </div>
+
         <div className="mb-6 rounded-[1.6rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
           <div className="mb-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
             <div className="space-y-2">

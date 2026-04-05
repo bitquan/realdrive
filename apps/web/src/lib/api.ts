@@ -52,6 +52,8 @@ import type {
   IssueReportResponse,
   PlatformDue,
   PlatformDueBatch,
+  PlatformRateAutoApplyResponse,
+  PlatformRateAutoStatus,
   PlatformPayoutSettings,
   PricingRule,
   PublicRideRequest,
@@ -509,6 +511,14 @@ export const api = {
     return apiFetch<PricingRule[]>("/admin/platform-rates", {
       method: "PUT",
       body: JSON.stringify(input)
+    }, token);
+  },
+  getPlatformRateAutoStatus(token: string) {
+    return apiFetch<PlatformRateAutoStatus>("/admin/platform-rates/auto-status", undefined, token);
+  },
+  applyPlatformRatesAuto(token: string) {
+    return apiFetch<PlatformRateAutoApplyResponse>("/admin/platform-rates/auto-apply", {
+      method: "POST"
     }, token);
   },
   listCommunityProposals(token: string) {

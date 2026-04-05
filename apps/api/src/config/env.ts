@@ -9,6 +9,14 @@ function asNumber(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function asBoolean(value: string | undefined, fallback = false): boolean {
+  if (!value) {
+    return fallback;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
 export const env = {
   port: asNumber(process.env.PORT, 4000),
   host: process.env.HOST ?? "0.0.0.0",
@@ -28,6 +36,11 @@ export const env = {
   webPushVapidSubject: process.env.WEB_PUSH_VAPID_SUBJECT ?? "mailto:support@realdrive.app",
   githubRepo: process.env.GITHUB_REPO ?? "",
   githubToken: process.env.GITHUB_TOKEN ?? "",
+  platformRateAutoApplyEnabled: asBoolean(process.env.PLATFORM_RATE_AUTO_APPLY_ENABLED, false),
+  platformRateAutoApplyMinutes: asNumber(process.env.PLATFORM_RATE_AUTO_APPLY_MINUTES, 60),
+  platformRateUndercutAmount: asNumber(process.env.PLATFORM_RATE_UNDERCUT_AMOUNT, 0.05),
+  uberRateFeedUrl: process.env.UBER_RATE_FEED_URL ?? "",
+  lyftRateFeedUrl: process.env.LYFT_RATE_FEED_URL ?? "",
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
   driverDocumentUploadDir: process.env.DRIVER_DOCUMENT_UPLOAD_DIR ?? "uploads/driver-documents"
 };

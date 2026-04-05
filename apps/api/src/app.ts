@@ -65,6 +65,7 @@ import { calculateCustomerTotal, calculateFare, calculatePlatformDue, findPlatfo
 import { createPushService } from "./services/push.js";
 import { createRideService } from "./services/ride-service.js";
 import { createSmsService } from "./services/sms.js";
+import { buildUndercutRules, fetchFeed, parseBenchmarkFeed } from "./services/platform-rate-auto.js";
 
 function resolvePublicBaseUrl(request: FastifyRequest) {
   const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
@@ -126,6 +127,67 @@ export function buildApp() {
   const otp = createOtpService();
   const sms = createSmsService();
   const push = createPushService();
+  const autoApplyIntervalMinutes = Math.max(1, Math.floor(env.platformRateAutoApplyMinutes));
+  const undercutAmount = Math.max(0, Number(env.platformRateUndercutAmount.toFixed(2)));
+
+  const autoRateState: {
+    lastRunAt: string | null;
+    lastAppliedRuleCount: number;
+    lastError: string | null;
+  } = {
+    lastRunAt: null,
+    lastAppliedRuleCount: 0,
+    lastError: null
+  };
+
+  async function applyAutoPlatformRates(trigger: "manual" | "scheduled" | "startup") {
+    if (!env.uberRateFeedUrl || !env.lyftRateFeedUrl) {
+      throw new Error("UBER_RATE_FEED_URL and LYFT_RATE_FEED_URL must be configured");
+    }
+
+    const [uberPayload, lyftPayload] = await Promise.all([
+      fetchFeed(env.uberRateFeedUrl),
+      fetchFeed(env.lyftRateFeedUrl)
+    ]);
+
+    const uberRules = parseBenchmarkFeed(uberPayload);
+    const lyftRules = parseBenchmarkFeed(lyftPayload);
+    const computedRules = buildUndercutRules(uberRules, lyftRules, undercutAmount);
+
+    if (!computedRules.length) {
+      throw new Error("No usable pricing rules returned from benchmark feeds");
+    }
+
+    await store.replacePlatformPricingRules(computedRules);
+
+    const nowIso = new Date().toISOString();
+    autoRateState.lastRunAt = nowIso;
+    autoRateState.lastAppliedRuleCount = computedRules.length;
+    autoRateState.lastError = null;
+
+    await store.addAuditLog({
+      action: "pricing.auto_apply.completed",
+      entityType: "platformRates",
+      entityId: "auto",
+      metadata: {
+        trigger,
+        appliedRuleCount: computedRules.length,
+        uberSourceRules: uberRules.length,
+        lyftSourceRules: lyftRules.length,
+        undercutAmount
+      }
+    });
+
+    return {
+      appliedRuleCount: computedRules.length,
+      sourceRuleCount: {
+        uber: uberRules.length,
+        lyft: lyftRules.length
+      },
+      runAt: nowIso,
+      undercutAmount
+    };
+  }
 
   app.register(cors, {
     origin: true,
@@ -134,6 +196,31 @@ export function buildApp() {
   app.register(sensible);
   app.register(jwt, {
     secret: env.jwtSecret
+  });
+
+  let autoApplyInterval: NodeJS.Timeout | null = null;
+  if (env.platformRateAutoApplyEnabled) {
+    const runScheduled = async (trigger: "scheduled" | "startup") => {
+      try {
+        await applyAutoPlatformRates(trigger);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Auto platform-rate apply failed";
+        autoRateState.lastError = message;
+        app.log.error({ error }, "Auto platform-rate apply failed");
+      }
+    };
+
+    void runScheduled("startup");
+    autoApplyInterval = setInterval(() => {
+      void runScheduled("scheduled");
+    }, autoApplyIntervalMinutes * 60 * 1000);
+  }
+
+  app.addHook("onClose", async () => {
+    if (autoApplyInterval) {
+      clearInterval(autoApplyInterval);
+      autoApplyInterval = null;
+    }
   });
 
   const io = new Server(app.server, {
@@ -2000,6 +2087,30 @@ export function buildApp() {
       rules: parsed.data.rules
     }.rules);
     return reply.send(rules);
+  });
+
+  app.get("/admin/platform-rates/auto-status", { preHandler: requireRole("admin") }, async () => {
+    return {
+      enabled: env.platformRateAutoApplyEnabled,
+      intervalMinutes: autoApplyIntervalMinutes,
+      undercutAmount,
+      uberFeedConfigured: Boolean(env.uberRateFeedUrl),
+      lyftFeedConfigured: Boolean(env.lyftRateFeedUrl),
+      lastRunAt: autoRateState.lastRunAt,
+      lastAppliedRuleCount: autoRateState.lastAppliedRuleCount,
+      lastError: autoRateState.lastError
+    };
+  });
+
+  app.post("/admin/platform-rates/auto-apply", { preHandler: requireRole("admin") }, async (_request, reply) => {
+    try {
+      const result = await applyAutoPlatformRates("manual");
+      return reply.send(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Auto platform-rate apply failed";
+      autoRateState.lastError = message;
+      return reply.badRequest(message);
+    }
   });
 
   app.get("/admin/pricing", { preHandler: requireRole("admin") }, async () => {

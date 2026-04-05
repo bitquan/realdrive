@@ -630,6 +630,27 @@ export const updatePlatformRatesSchema = z.object({
   )
 });
 
+export const platformRateAutoStatusSchema = z.object({
+  enabled: z.boolean(),
+  intervalMinutes: z.number().int().positive(),
+  undercutAmount: z.number().nonnegative(),
+  uberFeedConfigured: z.boolean(),
+  lyftFeedConfigured: z.boolean(),
+  lastRunAt: z.string().nullable(),
+  lastAppliedRuleCount: z.number().int().nonnegative(),
+  lastError: z.string().nullable()
+});
+
+export const platformRateAutoApplyResponseSchema = z.object({
+  appliedRuleCount: z.number().int().nonnegative(),
+  sourceRuleCount: z.object({
+    uber: z.number().int().nonnegative(),
+    lyft: z.number().int().nonnegative()
+  }),
+  runAt: z.string(),
+  undercutAmount: z.number().nonnegative()
+});
+
 export const updatePricingRulesSchema = updatePlatformRatesSchema;
 
 export const createDriverRoleSchema = driverApplicationInputSchema;
@@ -1033,6 +1054,8 @@ export type AdminReviewDriverDocumentInput = z.infer<typeof adminReviewDriverDoc
 export type AdminUpdateDriverInput = z.infer<typeof adminUpdateDriverSchema>;
 export type UpdatePlatformRatesInput = z.infer<typeof updatePlatformRatesSchema>;
 export type UpdatePricingRulesInput = z.infer<typeof updatePricingRulesSchema>;
+export type PlatformRateAutoStatus = z.infer<typeof platformRateAutoStatusSchema>;
+export type PlatformRateAutoApplyResponse = z.infer<typeof platformRateAutoApplyResponseSchema>;
 export type CreateDriverRoleInput = z.infer<typeof createDriverRoleSchema>;
 export type AdminUpdatePlatformDueInput = z.infer<typeof adminUpdatePlatformDueSchema>;
 export type AdminUpdatePlatformDueBatchInput = z.infer<typeof adminUpdatePlatformDueBatchSchema>;
