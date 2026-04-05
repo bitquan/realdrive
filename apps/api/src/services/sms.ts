@@ -39,7 +39,7 @@ export function createSmsService(): SmsService {
     ? twilio(env.twilioAccountSid, env.twilioAuthToken)
     : null;
 
-  async function send(to: string, body: string): Promise<void> {
+  async function send(to: string, body: string, options?: { strict?: boolean }): Promise<void> {
     if (!client) {
       console.info(`[SMS no-op] to=${to} | ${body}`);
       return;
@@ -52,6 +52,10 @@ export function createSmsService(): SmsService {
         body,
       });
     } catch (err) {
+      if (options?.strict) {
+        throw err;
+      }
+
       // Never let SMS failure break the ride flow
       console.error(`[SMS error] to=${to}:`, err);
     }
@@ -59,7 +63,7 @@ export function createSmsService(): SmsService {
 
   return {
     async sendRaw(to, body) {
-      await send(to, body);
+      await send(to, body, { strict: true });
     },
 
     /** Driver: you have a new ride offer */
