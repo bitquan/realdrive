@@ -3,6 +3,7 @@ import { DataField, EntityList } from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDriverOfferCountdown, getDriverRidePricing } from "@/components/driver-home/driver-home.utils";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
 
 interface RideActionMutation {
@@ -17,31 +18,6 @@ export interface DriverOfferInboxProps {
   now: number;
   acceptMutation: RideActionMutation;
   declineMutation: RideActionMutation;
-}
-
-function getRidePricing(ride: Ride) {
-  return {
-    subtotal: ride.pricing.finalSubtotal ?? ride.pricing.estimatedSubtotal,
-    customerTotal: ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal
-  };
-}
-
-function getOfferCountdown(ride: Ride, now: number) {
-  const pendingOffer = ride.offers.find((offer) => offer.status === "pending");
-  if (!pendingOffer) {
-    return null;
-  }
-
-  const remainingMs = new Date(pendingOffer.expiresAt).getTime() - now;
-  if (remainingMs <= 0) {
-    return "Expired";
-  }
-
-  const totalSeconds = Math.ceil(remainingMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 export function DriverOfferInbox({
@@ -62,8 +38,8 @@ export function DriverOfferInbox({
         {offers.length ? (
           <EntityList>
             {offers.map((ride) => {
-              const pricing = getRidePricing(ride);
-              const countdown = getOfferCountdown(ride, now);
+              const pricing = getDriverRidePricing(ride);
+              const countdown = getDriverOfferCountdown(ride, now);
 
               return (
                 <div key={ride.id} className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/40 p-4">

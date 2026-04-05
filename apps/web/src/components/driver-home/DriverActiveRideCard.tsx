@@ -4,17 +4,12 @@ import { Link } from "react-router-dom";
 import { DataField } from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDriverRidePricing } from "@/components/driver-home/driver-home.utils";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
 
 export interface DriverActiveRideCardProps {
   ride: Ride | null;
   emphasize?: boolean;
-}
-
-function getRidePricing(ride: Ride) {
-  return {
-    subtotal: ride.pricing.finalSubtotal ?? ride.pricing.estimatedSubtotal
-  };
 }
 
 function formatDriverStage(status: Ride["status"]) {
@@ -50,7 +45,7 @@ export function DriverActiveRideCard({ ride, emphasize }: DriverActiveRideCardPr
     );
   }
 
-  const pricing = getRidePricing(ride);
+  const pricing = getDriverRidePricing(ride);
 
   return (
     <Card className={emphasize ? "border-ops-primary/30 shadow-soft" : undefined}>

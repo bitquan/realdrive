@@ -3,6 +3,7 @@ import { DataField } from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDriverRidePricing } from "@/components/driver-home/driver-home.utils";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
 
 interface RideActionMutation {
@@ -17,14 +18,6 @@ export interface DriverLiveOfferCardProps {
   acceptMutation: RideActionMutation;
   declineMutation: RideActionMutation;
   mobile?: boolean;
-}
-
-function getRidePricing(ride: Ride) {
-  return {
-    subtotal: ride.pricing.finalSubtotal ?? ride.pricing.estimatedSubtotal,
-    platformDue: ride.pricing.finalPlatformDue ?? ride.pricing.estimatedPlatformDue,
-    customerTotal: ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal
-  };
 }
 
 export function DriverLiveOfferCard({
@@ -51,7 +44,7 @@ export function DriverLiveOfferCard({
     );
   }
 
-  const pricing = getRidePricing(offer);
+  const pricing = getDriverRidePricing(offer);
 
   return (
     <Card className="overflow-hidden border-ops-primary/24 shadow-glow">

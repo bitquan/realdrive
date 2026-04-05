@@ -2,15 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DriverDispatchSettings, PaymentMethod, Ride, RideType } from "@shared/contracts";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, MapPinned, Route } from "lucide-react";
+import { AlertTriangle, Route } from "lucide-react";
 import { BottomActionBar, DataField } from "@/components/layout/ops-layout";
 import { DriverActiveRideCard } from "@/components/driver-home/DriverActiveRideCard";
 import { DriverEarningsMini } from "@/components/driver-home/DriverEarningsMini";
 import { DriverLiveOfferCard } from "@/components/driver-home/DriverLiveOfferCard";
+import { DriverMapSurface } from "@/components/driver-home/DriverMapSurface";
 import { DriverOfferInbox } from "@/components/driver-home/DriverOfferInbox";
 import { DriverStatusBar } from "@/components/driver-home/DriverStatusBar";
 import { DriverToolsSection } from "@/components/driver-home/DriverToolsSection";
-import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
+import { formatDriverDispatchSummary, getDriverOfferCountdown, getDriverRidePricing } from "@/components/driver-home/driver-home.utils";
 import { HeadrestPrintTemplate } from "@/components/share/headrest-print-template";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
@@ -30,120 +31,6 @@ const emptyRateForm = {
 };
 
 const paymentMethodOptions: PaymentMethod[] = ["jim", "cashapp", "cash"];
-
-function getRidePricing(ride: Ride) {
-  return {
-    subtotal: ride.pricing.finalSubtotal ?? ride.pricing.estimatedSubtotal,
-    platformDue: ride.pricing.finalPlatformDue ?? ride.pricing.estimatedPlatformDue,
-    customerTotal: ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal
-  };
-}
-
-function formatDispatchSummary(settings: DriverDispatchSettings | undefined) {
-  if (!settings) {
-    return "Loading dispatch";
-  }
-
-  const parts: string[] = [];
-
-  if (settings.localEnabled) {
-    parts.push(`Local ${settings.localRadiusMiles} mi`);
-  }
-
-  if (settings.serviceAreaEnabled) {
-    parts.push(settings.serviceAreaStates.length ? `States ${settings.serviceAreaStates.join(", ")}` : "Service area");
-  }
-
-  if (settings.nationwideEnabled) {
-    parts.push("Nationwide");
-  }
-
-  return parts.length ? parts.join(" · ") : "Dispatch off";
-}
-
-function getOfferCountdown(ride: Ride, now: number) {
-  const pendingOffer = ride.offers.find((offer) => offer.status === "pending");
-  if (!pendingOffer) {
-    return null;
-  }
-
-  const remainingMs = new Date(pendingOffer.expiresAt).getTime() - now;
-  if (remainingMs <= 0) {
-    return "Expired";
-  }
-
-  const totalSeconds = Math.ceil(remainingMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-function DriverMapSurface({
-  ride,
-  statusLabel,
-  dispatchSummary,
-  vehicleLabel
-}: {
-  ride: Ride | null;
-  statusLabel: string;
-  dispatchSummary: string;
-  vehicleLabel: string;
-}) {
-  if (ride) {
-    return (
-      <div className="relative">
-        <div className="pointer-events-none absolute left-3 top-3 z-10 hidden flex-wrap gap-2 md:flex xl:hidden">
-          <Badge className="border-ops-border-soft bg-[#08101a]/90 text-ops-text">{statusLabel}</Badge>
-          <Badge className="border-ops-border-soft bg-[#08101a]/90 text-ops-text">{dispatchSummary}</Badge>
-        </div>
-        <DeferredLiveMap
-          ride={ride}
-          title={ride.status === "offered" ? "Live dispatch map" : "Driver route map"}
-          height={520}
-          meta={ride.status === "offered" ? "Offers and active trips stay attached to a live map-first work surface." : "Pickup, dropoff, and route progress stay visible while you work."}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <Card className="overflow-hidden border-ops-border-soft/95 bg-[radial-gradient(circle_at_top_left,rgba(90,124,255,0.18),transparent_28%),linear-gradient(180deg,rgba(10,14,20,0.98),rgba(6,9,14,0.96))] shadow-panel">
-      <CardHeader className="border-b border-ops-border-soft/80 pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <CardTitle>Live dispatch map</CardTitle>
-            <CardDescription className="mt-2">The map stays reserved as the primary driver surface, even when no offer is live yet.</CardDescription>
-          </div>
-          <span className="rounded-2xl border border-ops-border-soft bg-ops-panel/75 p-3 text-ops-primary">
-            <MapPinned className="h-5 w-5" />
-          </span>
-        </div>
-      </CardHeader>
-      <CardContent className="relative min-h-[420px] overflow-hidden p-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(90,124,255,0.12),transparent_20%),radial-gradient(circle_at_82%_32%,rgba(90,124,255,0.08),transparent_24%),linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:auto,auto,38px_38px,38px_38px] opacity-90" />
-        <div className="relative z-10 flex h-full flex-col justify-between">
-          <div className="hidden flex-wrap gap-2 md:flex">
-            <Badge className="border-ops-border-soft bg-[#08101a]/88 text-ops-text">{statusLabel}</Badge>
-            <Badge className="border-ops-border-soft bg-[#08101a]/88 text-ops-text">{dispatchSummary}</Badge>
-          </div>
-
-          <div className="max-w-xl space-y-4 rounded-[1.9rem] border border-ops-border-soft/90 bg-[#08101a]/78 p-5 shadow-soft backdrop-blur">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Stand by</p>
-            <h2 className="text-[2rem] font-extrabold tracking-[-0.04em] text-ops-text">Ready for the next nearby job.</h2>
-            <p className="text-sm leading-6 text-ops-muted">
-              Stay signed on and keep this screen open. New offers will land in the live work rail without making you dig through account tools.
-            </p>
-            <div className="grid gap-3 md:grid-cols-2">
-              <DataField label="Dispatch mode" value={dispatchSummary} />
-              <DataField label="Vehicle" value={vehicleLabel} />
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function DriverDashboardPage() {
   const navigate = useNavigate();
@@ -428,12 +315,12 @@ export function DriverDashboardPage() {
   const mapRide = activeRide ?? liveOffer;
   const requestedTab = searchParams.get("tab");
   const projectedLiveEarnings = useMemo(() => {
-    const activeSubtotal = activeRides.reduce((total, ride) => total + getRidePricing(ride).subtotal, 0);
-    const liveOfferSubtotal = liveOffer ? getRidePricing(liveOffer).subtotal : 0;
+    const activeSubtotal = activeRides.reduce((total, ride) => total + getDriverRidePricing(ride).subtotal, 0);
+    const liveOfferSubtotal = liveOffer ? getDriverRidePricing(liveOffer).subtotal : 0;
     return Number((activeSubtotal + liveOfferSubtotal).toFixed(2));
   }, [activeRides, liveOffer]);
   const jobsInFlow = activeRides.length + (liveOffer ? 1 : 0);
-  const dispatchSummary = formatDispatchSummary(dispatchQuery.data);
+  const dispatchSummary = formatDriverDispatchSummary(dispatchQuery.data);
   const statusLabel = suspended ? "Blocked" : profileQuery.data?.available ? "Online" : "Offline";
   const hasActiveTrip = activeRides.length > 0;
 
@@ -496,7 +383,7 @@ export function DriverDashboardPage() {
                 <DriverLiveOfferCard
                   offer={liveOffer}
                   suspended={suspended}
-                  countdown={liveOffer ? getOfferCountdown(liveOffer, now) : null}
+                  countdown={liveOffer ? getDriverOfferCountdown(liveOffer, now) : null}
                   acceptMutation={acceptMutation}
                   declineMutation={declineMutation}
                   mobile
@@ -565,7 +452,7 @@ export function DriverDashboardPage() {
               <DriverLiveOfferCard
                 offer={liveOffer}
                 suspended={suspended}
-                countdown={liveOffer ? getOfferCountdown(liveOffer, now) : null}
+                countdown={liveOffer ? getDriverOfferCountdown(liveOffer, now) : null}
                 acceptMutation={acceptMutation}
                 declineMutation={declineMutation}
               />
