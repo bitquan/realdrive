@@ -48,8 +48,8 @@ function commitSession(next: StoredAuth | null, setSession: (value: StoredAuth |
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [session, setSession] = useState<StoredAuth | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<StoredAuth | null>(() => loadStoredAuth());
+  const [loading, setLoading] = useState(() => Boolean(loadStoredAuth()));
 
   useEffect(() => {
     const stored = loadStoredAuth();
