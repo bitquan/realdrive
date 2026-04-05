@@ -1,9 +1,12 @@
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { CarFront, LogOut, Route, Shield, UserRound } from "lucide-react";
 import type { Role } from "@shared/contracts";
 import { AmbientShellMap } from "@/components/layout/ambient-shell-map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
 import { getMobileNavItems, getShellFrame, getShellSections, isNavItemActive, type ShellAction } from "@/lib/shell";
 import { cn, roleLabel, userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
@@ -27,7 +30,7 @@ function actionClassName(variant: ShellAction["variant"] = "secondary") {
 }
 
 export function AppShell() {
-  const { user, logout, switchRole } = useAuth();
+  const { user, token, logout, switchRole } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const frame = getShellFrame(location.pathname, user);
@@ -35,6 +38,71 @@ export function AppShell() {
   const mobileItems = getMobileNavItems(user);
   const CurrentRoleIcon = user ? roleIcons[user.role] : UserRound;
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
+  const [dismissedPrompt, setDismissedPrompt] = useState(false);
+
+  const canCheckNotificationApi = typeof window !== "undefined" && "Notification" in window;
+  const permission = canCheckNotificationApi ? Notification.permission : "default";
+
+  const notificationPrefQuery = useQuery({
+    queryKey: ["notification-prompt", user?.id],
+    queryFn: () => api.getNotificationPreferences(token!),
+    enabled: Boolean(user && token)
+  });
+
+  useEffect(() => {
+    if (!user) {
+      setDismissedPrompt(false);
+      return;
+    }
+
+    const key = `realdrive.notifications.promptDismissed.${user.id}`;
+    setDismissedPrompt(window.localStorage.getItem(key) === "1");
+  }, [user?.id]);
+
+  const shouldShowNotificationPrompt = useMemo(() => {
+    if (!user || !token || dismissedPrompt) {
+      return false;
+    }
+
+    if (!canCheckNotificationApi) {
+      return false;
+    }
+
+    if (notificationPrefQuery.isLoading) {
+      return false;
+    }
+
+    const pref = notificationPrefQuery.data;
+    if (!pref) {
+      return permission === "default";
+    }
+
+    if (!pref.preferences.pushEnabled) {
+      return true;
+    }
+
+    if (permission === "default" || permission === "denied") {
+      return true;
+    }
+
+    return pref.subscriptionCount === 0;
+  }, [
+    canCheckNotificationApi,
+    dismissedPrompt,
+    notificationPrefQuery.data,
+    notificationPrefQuery.isLoading,
+    permission,
+    token,
+    user
+  ]);
+
+  function dismissNotificationPrompt() {
+    if (user) {
+      const key = `realdrive.notifications.promptDismissed.${user.id}`;
+      window.localStorage.setItem(key, "1");
+    }
+    setDismissedPrompt(true);
+  }
 
   function roleDestination(role: Role) {
     if (role === "admin") {
@@ -279,6 +347,32 @@ export function AppShell() {
               frame.layout === "immersive" && "px-3 pt-3 md:px-5 md:pt-4"
             )}
           >
+            {shouldShowNotificationPrompt ? (
+              <div className="mb-4 rounded-2xl border border-ops-primary/35 bg-ops-panel/70 p-4 shadow-soft">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-ops-text">Enable ride notifications</p>
+                    <p className="mt-1 text-xs text-ops-muted">
+                      {permission === "denied"
+                        ? "Notifications are currently blocked in your browser. Open notification settings to re-enable push alerts."
+                        : "Turn on push alerts so you get new jobs, accepts, arrivals, and ride status updates in real time."}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      to="/notifications"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary/15 px-3 text-xs font-semibold text-ops-text transition hover:bg-ops-primary/25"
+                    >
+                      Open notification settings
+                    </Link>
+                    <Button variant="ghost" className="h-10 px-3 text-xs" onClick={dismissNotificationPrompt}>
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <Outlet />
           </main>
         </div>
