@@ -117,6 +117,15 @@ const sharedItems: ShellNavItem[] = [
     requiresAuth: true
   },
   {
+    id: "report-bug",
+    label: "Report bug",
+    shortLabel: "Bug",
+    to: "/report-bug",
+    icon: ClipboardList,
+    matchPatterns: ["/report-bug"],
+    requiresAuth: true
+  },
+  {
     id: "notifications",
     label: "Notifications",
     shortLabel: "Alerts",
@@ -528,6 +537,16 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Product",
       title: "Request a feature",
       description: "Share feature ideas directly with context so the engineering queue can pick them up quickly.",
+      mapMode: "off",
+      mobileHeaderMode: "minimal"
+    }
+  },
+  {
+    patterns: ["/report-bug"],
+    frame: {
+      eyebrow: "Support",
+      title: "Report a bug",
+      description: "Log visible product issues quickly, even when the app does not show an error code.",
       mapMode: "off",
       mobileHeaderMode: "minimal"
     }
