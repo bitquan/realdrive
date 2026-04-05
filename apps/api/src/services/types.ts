@@ -21,6 +21,8 @@ import type {
   DriverIdleLocationInput,
   DriverInterest,
   DriverInterestInput,
+  NotificationDeliveryLog,
+  NotificationPreference,
   IssueReport,
   IssueReportSource,
   IssueReportStatus,
@@ -39,6 +41,8 @@ import type {
   RidePricingSource,
   RideStatus,
   RideType,
+  UpsertPushSubscriptionInput,
+  UpdateNotificationPreferenceInput,
   RiderLead,
   RiderLeadInput,
   RouteLocation,
@@ -304,6 +308,30 @@ export interface Store {
       error?: string | null;
     }
   ): Promise<IssueReport>;
+  getNotificationPreference(userId: string): Promise<NotificationPreference>;
+  updateNotificationPreference(userId: string, input: UpdateNotificationPreferenceInput): Promise<NotificationPreference>;
+  upsertPushSubscription(userId: string, input: UpsertPushSubscriptionInput): Promise<void>;
+  removePushSubscription(userId: string, endpoint: string): Promise<void>;
+  listPushSubscriptions(userId: string): Promise<Array<{
+    id: string;
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+    userAgent: string | null;
+    enabled: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>>;
+  listNotificationDeliveryLogs(userId: string, limit?: number): Promise<NotificationDeliveryLog[]>;
+  logNotificationDelivery(input: {
+    userId: string;
+    rideId?: string | null;
+    channel: "push" | "sms";
+    eventKey: string;
+    status: "sent" | "failed" | "skipped";
+    errorCode?: string | null;
+    errorText?: string | null;
+    metadata?: Record<string, string | number | boolean | null> | null;
+  }): Promise<void>;
 }
 
 export interface MapsService {

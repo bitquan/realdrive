@@ -41,9 +41,12 @@ import {
   driverSignupInputSchema,
   publicRideRequestSchema,
   riderLeadInputSchema,
+  removePushSubscriptionSchema,
+  updateNotificationPreferenceSchema,
   updatePlatformPayoutSettingsSchema,
   updatePlatformRatesSchema,
-  updateRideStatusSchema
+  updateRideStatusSchema,
+  upsertPushSubscriptionSchema
 } from "@shared/contracts";
 import { env } from "./config/env.js";
 import { createPublicTrackingToken } from "./lib/codes.js";
@@ -59,6 +62,7 @@ import {
 } from "./services/issue-reports.js";
 import { createOtpService } from "./services/otp.js";
 import { calculateCustomerTotal, calculateFare, calculatePlatformDue, findPlatformPricingRule } from "./services/pricing.js";
+import { createPushService } from "./services/push.js";
 import { createRideService } from "./services/ride-service.js";
 import { createSmsService } from "./services/sms.js";
 
@@ -121,6 +125,7 @@ export function buildApp() {
   const maps = createMapsService(env.mapboxToken);
   const otp = createOtpService();
   const sms = createSmsService();
+  const push = createPushService();
 
   app.register(cors, {
     origin: true,
@@ -150,6 +155,177 @@ export function buildApp() {
     };
   });
 
+  app.get("/public/push/config", async () => {
+    return {
+      enabled: push.isEnabled(),
+      vapidPublicKey: push.publicVapidKey() || null
+    };
+  });
+
+  async function logPushSkipped(userId: string, rideId: string | null, eventKey: string, reason: string) {
+    await store.logNotificationDelivery({
+      userId,
+      rideId,
+      channel: "push",
+      eventKey,
+      status: "skipped",
+      errorCode: reason,
+      metadata: { reason }
+    });
+  }
+
+  async function sendPushForUser(input: {
+    userId: string;
+    rideId: string | null;
+    eventKey: string;
+    title: string;
+    body: string;
+    url: string;
+  }) {
+    const preference = await store.getNotificationPreference(input.userId);
+    if (!preference.pushEnabled) {
+      await logPushSkipped(input.userId, input.rideId, input.eventKey, "user_push_disabled");
+      return { sentCount: 0, failedCount: 0, pushEnabled: false };
+    }
+
+    if (!push.isEnabled()) {
+      await logPushSkipped(input.userId, input.rideId, input.eventKey, "server_push_not_configured");
+      return { sentCount: 0, failedCount: 0, pushEnabled: true };
+    }
+
+    const subscriptions = await store.listPushSubscriptions(input.userId);
+    if (!subscriptions.length) {
+      await logPushSkipped(input.userId, input.rideId, input.eventKey, "no_active_subscription");
+      return { sentCount: 0, failedCount: 0, pushEnabled: true };
+    }
+
+    const result = await push.sendToSubscriptions(
+      subscriptions.map((subscription) => ({
+        endpoint: subscription.endpoint,
+        keys: subscription.keys
+      })),
+      {
+        title: input.title,
+        body: input.body,
+        url: input.url,
+        tag: `ride:${input.rideId ?? "general"}:${input.eventKey}`,
+        metadata: {
+          eventKey: input.eventKey,
+          rideId: input.rideId
+        }
+      }
+    );
+
+    if (result.sentCount > 0) {
+      await store.logNotificationDelivery({
+        userId: input.userId,
+        rideId: input.rideId,
+        channel: "push",
+        eventKey: input.eventKey,
+        status: "sent",
+        metadata: {
+          sentCount: result.sentCount
+        }
+      });
+    }
+
+    for (const failed of result.failed) {
+      await store.logNotificationDelivery({
+        userId: input.userId,
+        rideId: input.rideId,
+        channel: "push",
+        eventKey: input.eventKey,
+        status: "failed",
+        errorCode: failed.code,
+        errorText: failed.message,
+        metadata: {
+          endpoint: failed.endpoint
+        }
+      });
+
+      if (failed.removeSubscription) {
+        await store.removePushSubscription(input.userId, failed.endpoint);
+      }
+    }
+
+    return {
+      sentCount: result.sentCount,
+      failedCount: result.failed.length,
+      pushEnabled: true
+    };
+  }
+
+  async function sendCriticalSmsFallback(input: {
+    userId: string;
+    rideId: string | null;
+    eventKey: string;
+    phone: string | null;
+    sendSms: () => Promise<void>;
+    pushSentCount: number;
+    pushFailedCount: number;
+  }) {
+    const preference = await store.getNotificationPreference(input.userId);
+    if (!preference.smsCriticalOnly) {
+      await store.logNotificationDelivery({
+        userId: input.userId,
+        rideId: input.rideId,
+        channel: "sms",
+        eventKey: input.eventKey,
+        status: "skipped",
+        errorCode: "user_sms_disabled",
+        metadata: { reason: "user_sms_disabled" }
+      });
+      return;
+    }
+
+    const shouldFallback = input.pushSentCount === 0 || input.pushFailedCount > 0;
+    if (!shouldFallback) {
+      await store.logNotificationDelivery({
+        userId: input.userId,
+        rideId: input.rideId,
+        channel: "sms",
+        eventKey: input.eventKey,
+        status: "skipped",
+        errorCode: "push_success",
+        metadata: { reason: "push_success" }
+      });
+      return;
+    }
+
+    if (!input.phone) {
+      await store.logNotificationDelivery({
+        userId: input.userId,
+        rideId: input.rideId,
+        channel: "sms",
+        eventKey: input.eventKey,
+        status: "skipped",
+        errorCode: "missing_phone",
+        metadata: { reason: "missing_phone" }
+      });
+      return;
+    }
+
+    try {
+      await input.sendSms();
+      await store.logNotificationDelivery({
+        userId: input.userId,
+        rideId: input.rideId,
+        channel: "sms",
+        eventKey: input.eventKey,
+        status: "sent"
+      });
+    } catch (error) {
+      await store.logNotificationDelivery({
+        userId: input.userId,
+        rideId: input.rideId,
+        channel: "sms",
+        eventKey: input.eventKey,
+        status: "failed",
+        errorText: error instanceof Error ? error.message : "sms_failed"
+      });
+    }
+  }
+
   const rideService = createRideService({
     store,
     maps,
@@ -158,17 +334,35 @@ export function buildApp() {
         for (const driverId of driverIds) {
           io.to(`user:${driverId}`).emit("ride.offer", ride);
         }
-        // SMS: look up each driver's phone and send offer notification (fire-and-forget)
+
         void Promise.all(
           driverIds.map(async (driverId) => {
             try {
               const driver = await store.getDriverAccount(driverId);
-              if (driver?.phone) {
-                await sms.notifyDriverNewRide(driver.phone, ride);
+              if (!driver) {
+                return;
               }
+
+              const pushResult = await sendPushForUser({
+                userId: driverId,
+                rideId: ride.id,
+                eventKey: "new_job",
+                title: "New job available",
+                body: `Ride near ${ride.pickup.address}. Open RealDrive to accept.`,
+                url: `/driver/rides/${ride.id}`
+              });
+
+              await sendCriticalSmsFallback({
+                userId: driverId,
+                rideId: ride.id,
+                eventKey: "new_job",
+                phone: driver.phone ?? null,
+                pushSentCount: pushResult.sentCount,
+                pushFailedCount: pushResult.failedCount,
+                sendSms: () => sms.notifyDriverNewRide(driver.phone ?? "", ride)
+              });
             } catch (err) {
-              // Never block dispatch on SMS failure
-              app.log.warn({ err, driverId }, "SMS offer notification failed");
+              app.log.warn({ err, driverId }, "Driver notification flow failed");
             }
           })
         );
@@ -184,20 +378,146 @@ export function buildApp() {
         const riderPhone = ride.rider?.phone ?? null;
         const driverPhone = ride.driver?.phone ?? null;
 
+        const riderTrackUrl = ride.publicTrackingToken ? `/track/${ride.publicTrackingToken}` : `/rider/rides/${ride.id}`;
+        const driverRideUrl = `/driver/rides/${ride.id}`;
+
         if (ride.status === "offered") {
           // Driver-side notifications are sent per-driver in rideOffered — see below.
         } else if (ride.status === "accepted") {
-          if (riderPhone) sms.notifyRiderDriverAccepted(riderPhone, ride);
+          void (async () => {
+            const pushResult = await sendPushForUser({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "accepted",
+              title: "Driver accepted your ride",
+              body: `${ride.driver?.name ?? "Your driver"} is on the way.`,
+              url: riderTrackUrl
+            });
+            await sendCriticalSmsFallback({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "accepted",
+              phone: riderPhone,
+              pushSentCount: pushResult.sentCount,
+              pushFailedCount: pushResult.failedCount,
+              sendSms: () => sms.notifyRiderDriverAccepted(riderPhone ?? "", ride)
+            });
+          })();
         } else if (ride.status === "en_route") {
-          if (riderPhone) sms.notifyRiderDriverEnRoute(riderPhone, ride);
+          void sendPushForUser({
+            userId: ride.riderId,
+            rideId: ride.id,
+            eventKey: "en_route",
+            title: "Driver en route",
+            body: `${ride.driver?.name ?? "Your driver"} is heading to pickup.`,
+            url: riderTrackUrl
+          });
         } else if (ride.status === "arrived") {
-          if (riderPhone) sms.notifyRiderDriverArrived(riderPhone, ride);
+          void (async () => {
+            const pushResult = await sendPushForUser({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "arrived",
+              title: "Driver arrived",
+              body: `${ride.driver?.name ?? "Your driver"} has arrived at pickup.`,
+              url: riderTrackUrl
+            });
+            await sendCriticalSmsFallback({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "arrived",
+              phone: riderPhone,
+              pushSentCount: pushResult.sentCount,
+              pushFailedCount: pushResult.failedCount,
+              sendSms: () => sms.notifyRiderDriverArrived(riderPhone ?? "", ride)
+            });
+          })();
         } else if (ride.status === "completed") {
-          if (riderPhone) sms.notifyRiderRideComplete(riderPhone, ride);
-          if (driverPhone) sms.notifyDriverRideComplete(driverPhone, ride);
+          void Promise.all([
+            sendPushForUser({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "completed",
+              title: "Ride completed",
+              body: "Your trip is complete. Thanks for riding with RealDrive.",
+              url: riderTrackUrl
+            }),
+            ride.driverId
+              ? sendPushForUser({
+                  userId: ride.driverId,
+                  rideId: ride.id,
+                  eventKey: "completed",
+                  title: "Ride completed",
+                  body: "Trip completed. Earnings and dues are updated.",
+                  url: driverRideUrl
+                })
+              : Promise.resolve({ sentCount: 0, failedCount: 0, pushEnabled: true })
+          ]).then(async ([riderPush, driverPush]) => {
+            await sendCriticalSmsFallback({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "completed",
+              phone: riderPhone,
+              pushSentCount: riderPush.sentCount,
+              pushFailedCount: riderPush.failedCount,
+              sendSms: () => sms.notifyRiderRideComplete(riderPhone ?? "", ride)
+            });
+
+            if (ride.driverId) {
+              await sendCriticalSmsFallback({
+                userId: ride.driverId,
+                rideId: ride.id,
+                eventKey: "completed",
+                phone: driverPhone,
+                pushSentCount: driverPush.sentCount,
+                pushFailedCount: driverPush.failedCount,
+                sendSms: () => sms.notifyDriverRideComplete(driverPhone ?? "", ride)
+              });
+            }
+          });
         } else if (ride.status === "canceled") {
-          if (riderPhone) sms.notifyRiderCanceled(riderPhone, ride);
-          if (driverPhone) sms.notifyDriverCanceled(driverPhone, ride);
+          void Promise.all([
+            sendPushForUser({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "canceled",
+              title: "Ride canceled",
+              body: "Your ride was canceled.",
+              url: riderTrackUrl
+            }),
+            ride.driverId
+              ? sendPushForUser({
+                  userId: ride.driverId,
+                  rideId: ride.id,
+                  eventKey: "canceled",
+                  title: "Ride canceled",
+                  body: "This ride has been canceled.",
+                  url: driverRideUrl
+                })
+              : Promise.resolve({ sentCount: 0, failedCount: 0, pushEnabled: true })
+          ]).then(async ([riderPush, driverPush]) => {
+            await sendCriticalSmsFallback({
+              userId: ride.riderId,
+              rideId: ride.id,
+              eventKey: "canceled",
+              phone: riderPhone,
+              pushSentCount: riderPush.sentCount,
+              pushFailedCount: riderPush.failedCount,
+              sendSms: () => sms.notifyRiderCanceled(riderPhone ?? "", ride)
+            });
+
+            if (ride.driverId) {
+              await sendCriticalSmsFallback({
+                userId: ride.driverId,
+                rideId: ride.id,
+                eventKey: "canceled",
+                phone: driverPhone,
+                pushSentCount: driverPush.sentCount,
+                pushFailedCount: driverPush.failedCount,
+                sendSms: () => sms.notifyDriverCanceled(driverPhone ?? "", ride)
+              });
+            }
+          });
         }
       },
       rideLocationUpdated(ride) {
@@ -722,6 +1042,67 @@ export function buildApp() {
   app.get("/me/share", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
     const user = await store.ensureUserReferralCode(request.userContext.id);
     return buildShareInfo(request, user);
+  });
+
+  app.get("/me/notification-preferences", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
+    const [preferences, subscriptions] = await Promise.all([
+      store.getNotificationPreference(request.userContext.id),
+      store.listPushSubscriptions(request.userContext.id)
+    ]);
+
+    return {
+      preferences,
+      subscriptionCount: subscriptions.length,
+      subscriptions
+    };
+  });
+
+  app.put("/me/notification-preferences", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
+    const parsed = updateNotificationPreferenceSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const preferences = await store.updateNotificationPreference(request.userContext.id, parsed.data);
+    return reply.send({ preferences });
+  });
+
+  app.post("/me/push-subscriptions", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
+    const parsed = upsertPushSubscriptionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    await store.upsertPushSubscription(request.userContext.id, parsed.data);
+    const subscriptions = await store.listPushSubscriptions(request.userContext.id);
+    return reply.status(201).send({
+      ok: true,
+      subscriptionCount: subscriptions.length,
+      subscriptions
+    });
+  });
+
+  app.post("/me/push-subscriptions/unsubscribe", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
+    const parsed = removePushSubscriptionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    await store.removePushSubscription(request.userContext.id, parsed.data.endpoint);
+    const subscriptions = await store.listPushSubscriptions(request.userContext.id);
+    return reply.send({
+      ok: true,
+      subscriptionCount: subscriptions.length,
+      subscriptions
+    });
+  });
+
+  app.get("/me/notification-delivery-logs", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
+    const limit = Number((request.query as { limit?: string }).limit ?? "20");
+    const logs = await store.listNotificationDeliveryLogs(request.userContext.id, Number.isFinite(limit) ? limit : 20);
+    return {
+      logs
+    };
   });
 
   app.post("/issues/report", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {

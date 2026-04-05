@@ -153,6 +153,9 @@ model User {
   communityVotes        CommunityVote[]     @relation("CommunityVoteUsers")
   communityComments     CommunityComment[]  @relation("CommunityCommentAuthors")
   issueReports          IssueReport[]       @relation("IssueReportReporter")
+  pushSubscriptions     PushSubscription[]
+  notificationPreference NotificationPreference?
+  notificationLogs      NotificationDeliveryLog[]
 }
 
 model RiderProfile {
@@ -251,6 +254,7 @@ model Ride {
   locationPings            LocationPing[]
   platformDue              PlatformDue?
   issueReports             IssueReport[]
+  notificationLogs         NotificationDeliveryLog[]
 }
 
 model RideOffer {
@@ -487,6 +491,50 @@ model IssueReport {
   @@index([reporterId, createdAt])
   @@index([rideId])
   @@index([githubSyncStatus, createdAt])
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enabled])
+}
+
+model NotificationPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  pushEnabled      Boolean  @default(true)
+  smsCriticalOnly  Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationDeliveryLog {
+  id         String   @id @default(cuid())
+  userId     String
+  rideId     String?
+  channel    String
+  eventKey   String
+  status     String
+  errorCode  String?
+  errorText  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ride       Ride?    @relation(fields: [rideId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([rideId])
+  @@index([channel, eventKey, createdAt])
 }
 
 model AuditLog {

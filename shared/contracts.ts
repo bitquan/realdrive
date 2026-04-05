@@ -856,6 +856,67 @@ export const issueReportResponseSchema = z.object({
   report: issueReportSchema
 });
 
+export const pushSubscriptionKeysSchema = z.object({
+  p256dh: z.string().min(8),
+  auth: z.string().min(8)
+});
+
+export const pushSubscriptionSchema = z.object({
+  id: z.string(),
+  endpoint: z.string().url(),
+  keys: pushSubscriptionKeysSchema,
+  userAgent: z.string().nullable(),
+  enabled: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const notificationPreferenceSchema = z.object({
+  pushEnabled: z.boolean(),
+  smsCriticalOnly: z.boolean()
+});
+
+export const updateNotificationPreferenceSchema = z
+  .object({
+    pushEnabled: z.boolean().optional(),
+    smsCriticalOnly: z.boolean().optional()
+  })
+  .refine((value) => value.pushEnabled !== undefined || value.smsCriticalOnly !== undefined, {
+    message: "At least one preference field is required."
+  });
+
+export const upsertPushSubscriptionSchema = z.object({
+  endpoint: z.string().url(),
+  keys: pushSubscriptionKeysSchema,
+  userAgent: z.string().max(500).optional()
+});
+
+export const removePushSubscriptionSchema = z.object({
+  endpoint: z.string().url()
+});
+
+export const notificationDeliveryLogSchema = z.object({
+  id: z.string(),
+  rideId: z.string().nullable(),
+  channel: z.enum(["push", "sms"]),
+  eventKey: z.string(),
+  status: z.enum(["sent", "failed", "skipped"]),
+  errorCode: z.string().nullable(),
+  errorText: z.string().nullable(),
+  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).nullable(),
+  createdAt: z.string()
+});
+
+export const notificationPreferencesResponseSchema = z.object({
+  preferences: notificationPreferenceSchema,
+  subscriptionCount: z.number().int().nonnegative(),
+  subscriptions: z.array(pushSubscriptionSchema)
+});
+
+export const notificationDeliveryLogsResponseSchema = z.object({
+  logs: z.array(notificationDeliveryLogSchema)
+});
+
 export const ridesResponseSchema = z.array(rideSchema);
 export const pricingRulesResponseSchema = z.array(pricingRuleSchema);
 export const driverRatesResponseSchema = driverRateCardSchema;
@@ -952,6 +1013,13 @@ export type AdminUpdateCommunityProposalInput = z.infer<typeof adminUpdateCommun
 export type AdminUpdateCommunityCommentInput = z.infer<typeof adminUpdateCommunityCommentSchema>;
 export type CreateIssueReportInput = z.infer<typeof createIssueReportSchema>;
 export type IssueReport = z.infer<typeof issueReportSchema>;
+export type PushSubscription = z.infer<typeof pushSubscriptionSchema>;
+export type PushSubscriptionKeys = z.infer<typeof pushSubscriptionKeysSchema>;
+export type NotificationPreference = z.infer<typeof notificationPreferenceSchema>;
+export type UpdateNotificationPreferenceInput = z.infer<typeof updateNotificationPreferenceSchema>;
+export type UpsertPushSubscriptionInput = z.infer<typeof upsertPushSubscriptionSchema>;
+export type RemovePushSubscriptionInput = z.infer<typeof removePushSubscriptionSchema>;
+export type NotificationDeliveryLog = z.infer<typeof notificationDeliveryLogSchema>;
 export type RideQuoteResponse = z.infer<typeof rideQuoteResponseSchema>;
 export type AddressSuggestionsResponse = z.infer<typeof addressSuggestionsResponseSchema>;
 export type AdminInviteStatus = z.infer<typeof adminInviteStatusSchema>;
@@ -971,3 +1039,5 @@ export type AdminTeamResponse = z.infer<typeof adminTeamResponseSchema>;
 export type CommunityBoardResponse = z.infer<typeof communityBoardResponseSchema>;
 export type CommunityCommentsResponse = z.infer<typeof communityCommentsResponseSchema>;
 export type IssueReportResponse = z.infer<typeof issueReportResponseSchema>;
+export type NotificationPreferencesResponse = z.infer<typeof notificationPreferencesResponseSchema>;
+export type NotificationDeliveryLogsResponse = z.infer<typeof notificationDeliveryLogsResponseSchema>;

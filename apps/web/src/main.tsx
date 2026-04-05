@@ -31,6 +31,9 @@ const CommunityJoinPage = lazy(() => import("@/pages/community-join-page").then(
 const CommunityPage = lazy(() => import("@/pages/community-page").then((module) => ({ default: module.CommunityPage })));
 const ShareRedirectPage = lazy(() => import("@/pages/share-redirect-page").then((module) => ({ default: module.ShareRedirectPage })));
 const RequestFeaturePage = lazy(() => import("@/pages/request-feature-page").then((module) => ({ default: module.RequestFeaturePage })));
+const NotificationPreferencesPage = lazy(() =>
+  import("@/pages/notification-preferences-page").then((module) => ({ default: module.NotificationPreferencesPage }))
+);
 const SmsConsentPage = lazy(() => import("@/pages/sms-consent-page").then((module) => ({ default: module.SmsConsentPage })));
 const SmsHelpPage = lazy(() => import("@/pages/sms-help-page").then((module) => ({ default: module.SmsHelpPage })));
 
@@ -117,6 +120,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireAuth>
                   <PageLoader><RequestFeaturePage /></PageLoader>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <RequireAuth>
+                  <PageLoader><NotificationPreferencesPage /></PageLoader>
                 </RequireAuth>
               }
             />

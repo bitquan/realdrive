@@ -44,6 +44,10 @@ import type {
   DriverRateCard,
   DriverRateCardUpdateInput,
   DriverSignupInput,
+  NotificationDeliveryLogsResponse,
+  NotificationPreferencesResponse,
+  UpdateNotificationPreferenceInput,
+  UpsertPushSubscriptionInput,
   IssueReportResponse,
   PlatformDue,
   PlatformDueBatch,
@@ -194,6 +198,42 @@ export const api = {
   },
   meShare(token: string) {
     return apiFetch<ShareInfo | null>("/me/share", undefined, token);
+  },
+  publicPushConfig() {
+    return apiFetch<{ enabled: boolean; vapidPublicKey: string | null }>("/public/push/config");
+  },
+  getNotificationPreferences(token: string) {
+    return apiFetch<NotificationPreferencesResponse>("/me/notification-preferences", undefined, token);
+  },
+  updateNotificationPreferences(input: UpdateNotificationPreferenceInput, token: string) {
+    return apiFetch<{ preferences: NotificationPreferencesResponse["preferences"] }>("/me/notification-preferences", {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  upsertPushSubscription(input: UpsertPushSubscriptionInput, token: string) {
+    return apiFetch<{ ok: true; subscriptionCount: number; subscriptions: NotificationPreferencesResponse["subscriptions"] }>(
+      "/me/push-subscriptions",
+      {
+        method: "POST",
+        body: JSON.stringify(input)
+      },
+      token
+    );
+  },
+  unsubscribePushSubscription(endpoint: string, token: string) {
+    return apiFetch<{ ok: true; subscriptionCount: number; subscriptions: NotificationPreferencesResponse["subscriptions"] }>(
+      "/me/push-subscriptions/unsubscribe",
+      {
+        method: "POST",
+        body: JSON.stringify({ endpoint })
+      },
+      token
+    );
+  },
+  listNotificationDeliveryLogs(token: string, limit = 20) {
+    const params = new URLSearchParams({ limit: String(limit) });
+    return apiFetch<NotificationDeliveryLogsResponse>(`/me/notification-delivery-logs?${params.toString()}`, undefined, token);
   },
   createDriverRole(input: CreateDriverRoleInput, token: string) {
     return apiFetch<DriverAccount>("/me/roles/driver", {

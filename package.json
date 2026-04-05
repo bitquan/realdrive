@@ -16,6 +16,10 @@
     "ops:health": "node scripts/ops/health-check.mjs",
     "ops:digest": "node scripts/ops/daily-digest.mjs",
     "ops:labels": "node scripts/ops/setup-labels.mjs",
+    "sms:test": "node scripts/ops/sms-test.mjs",
+    "sms:test:virtual": "SMS_TEST_TO=+18777804236 node scripts/ops/sms-test.mjs",
+    "sms:test:raw": "node scripts/ops/sms-test.mjs",
+    "sms:test:ride": "node scripts/ops/sms-test.mjs",
     "db:generate": "pnpm --filter @realdrive/api prisma:generate",
     "db:migrate": "pnpm --filter @realdrive/api prisma:migrate",
     "db:seed": "pnpm --filter @realdrive/api prisma:seed"

@@ -13,6 +13,10 @@ import type {
   CreateAdminInviteInput,
   IssueReport,
   IssueReportStatus,
+  NotificationDeliveryLog,
+  NotificationPreference,
+  UpdateNotificationPreferenceInput,
+  UpsertPushSubscriptionInput,
   DriverDueSnapshot,
   DriverDocumentType,
   DriverDocumentUpload,
@@ -3127,6 +3131,142 @@ export const store: Store = {
     });
 
     return mapCommunityComment(comment);
+  },
+
+  async getNotificationPreference(userId): Promise<NotificationPreference> {
+    const preference = await prisma.notificationPreference.upsert({
+      where: { userId },
+      update: {},
+      create: {
+        userId,
+        pushEnabled: true,
+        smsCriticalOnly: true
+      }
+    });
+
+    return {
+      pushEnabled: preference.pushEnabled,
+      smsCriticalOnly: preference.smsCriticalOnly
+    };
+  },
+
+  async updateNotificationPreference(userId, input: UpdateNotificationPreferenceInput): Promise<NotificationPreference> {
+    const preference = await prisma.notificationPreference.upsert({
+      where: { userId },
+      update: {
+        pushEnabled: input.pushEnabled,
+        smsCriticalOnly: input.smsCriticalOnly
+      },
+      create: {
+        userId,
+        pushEnabled: input.pushEnabled ?? true,
+        smsCriticalOnly: input.smsCriticalOnly ?? true
+      }
+    });
+
+    return {
+      pushEnabled: preference.pushEnabled,
+      smsCriticalOnly: preference.smsCriticalOnly
+    };
+  },
+
+  async upsertPushSubscription(userId, input: UpsertPushSubscriptionInput) {
+    await prisma.pushSubscription.upsert({
+      where: {
+        endpoint: input.endpoint
+      },
+      update: {
+        userId,
+        p256dh: input.keys.p256dh,
+        auth: input.keys.auth,
+        userAgent: input.userAgent ?? null,
+        enabled: true
+      },
+      create: {
+        userId,
+        endpoint: input.endpoint,
+        p256dh: input.keys.p256dh,
+        auth: input.keys.auth,
+        userAgent: input.userAgent ?? null,
+        enabled: true
+      }
+    });
+  },
+
+  async removePushSubscription(userId, endpoint) {
+    await prisma.pushSubscription.deleteMany({
+      where: {
+        userId,
+        endpoint
+      }
+    });
+  },
+
+  async listPushSubscriptions(userId) {
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: {
+        userId,
+        enabled: true
+      },
+      orderBy: {
+        updatedAt: "desc"
+      }
+    });
+
+    return subscriptions.map((subscription) => ({
+      id: subscription.id,
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: subscription.p256dh,
+        auth: subscription.auth
+      },
+      userAgent: subscription.userAgent,
+      enabled: subscription.enabled,
+      createdAt: subscription.createdAt.toISOString(),
+      updatedAt: subscription.updatedAt.toISOString()
+    }));
+  },
+
+  async listNotificationDeliveryLogs(userId, limit = 50): Promise<NotificationDeliveryLog[]> {
+    const rows = await prisma.notificationDeliveryLog.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: Math.min(Math.max(limit, 1), 200)
+    });
+
+    return rows.map((row) => {
+      const metadata =
+        row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, string | number | boolean | null>)
+          : null;
+
+      return {
+        id: row.id,
+        rideId: row.rideId,
+        channel: row.channel === "sms" ? "sms" : "push",
+        eventKey: row.eventKey,
+        status: row.status === "failed" ? "failed" : row.status === "skipped" ? "skipped" : "sent",
+        errorCode: row.errorCode,
+        errorText: row.errorText,
+        metadata,
+        createdAt: row.createdAt.toISOString()
+      };
+    });
+  },
+
+  async logNotificationDelivery(input) {
+    await prisma.notificationDeliveryLog.create({
+      data: {
+        userId: input.userId,
+        rideId: input.rideId ?? null,
+        channel: input.channel,
+        eventKey: input.eventKey,
+        status: input.status,
+        errorCode: input.errorCode ?? null,
+        errorText: input.errorText ?? null,
+        metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null
+      }
+    });
   },
 
   async addAuditLog(input) {

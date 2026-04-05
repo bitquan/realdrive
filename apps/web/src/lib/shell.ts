@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Bell,
   BookOpen,
   CarFront,
   CreditCard,
@@ -100,6 +101,15 @@ const sharedItems: ShellNavItem[] = [
     to: "/request-feature",
     icon: Lightbulb,
     matchPatterns: ["/request-feature"],
+    requiresAuth: true
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    shortLabel: "Alerts",
+    to: "/notifications",
+    icon: Bell,
+    matchPatterns: ["/notifications"],
     requiresAuth: true
   }
 ];
@@ -260,6 +270,16 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       title: "Platform pricing",
       description: "Tune market rate cards without inventing new products or flows.",
       mapMode: "ambient"
+    }
+  },
+  {
+    patterns: ["/notifications"],
+    frame: {
+      eyebrow: "Account",
+      title: "Notification center",
+      description: "Manage push notifications, SMS critical fallback, and recent delivery results.",
+      mapMode: "off",
+      mobileHeaderMode: "minimal"
     }
   },
   {
