@@ -9,6 +9,7 @@ import type { Ride } from "@shared/contracts";
  * Falls back to no-op with a console.info when not configured.
  */
 export interface SmsService {
+  sendRaw(to: string, body: string): Promise<void>;
   notifyDriverNewRide(driverPhone: string, ride: Ride): Promise<void>;
   notifyRiderDriverAccepted(riderPhone: string, ride: Ride): Promise<void>;
   notifyRiderDriverEnRoute(riderPhone: string, ride: Ride): Promise<void>;
@@ -57,6 +58,10 @@ export function createSmsService(): SmsService {
   }
 
   return {
+    async sendRaw(to, body) {
+      await send(to, body);
+    },
+
     /** Driver: you have a new ride offer */
     async notifyDriverNewRide(driverPhone, ride) {
       const fare = fmt(ride.pricing.estimatedCustomerTotal);

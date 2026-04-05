@@ -1172,6 +1172,105 @@ export function buildApp() {
     };
   });
 
+
+      app.post("/admin/sms/test", { preHandler: requireRole("admin") }, async (request, reply) => {
+        const parsed = z
+          .object({
+            to: z.string().min(8).optional(),
+            message: z.string().min(3).max(320).optional(),
+            rideId: z.string().min(1).optional(),
+            scenario: z
+              .enum(["new_job", "accepted", "en_route", "arrived", "completed", "canceled"])
+              .optional()
+          })
+          .safeParse(request.body);
+
+        if (!parsed.success) {
+          return sendValidationError(reply, parsed.error.flatten());
+        }
+
+        const { to, message, rideId, scenario } = parsed.data;
+
+        if (to && message) {
+          await sms.sendRaw(to, message);
+          return reply.send({ ok: true, mode: "raw", to });
+        }
+
+        if (!rideId || !scenario) {
+          return reply.status(400).send({
+            message:
+              "Provide either { to, message } for a raw test SMS, or { rideId, scenario } for a ride-status simulation."
+          });
+        }
+
+        const ride = await store.getRideById(rideId);
+        if (!ride) {
+          return reply.status(404).send({ message: "Ride not found" });
+        }
+
+        const riderPhone = to ?? ride.rider.phone ?? null;
+        const driverPhone = to ?? ride.driver?.phone ?? null;
+
+        if (scenario === "new_job") {
+          if (!driverPhone) {
+            return reply.status(400).send({ message: "No driver phone found on this ride. Provide `to` to override." });
+          }
+          await sms.notifyDriverNewRide(driverPhone, ride);
+          return reply.send({ ok: true, mode: "scenario", scenario, to: driverPhone, rideId });
+        }
+
+        if (scenario === "accepted") {
+          if (!riderPhone) {
+            return reply.status(400).send({ message: "No rider phone found on this ride. Provide `to` to override." });
+          }
+          await sms.notifyRiderDriverAccepted(riderPhone, ride);
+          return reply.send({ ok: true, mode: "scenario", scenario, to: riderPhone, rideId });
+        }
+
+        if (scenario === "en_route") {
+          if (!riderPhone) {
+            return reply.status(400).send({ message: "No rider phone found on this ride. Provide `to` to override." });
+          }
+          await sms.notifyRiderDriverEnRoute(riderPhone, ride);
+          return reply.send({ ok: true, mode: "scenario", scenario, to: riderPhone, rideId });
+        }
+
+        if (scenario === "arrived") {
+          if (!riderPhone) {
+            return reply.status(400).send({ message: "No rider phone found on this ride. Provide `to` to override." });
+          }
+          await sms.notifyRiderDriverArrived(riderPhone, ride);
+          return reply.send({ ok: true, mode: "scenario", scenario, to: riderPhone, rideId });
+        }
+
+        if (scenario === "completed") {
+          if (!riderPhone && !driverPhone) {
+            return reply
+              .status(400)
+              .send({ message: "No rider/driver phone found on this ride. Provide `to` to override." });
+          }
+          if (riderPhone) {
+            await sms.notifyRiderRideComplete(riderPhone, ride);
+          }
+          if (driverPhone) {
+            await sms.notifyDriverRideComplete(driverPhone, ride);
+          }
+          return reply.send({ ok: true, mode: "scenario", scenario, to: [riderPhone, driverPhone].filter(Boolean), rideId });
+        }
+
+        if (!riderPhone && !driverPhone) {
+          return reply
+            .status(400)
+            .send({ message: "No rider/driver phone found on this ride. Provide `to` to override." });
+        }
+        if (riderPhone) {
+          await sms.notifyRiderCanceled(riderPhone, ride);
+        }
+        if (driverPhone) {
+          await sms.notifyDriverCanceled(driverPhone, ride);
+        }
+        return reply.send({ ok: true, mode: "scenario", scenario, to: [riderPhone, driverPhone].filter(Boolean), rideId });
+      });
   app.get("/admin/team", { preHandler: requireRole("admin") }, async (request) => {
     const [admins, invites] = await Promise.all([
       store.listAdminTeamUsers(),
