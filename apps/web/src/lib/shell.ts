@@ -642,7 +642,6 @@ export function getShellSections(user: SessionUser | null): ShellSection[] {
 }
 
 export function getMobileNavItems(user: SessionUser | null, options?: { driverRidePath?: string }): ShellNavItem[] {
-  const driverItem = getDriverNavItem(user);
   const notificationsItem = sharedItems.find((item) => item.id === "notifications");
 
   if (user?.role === "admin") {

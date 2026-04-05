@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { DriverDispatchSettings, PaymentMethod, Ride, RideType } from "@shared/contracts";
+import type { DriverDispatchSettings, PaymentMethod, RideType } from "@shared/contracts";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AlertTriangle, Route } from "lucide-react";
-import { BottomActionBar, DataField } from "@/components/layout/ops-layout";
+import { BottomActionBar } from "@/components/layout/ops-layout";
 import { DriverActiveRideCard } from "@/components/driver-home/DriverActiveRideCard";
 import { DriverEarningsMini } from "@/components/driver-home/DriverEarningsMini";
 import { DriverLiveOfferCard } from "@/components/driver-home/DriverLiveOfferCard";
