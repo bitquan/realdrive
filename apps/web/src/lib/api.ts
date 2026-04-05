@@ -235,7 +235,8 @@ export const api = {
     return apiFetch<{ ok: true; push: { sentCount: number; failedCount: number; pushEnabled: boolean } }>(
       "/me/notifications/test-push",
       {
-        method: "POST"
+        method: "POST",
+        body: JSON.stringify({})
       },
       token
     );
