@@ -242,6 +242,10 @@ model Ride {
   publicTrackingToken      String?            @unique
   referredByUserId         String?
   referredByCode           String?
+  isTest                   Boolean            @default(false)
+  testLabel                String?
+  createdByAdminId         String?
+  targetDriverId           String?
   status                   RideStatus         @default(DRAFT)
   rideType                 RideType           @default(STANDARD)
   pickupAddress            String

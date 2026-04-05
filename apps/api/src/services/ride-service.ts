@@ -67,22 +67,62 @@ export function createRideService(deps: {
     return user.role === role || user.roles.includes(role);
   }
 
+  async function listDispatchCandidates(options: {
+    pickup: Ride["pickup"];
+    pickupStateCode?: string | null;
+    paymentMethod: PaymentMethod;
+    targetDriverId?: string | null;
+  }) {
+    const eligibleDrivers = await store.listEligibleDriversForRide(options.pickup, options.pickupStateCode);
+    const targetedDrivers = options.targetDriverId
+      ? eligibleDrivers.filter((driver) => driver.id === options.targetDriverId)
+      : eligibleDrivers;
+
+    if (options.targetDriverId && !targetedDrivers.length) {
+      throw new Error("Selected driver is unavailable for this pickup area or is not currently dispatch eligible.");
+    }
+
+    const compatibleDrivers = targetedDrivers.filter((driver) => isDriverPaymentCompatible(driver, options.paymentMethod));
+
+    if (targetedDrivers.length && !compatibleDrivers.length) {
+      const acceptedPaymentMethods = Array.from(
+        new Set(targetedDrivers.flatMap((driver) => driver.acceptedPaymentMethods ?? []))
+      );
+      const acceptedLabel = acceptedPaymentMethods.length
+        ? acceptedPaymentMethods.map(formatPaymentMethod).join(", ")
+        : "none";
+
+      throw new Error(
+        `Driver does not accept ${formatPaymentMethod(options.paymentMethod)}. Accepted payment methods: ${acceptedLabel}.`
+      );
+    }
+
+    return {
+      eligibleDrivers,
+      dispatchDrivers: compatibleDrivers
+    };
+  }
+
   async function dispatchRide(rideId: string): Promise<Ride> {
     const ride = await store.getRideById(rideId);
     if (!ride) {
       throw new Error("Ride not found");
     }
 
-    const eligibleDrivers = await store.listEligibleDriversForRide(ride.pickup, ride.pickup.stateCode);
-    const compatibleDrivers = eligibleDrivers.filter((driver) => isDriverPaymentCompatible(driver, ride.payment.method));
+    const { dispatchDrivers } = await listDispatchCandidates({
+      pickup: ride.pickup,
+      pickupStateCode: ride.pickup.stateCode,
+      paymentMethod: ride.payment.method,
+      targetDriverId: ride.test.targetDriverId
+    });
     const offeredRide = await store.createRideOffers(
       ride.id,
-      compatibleDrivers.map((driver) => driver.id),
+      dispatchDrivers.map((driver) => driver.id),
       new Date(Date.now() + 2 * 60 * 1000)
     );
 
-    if (compatibleDrivers.length) {
-      events.rideOffered(offeredRide, compatibleDrivers.map((driver) => driver.id));
+    if (dispatchDrivers.length) {
+      events.rideOffered(offeredRide, dispatchDrivers.map((driver) => driver.id));
     } else {
       events.rideUpdated(offeredRide);
     }
@@ -98,6 +138,10 @@ export function createRideService(deps: {
         publicTrackingToken?: string;
         referredByUserId?: string | null;
         referredByCode?: string | null;
+        isTest?: boolean;
+        testLabel?: string | null;
+        createdByAdminId?: string | null;
+        targetDriverId?: string | null;
       }
     ) {
       const route = await maps.estimateRoute(input.pickupAddress, input.dropoffAddress);
@@ -109,27 +153,21 @@ export function createRideService(deps: {
         throw new Error(`Missing platform pricing rule for ${input.rideType}`);
       }
 
-      const eligibleDrivers = await store.listEligibleDriversForRide(route.pickup, route.pickup.stateCode);
-      if (eligibleDrivers.length) {
-        const compatibleDrivers = eligibleDrivers.filter((driver) => isDriverPaymentCompatible(driver, input.paymentMethod));
-        if (!compatibleDrivers.length) {
-          const acceptedPaymentMethods = Array.from(
-            new Set(eligibleDrivers.flatMap((driver) => driver.acceptedPaymentMethods ?? []))
-          );
-          const acceptedLabel = acceptedPaymentMethods.length
-            ? acceptedPaymentMethods.map(formatPaymentMethod).join(", ")
-            : "none";
-
-          throw new Error(
-            `Driver does not accept ${formatPaymentMethod(input.paymentMethod)}. Accepted payment methods: ${acceptedLabel}.`
-          );
-        }
-      }
+      await listDispatchCandidates({
+        pickup: route.pickup,
+        pickupStateCode: route.pickup.stateCode,
+        paymentMethod: input.paymentMethod,
+        targetDriverId: options?.targetDriverId
+      });
 
       const status: RideStatus = input.scheduledFor ? "scheduled" : "requested";
       const quotedFare = calculateFare(rule, route.distanceMiles, route.durationMinutes);
       const created = await store.createRide({
         riderId: rider.id,
+        isTest: options?.isTest ?? false,
+        testLabel: options?.testLabel ?? null,
+        createdByAdminId: options?.createdByAdminId ?? null,
+        targetDriverId: options?.targetDriverId ?? null,
         rideType: input.rideType,
         paymentMethod: input.paymentMethod,
         route,

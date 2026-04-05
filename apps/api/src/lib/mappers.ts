@@ -721,7 +721,13 @@ export function mapRide(ride: RideWithRelations): Ride {
     rider: mapSessionUser(ride.rider),
     driver: ride.driver ? mapSessionUser(ride.driver) : null,
     offers: ride.offers.map(mapRideOffer),
-    latestLocation
+    latestLocation,
+    test: {
+      isTest: ride.isTest,
+      label: ride.testLabel,
+      createdByAdminId: ride.createdByAdminId,
+      targetDriverId: ride.targetDriverId
+    }
   };
 }
 

@@ -63,6 +63,8 @@ Providers:
   One-time first-admin setup with optional admin-plus-driver bootstrap
 - `/admin`
   Admin dashboard
+- `/admin/dispatch`
+  Ride-first dispatch workspace with the live queue plus a test lab for creating labeled test jobs and watching rider/driver split-screen flow state
 - `/admin/drivers`
   Driver management
 - `/admin/dues`
@@ -103,6 +105,7 @@ TanStack Query is used for:
 - Driver active rides
 - Driver dues
 - Admin rides
+- Admin test ride creation
 - Admin leads
 - Admin drivers
 - Admin dues

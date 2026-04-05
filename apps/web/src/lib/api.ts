@@ -5,6 +5,8 @@ import type {
   AdSubmissionResponse,
   AdVisitResolveResponse,
   AddressSuggestion,
+  AdminCreateTestRideInput,
+  AdminCreateTestRideResponse,
   AdminInvite,
   AdminInvitesResponse,
   AdminAdsResponse,
@@ -457,6 +459,12 @@ export const api = {
   },
   listAdminRides(token: string) {
     return apiFetch<Ride[]>("/admin/rides", undefined, token);
+  },
+  createAdminTestRide(input: AdminCreateTestRideInput, token: string) {
+    return apiFetch<AdminCreateTestRideResponse>("/admin/test-rides", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
   },
   listAdminLeads(token: string) {
     return apiFetch<AdminLeadsResponse>("/admin/leads", undefined, token);

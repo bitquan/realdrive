@@ -230,6 +230,23 @@ Purpose:
 
 - Create an on-demand or scheduled ride
 
+## Admin
+
+### `GET /admin/rides`
+
+Purpose:
+
+- Return the full ride queue used by the admin dispatch workspace
+- Includes normal rides and admin-created labeled test rides
+
+### `POST /admin/test-rides`
+
+Purpose:
+
+- Create a real ride from the admin dispatch test lab using live routing and pricing
+- Optionally pin the ride to one approved driver account for focused driver-flow testing
+- Return the created ride plus a public tracking URL for rider-side validation
+
 ### `POST /rides/:id/cancel`
 
 Purpose:

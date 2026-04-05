@@ -2026,6 +2026,10 @@ export const store: Store = {
     const ride = await prisma.ride.create({
       data: {
         riderId: input.riderId,
+        isTest: input.isTest ?? false,
+        testLabel: input.testLabel ?? null,
+        createdByAdminId: input.createdByAdminId ?? null,
+        targetDriverId: input.targetDriverId ?? null,
         rideType: toDbRideType(input.rideType),
         status: toDbRideStatus(input.status),
         publicTrackingToken: input.publicTrackingToken,

@@ -101,6 +101,10 @@ export interface CreateRideRecordInput {
   referredByCode?: string | null;
   platformMarketKey?: string | null;
   estimatedPricingSource?: RidePricingSource;
+  isTest?: boolean;
+  testLabel?: string | null;
+  createdByAdminId?: string | null;
+  targetDriverId?: string | null;
 }
 
 export interface AuthIdentity extends SessionUser {

@@ -272,6 +272,13 @@ export const locationPingSchema = z.object({
   createdAt: z.string()
 });
 
+export const rideTestMetadataSchema = z.object({
+  isTest: z.boolean(),
+  label: z.string().nullable(),
+  createdByAdminId: z.string().nullable(),
+  targetDriverId: z.string().nullable()
+});
+
 export const rideSchema = z.object({
   id: z.string(),
   riderId: z.string(),
@@ -305,7 +312,8 @@ export const rideSchema = z.object({
   rider: ridePartySchema,
   driver: ridePartySchema.nullable(),
   offers: z.array(rideOfferSchema),
-  latestLocation: locationPingSchema.nullable()
+  latestLocation: locationPingSchema.nullable(),
+  test: rideTestMetadataSchema
 });
 
 export const shareInfoSchema = z.object({
@@ -744,6 +752,19 @@ export const publicRideRequestSchema = createRideSchema.extend({
   phone: z.string().min(8),
   email: z.string().email().optional(),
   referredByCode: z.string().min(4).max(40).optional()
+});
+
+export const adminCreateTestRideSchema = createRideSchema.extend({
+  riderName: z.string().min(2).max(120),
+  riderPhone: z.string().min(8).max(30).optional(),
+  riderEmail: z.string().email().optional(),
+  label: z.string().min(2).max(120).optional(),
+  targetDriverId: z.string().min(1).optional()
+});
+
+export const adminCreateTestRideResponseSchema = z.object({
+  ride: rideSchema,
+  trackingUrl: z.string().url().nullable()
 });
 
 export const riderLeadInputSchema = z.object({
@@ -1402,6 +1423,7 @@ export type RidePricingSnapshot = z.infer<typeof ridePricingSnapshotSchema>;
 export type PaymentRecord = z.infer<typeof paymentRecordSchema>;
 export type RideOffer = z.infer<typeof rideOfferSchema>;
 export type LocationPing = z.infer<typeof locationPingSchema>;
+export type RideTestMetadata = z.infer<typeof rideTestMetadataSchema>;
 export type Ride = z.infer<typeof rideSchema>;
 export type ShareInfo = z.infer<typeof shareInfoSchema>;
 export type CommunityAccessLink = z.infer<typeof communityAccessLinkSchema>;
@@ -1444,6 +1466,8 @@ export type DriverSignupInput = z.infer<typeof driverSignupInputSchema>;
 export type DriverLoginInput = z.infer<typeof driverLoginSchema>;
 export type CreateRideInput = z.infer<typeof createRideSchema>;
 export type PublicRideRequest = z.infer<typeof publicRideRequestSchema>;
+export type AdminCreateTestRideInput = z.infer<typeof adminCreateTestRideSchema>;
+export type AdminCreateTestRideResponse = z.infer<typeof adminCreateTestRideResponseSchema>;
 export type RiderLeadInput = z.infer<typeof riderLeadInputSchema>;
 export type DriverInterestInput = z.infer<typeof driverInterestInputSchema>;
 export type DriverProfileUpdateInput = z.infer<typeof driverProfileUpdateSchema>;

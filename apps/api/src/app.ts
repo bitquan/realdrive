@@ -9,6 +9,7 @@ import type { SessionUser, ShareInfo } from "@shared/contracts";
 import { z } from "zod";
 import {
   acceptAdminInviteSchema,
+  adminCreateTestRideSchema,
   adminLoginSchema,
   adminUpdateAdSubmissionSchema,
   applyDriverAdCreditsSchema,
@@ -1719,6 +1720,68 @@ export function buildApp() {
 
   app.get("/admin/rides", { preHandler: requireRole("admin") }, async () => {
     return store.listAdminRides();
+  });
+
+  app.post("/admin/test-rides", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminCreateTestRideSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    if (parsed.data.targetDriverId) {
+      const driver = await store.getDriverAccount(parsed.data.targetDriverId);
+      if (!driver) {
+        return reply.notFound("Driver not found");
+      }
+
+      if (driver.approvalStatus !== "approved") {
+        return reply.badRequest("Selected driver is not approved for live dispatch");
+      }
+    }
+
+    const rider = await store.createRiderIdentity({
+      name: parsed.data.riderName,
+      phone: parsed.data.riderPhone ? normalizePhone(parsed.data.riderPhone) : null,
+      email: parsed.data.riderEmail ?? null
+    });
+
+    try {
+      const ride = await rideService.createRide(
+        rider,
+        {
+          pickupAddress: parsed.data.pickupAddress,
+          dropoffAddress: parsed.data.dropoffAddress,
+          rideType: parsed.data.rideType,
+          paymentMethod: parsed.data.paymentMethod,
+          scheduledFor: parsed.data.scheduledFor
+        },
+        {
+          publicTrackingToken: createPublicTrackingToken(),
+          isTest: true,
+          testLabel: parsed.data.label ?? null,
+          createdByAdminId: request.userContext.id,
+          targetDriverId: parsed.data.targetDriverId ?? null
+        }
+      );
+
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "ride.test.created",
+        entityType: "ride",
+        entityId: ride.id,
+        metadata: {
+          targetDriverId: parsed.data.targetDriverId ?? null,
+          testLabel: parsed.data.label ?? null
+        }
+      });
+
+      return reply.status(201).send({
+        ride,
+        trackingUrl: ride.publicTrackingToken ? `${resolvePublicBaseUrl(request)}/track/${ride.publicTrackingToken}` : null
+      });
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
   });
 
   app.get("/admin/dues", { preHandler: requireRole("admin") }, async (request) => {
