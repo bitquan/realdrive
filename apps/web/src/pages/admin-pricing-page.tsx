@@ -15,6 +15,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/providers/auth-provider";
 
 type RateForm = Record<RideType, { baseFare: string; perMile: string; perMinute: string; multiplier: string }>;
+type BenchmarkForm = Record<"uber" | "lyft", RateForm>;
 
 function emptyRateForm(): RateForm {
   return {
@@ -22,6 +23,35 @@ function emptyRateForm(): RateForm {
     suv: { baseFare: "0", perMile: "0", perMinute: "0", multiplier: "1" },
     xl: { baseFare: "0", perMile: "0", perMinute: "0", multiplier: "1" }
   };
+}
+
+function emptyBenchmarkForm(): BenchmarkForm {
+  return {
+    uber: emptyRateForm(),
+    lyft: emptyRateForm()
+  };
+}
+
+function parseMoneyLike(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Number(parsed.toFixed(2));
+}
+
+function cheaperThanBenchmark(uber: string, lyft: string): string {
+  const uberValue = parseMoneyLike(uber);
+  const lyftValue = parseMoneyLike(lyft);
+  const benchmark = Math.min(uberValue, lyftValue);
+  return Math.max(0, Number((benchmark - 0.05).toFixed(2))).toFixed(2);
+}
+
+function followBenchmark(uber: string, lyft: string): string {
+  const uberValue = parseMoneyLike(uber);
+  const lyftValue = parseMoneyLike(lyft);
+  return Math.min(uberValue, lyftValue).toFixed(2);
 }
 
 export function AdminPricingPage() {
@@ -33,6 +63,8 @@ export function AdminPricingPage() {
   });
   const [markets, setMarkets] = useState<Record<string, RateForm>>({});
   const [newMarketKey, setNewMarketKey] = useState("");
+  const [benchmarkMarketKey, setBenchmarkMarketKey] = useState("DEFAULT");
+  const [benchmarkRates, setBenchmarkRates] = useState<BenchmarkForm>(emptyBenchmarkForm());
 
   useEffect(() => {
     if (!pricingQuery.data) {
@@ -56,6 +88,15 @@ export function AdminPricingPage() {
 
     setMarkets(next);
   }, [pricingQuery.data]);
+
+  useEffect(() => {
+    if (!benchmarkMarketKey || !markets[benchmarkMarketKey]) {
+      const firstMarket = Object.keys(markets)[0];
+      if (firstMarket) {
+        setBenchmarkMarketKey(firstMarket);
+      }
+    }
+  }, [benchmarkMarketKey, markets]);
 
   const updateMutation = useMutation({
     mutationFn: () =>
@@ -96,6 +137,111 @@ export function AdminPricingPage() {
       </MetricStrip>
 
       <PanelSection title="Market rate cards" description="Configure state-based pricing and keep DEFAULT as the fallback for unmatched pickups.">
+        <div className="mb-6 rounded-[1.6rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+          <div className="mb-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <div className="space-y-2">
+              <Label>Benchmark market</Label>
+              <select
+                className="h-11 w-full rounded-2xl border border-input bg-background px-3 text-sm"
+                value={benchmarkMarketKey}
+                onChange={(event) => setBenchmarkMarketKey(event.target.value)}
+              >
+                {Object.keys(markets).map((marketKey) => (
+                  <option key={marketKey} value={marketKey}>
+                    {marketKey}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (!benchmarkMarketKey) {
+                  return;
+                }
+
+                setMarkets((current) => ({
+                  ...current,
+                  [benchmarkMarketKey]: {
+                    standard: {
+                      baseFare: cheaperThanBenchmark(
+                        benchmarkRates.uber.standard.baseFare,
+                        benchmarkRates.lyft.standard.baseFare
+                      ),
+                      perMile: cheaperThanBenchmark(
+                        benchmarkRates.uber.standard.perMile,
+                        benchmarkRates.lyft.standard.perMile
+                      ),
+                      perMinute: cheaperThanBenchmark(
+                        benchmarkRates.uber.standard.perMinute,
+                        benchmarkRates.lyft.standard.perMinute
+                      ),
+                      multiplier: followBenchmark(
+                        benchmarkRates.uber.standard.multiplier,
+                        benchmarkRates.lyft.standard.multiplier
+                      )
+                    },
+                    suv: {
+                      baseFare: cheaperThanBenchmark(benchmarkRates.uber.suv.baseFare, benchmarkRates.lyft.suv.baseFare),
+                      perMile: cheaperThanBenchmark(benchmarkRates.uber.suv.perMile, benchmarkRates.lyft.suv.perMile),
+                      perMinute: cheaperThanBenchmark(
+                        benchmarkRates.uber.suv.perMinute,
+                        benchmarkRates.lyft.suv.perMinute
+                      ),
+                      multiplier: followBenchmark(benchmarkRates.uber.suv.multiplier, benchmarkRates.lyft.suv.multiplier)
+                    },
+                    xl: {
+                      baseFare: cheaperThanBenchmark(benchmarkRates.uber.xl.baseFare, benchmarkRates.lyft.xl.baseFare),
+                      perMile: cheaperThanBenchmark(benchmarkRates.uber.xl.perMile, benchmarkRates.lyft.xl.perMile),
+                      perMinute: cheaperThanBenchmark(benchmarkRates.uber.xl.perMinute, benchmarkRates.lyft.xl.perMinute),
+                      multiplier: followBenchmark(benchmarkRates.uber.xl.multiplier, benchmarkRates.lyft.xl.multiplier)
+                    }
+                  }
+                }));
+              }}
+            >
+              Apply Uber/Lyft minus $0.05
+            </Button>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {(["uber", "lyft"] as const).map((provider) => (
+              <div key={provider} className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/40 p-4">
+                <h4 className="mb-4 text-lg font-semibold capitalize text-ops-text">{provider} benchmark</h4>
+                <div className="space-y-4">
+                  {(["standard", "suv", "xl"] as RideType[]).map((rideType) => (
+                    <div key={`${provider}-${rideType}`}>
+                      <p className="mb-2 text-sm font-semibold capitalize text-ops-text">{rideType}</p>
+                      <div className="grid gap-3 md:grid-cols-4">
+                        {(["baseFare", "perMile", "perMinute", "multiplier"] as const).map((field) => (
+                          <div key={`${provider}-${rideType}-${field}`} className="space-y-1">
+                            <Label>{field}</Label>
+                            <Input
+                              value={benchmarkRates[provider][rideType][field]}
+                              onChange={(event) =>
+                                setBenchmarkRates((current) => ({
+                                  ...current,
+                                  [provider]: {
+                                    ...current[provider],
+                                    [rideType]: {
+                                      ...current[provider][rideType],
+                                      [field]: event.target.value
+                                    }
+                                  }
+                                }))
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="mb-6 flex flex-col gap-3 rounded-[1.6rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4 md:flex-row md:items-end">
           <div className="flex-1 space-y-2">
             <Label>Add market key</Label>
