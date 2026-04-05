@@ -72,13 +72,13 @@ No manual migration steps needed. Each new git push triggers deployment and runs
    - Render auto-creates services from `render.yaml`
 
 4. **Set Required Environment Variables**
-   - In Render dashboard, edit the `realdrive-api` service
+   - In Render dashboard, edit the live API service
    - Add all variables from [API Environment Variables](#api-environment-variables) below
 
 5. **Deploy**
    - Click **Deploy** to start build
    - Monitor logs in Render dashboard
-   - API becomes available at `https://realdrive-api.onrender.com` (or custom domain)
+   - API becomes available at `https://realdrive.onrender.com` (or custom domain)
 
 ### Auto-Redeploy
 
@@ -88,7 +88,7 @@ No manual migration steps needed. Each new git push triggers deployment and runs
 
 ## API Environment Variables
 
-Add these to Render dashboard for the `realdrive-api` service.
+Add these to the live Render API service.
 
 ### Required Variables
 
@@ -162,13 +162,13 @@ Add these to Render dashboard for the `realdrive-api` service.
    - **Output Directory**: `dist`
 
 4. **Add Environment Variables**
-   - `VITE_API_URL` = Your Render API URL (e.g., `https://realdrive-api.onrender.com`)
+   - `VITE_API_URL` = Your Render API URL (current live value: `https://realdrive.onrender.com`)
    - `VITE_MAPBOX_TOKEN` = (optional) Mapbox token
 
 5. **Deploy**
    - Click "Deploy"
    - Vercel builds and deploys automatically
-   - URL provided (e.g., `https://realdrive.vercel.app`)
+   - URL provided (current stable alias: `https://realdrive-web.vercel.app`)
 
 ### Auto-Redeploy
 
@@ -187,8 +187,13 @@ To use your own domain:
 
 | Variable | Example | Notes |
 |----------|---------|-------|
-| `VITE_API_URL` | `https://realdrive-api.onrender.com` | **Required** - Points to Render API |
+| `VITE_API_URL` | `https://realdrive.onrender.com` | **Required** - Points to Render API |
 | `VITE_MAPBOX_TOKEN` | (mapbox token) | Optional - For live maps |
+
+Important:
+
+- Do not commit `VITE_MAPBOX_TOKEN` into `apps/web/.env.production`
+- Store it in the Vercel project env settings instead
 
 ## Smoke Tests
 
@@ -196,16 +201,16 @@ After deploy completes:
 
 ```bash
 # 1. Web loads
-curl https://realdrive.vercel.app/
+curl https://realdrive-web.vercel.app/
 
 # 2. API health check
-curl https://realdrive-api.onrender.com/health
+curl https://realdrive.onrender.com/health
 
 # 3. After deploy, create admin at /admin/setup
-# Open https://realdrive.vercel.app/admin/setup
+# Open https://realdrive-web.vercel.app/admin/setup
 
 # 4. Test ride quote
-curl -X POST https://realdrive-api.onrender.com/quotes/ride \
+curl -X POST https://realdrive.onrender.com/quotes/ride \
   -H "Content-Type: application/json" \
   -d '{
     "pickupAddress": "123 Main St, Atlanta, GA",
@@ -214,8 +219,21 @@ curl -X POST https://realdrive-api.onrender.com/quotes/ride \
   }'
 
 # 5. Public drivers list
-curl https://realdrive-api.onrender.com/public/drivers
+curl https://realdrive.onrender.com/public/drivers
 ```
+
+## Current Production Truth
+
+Use these values unless infrastructure is intentionally changed:
+
+- Web project: `bitquans-projects/realdrive-web`
+- Web alias: `https://realdrive-web.vercel.app`
+- API host: `https://realdrive.onrender.com`
+
+Avoid these stale values:
+
+- `https://realdrive-api.onrender.com`
+- `https://realdrive.vercel.app`
 
 ## Troubleshooting
 
@@ -235,13 +253,19 @@ curl https://realdrive-api.onrender.com/public/drivers
 
 - Check `VITE_API_URL` in Vercel environment
 - Check `CLIENT_ORIGIN` in Render matches Vercel URL exactly
-- Verify API is running: `curl https://realdrive-api.onrender.com/health`
+- Verify API is running: `curl https://realdrive.onrender.com/health`
 
 ### CORS errors
 
 - Ensure `CLIENT_ORIGIN` in Render matches web domain (including protocol)
 - Check browser console for exact error
 - Verify API has CORS middleware enabled
+
+### Push blocked by secret scanning
+
+- Remove the secret from the committed file and local commit history first
+- Re-store API secrets in Render and web-facing env vars in Vercel
+- Re-push only after the secret is no longer present in the branch history
 
 ## Secrets Management
 
@@ -270,9 +294,9 @@ pg_dump "$DATABASE_URL" > backup-$(date +%Y%m%d).sql
 
 ### Render Logs
 
-- **Build logs**: Render → Services → realdrive-api → Logs (Build)
-- **Runtime logs**: Render → Services → realdrive-api → Logs (Runtime)
-- **Metrics**: Render → Services → realdrive-api → Metrics (CPU, memory, disk)
+- **Build logs**: Render → Services → live API service → Logs (Build)
+- **Runtime logs**: Render → Services → live API service → Logs (Runtime)
+- **Metrics**: Render → Services → live API service → Metrics (CPU, memory, disk)
 
 ### Vercel Logs
 
@@ -286,10 +310,10 @@ Check these endpoints for health:
 
 ```bash
 # API health
-curl https://realdrive-api.onrender.com/health
+curl https://realdrive.onrender.com/health
 
 # Database connectivity
-curl https://realdrive-api.onrender.com/admin/setup  # Should not 500
+curl https://realdrive.onrender.com/admin/setup  # Should not 500
 ```
 
 ## Scheduled Tasks

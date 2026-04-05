@@ -7,6 +7,11 @@ RealDrive is a web-first ride dispatch MVP with separate rider, driver, and admi
 
 Project docs live in [`docs/README.md`](./docs/README.md).
 
+Current hosted defaults:
+
+- Web: `https://realdrive-web.vercel.app`
+- API: `https://realdrive.onrender.com`
+
 ## Stack
 
 - `apps/web`: React, Vite, React Router, TanStack Query, Tailwind
@@ -32,6 +37,8 @@ Project docs live in [`docs/README.md`](./docs/README.md).
 - Public referral redirect page: `/share/:referralCode`
 - Public rider community join page: `/community/join/:token`
 - Authenticated community board: `/community`
+- Authenticated feature request page: `/request-feature`
+- Authenticated bug report page: `/report-bug`
 - Private driver app: `/driver`
 - Private admin app: `/admin`
 
@@ -43,6 +50,8 @@ For the default multi-driver setup, use these in `apps/api/.env`:
 If you want to temporarily lock the system down to one driver for a pilot, switch `LAUNCH_MODE` to `solo_driver` and set either `OWNER_DRIVER_PHONE` or `OWNER_DRIVER_USER_ID`.
 
 If `MAPBOX_TOKEN` and `VITE_MAPBOX_TOKEN` are configured, the rider quote flow and maps use live Mapbox routing/rendering. If `TWILIO_*` is left empty, rider OTP stays in development mode and the public rider flow still works without SMS.
+
+Do not commit production secrets or provider tokens. Keep production values in Render and Vercel environment settings.
 
 ## First Admin Setup
 
@@ -84,3 +93,5 @@ Drivers now sign up normally at `/driver/signup`, stay `pending` until approved,
 6. Verify delivery entries in the notification delivery log.
 
 For full setup, troubleshooting, and ride-lifecycle test tutorials, use [docs/12-push-notifications-playbook.md](./docs/12-push-notifications-playbook.md).
+
+For contributor, GitHub workflow, and GitHub Copilot repo guidance, use [docs/17-contributor-and-copilot-guide.md](./docs/17-contributor-and-copilot-guide.md).

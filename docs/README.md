@@ -41,3 +41,5 @@ This folder is the project handbook for RealDrive.
   Track owners, sprints, readiness, and issue links for all 26 roadmap features.
 - [15 Public Roadmap Feature Spec](./15-public-roadmap-feature-spec.md)
   Feature #26 specification: public-facing roadmap page with upvoting, requirements, API design, and rollout plan.
+- [17 Contributor And Copilot Guide](./17-contributor-and-copilot-guide.md)
+  Clear repo instructions for contributors, GitHub workflows, secrets handling, deployment truth, and GitHub Copilot usage.

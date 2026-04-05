@@ -106,6 +106,12 @@ Run TypeScript checks:
 pnpm lint
 ```
 
+Build only the web app:
+
+```bash
+pnpm --filter @realdrive/web build
+```
+
 ## CI Pipeline
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
@@ -132,6 +138,12 @@ If you need to reseed:
 3. Run `pnpm db:seed`
 
 ## Quick API Smoke Checks
+
+## Local health check
+
+```bash
+curl http://localhost:4000/health
+```
 
 ## Quote Endpoint
 
@@ -178,6 +190,13 @@ After a fresh reset:
 - Riders stay read-only until they reach `51` completed rides
 - Admin moderation for proposals/comments also lives through the same community endpoints and admin UI actions
 
+## Product Feedback Runbook
+
+- Signed-in users submit feature ideas from `/request-feature`
+- Signed-in users submit bug reports from `/report-bug`
+- Bug reports do not require an error code; the form captures summary, actual behavior, expected behavior, and reproduction steps
+- Backend issue intake routes through `POST /issues/report`
+
 ## Rider OTP In Development
 
 If Twilio is not configured:
@@ -193,6 +212,8 @@ Check:
 
 - API is running on `4000`
 - `apps/web/.env` has `VITE_API_URL=http://localhost:4000`
+
+For production checks, confirm the web app uses `https://realdrive.onrender.com`, not `https://realdrive-api.onrender.com`
 
 ## Prisma migrate works but seed fails
 
@@ -218,6 +239,14 @@ Expected if:
 Local behavior:
 
 - Use the development OTP returned by the API
+
+## Vercel redeploy picks the wrong project
+
+Check:
+
+- The intended web project is `realdrive-web`
+- The intended production alias is `https://realdrive-web.vercel.app`
+- Local `.vercel/` folders are temporary and should not be committed
 
 ## Push Notifications Runbook
 

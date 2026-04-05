@@ -89,6 +89,11 @@ Use these files:
 - `apps/api/.env`
 - `apps/web/.env`
 
+For hosted environments, use platform dashboards instead of tracked files:
+
+- Render dashboard for API values
+- Vercel project env vars for web values
+
 Templates are provided here:
 
 - `apps/api/.env.example`
@@ -117,6 +122,7 @@ Defined in `apps/api/.env`.
   Canonical public web URL used for tracking links and referral/share links when you are not relying on request origin.
 - `MAPBOX_TOKEN`
   Enables real geocoding and directions in the API.
+  Keep this in Render env vars for production instead of committing it.
 - `TWILIO_ACCOUNT_SID`
   Enables real rider OTP delivery.
 - `TWILIO_AUTH_TOKEN`
@@ -147,6 +153,11 @@ Defined in `apps/web/.env`.
 - `VITE_MAPBOX_TOKEN`
   Enables actual map rendering in the frontend.
 
+Production note:
+
+- The current live API host is `https://realdrive.onrender.com`
+- `VITE_MAPBOX_TOKEN` is browser-visible by design, but it should still be stored in Vercel env vars instead of tracked files
+
 ## Current Routing Defaults
 
 The current public URLs are:
@@ -170,6 +181,10 @@ The main private URLs are:
   Admin dashboard.
 - `/admin/share`
   Stable business QR code page.
+- `/request-feature`
+  Shared signed-in feature intake page.
+- `/report-bug`
+  Shared signed-in bug intake page.
 
 ## Service Setup Checklist
 
@@ -227,6 +242,7 @@ Required setup:
 1. Create a Mapbox account
 2. Add the token to `apps/api/.env` as `MAPBOX_TOKEN`
 3. Add the token to `apps/web/.env` as `VITE_MAPBOX_TOKEN`
+4. For production, add `MAPBOX_TOKEN` in Render and `VITE_MAPBOX_TOKEN` in Vercel
 
 Without Mapbox:
 
@@ -237,6 +253,7 @@ With Mapbox configured:
 
 - Rider quote requests use live geocoding and directions
 - Public tracking and driver ride views render real maps
+- Tablet ad kiosk trip maps also render live route data when available
 - This is the preferred setup for tomorrow’s pilot
 
 ## Web Push (VAPID)

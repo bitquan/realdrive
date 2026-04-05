@@ -65,6 +65,8 @@ Also set these if you want real Mapbox behavior:
 - `MAPBOX_TOKEN` in `apps/api/.env`
 - `VITE_MAPBOX_TOKEN` in `apps/web/.env`
 
+For production, do not place provider tokens in tracked files. Put API secrets in Render env vars and web-facing values like `VITE_MAPBOX_TOKEN` in Vercel env vars.
+
 ## Daily Startup
 
 If the project has already been set up:
@@ -108,6 +110,7 @@ Once the app is running:
 5. Open `/driver/signup` and create a driver account
 6. Log in as admin and approve that driver from `/admin/drivers`
 7. Log in at `/driver/login` and confirm the ride offer appears there
+8. Open `/request-feature` and `/report-bug` after login to confirm the shared feedback flows render correctly
 
 ## Common Local Issues
 
@@ -144,3 +147,15 @@ Fix:
 - Add `MAPBOX_TOKEN` to `apps/api/.env`
 
 Without Mapbox, route estimates still work through fallback logic.
+
+## Production token was blocked by GitHub
+
+Symptom:
+
+- A push is rejected because a token or secret was committed
+
+Fix:
+
+- Remove the secret from the tracked file and from the pending commit history
+- Re-store the value in Render or Vercel instead of git
+- Retry the push only after `git status` is clean and the secret is gone
