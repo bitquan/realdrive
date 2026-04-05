@@ -901,7 +901,10 @@ export function DriverDashboardPage() {
                       Applied credits: <span className="font-semibold text-ops-text">{formatMoney(adProgram?.summary.appliedTotal ?? 0)}</span>
                     </p>
                     <p className="mt-2">
-                      Launch screen: <span className="font-semibold text-ops-text">/ads/display/{shareQuery.data.referralCode}</span>
+                      Public preview: <span className="font-semibold text-ops-text">/ads/display/{shareQuery.data.referralCode}</span>
+                    </p>
+                    <p className="mt-2">
+                      Tablet mode login: <span className="font-semibold text-ops-text">/tablet/ads/login</span>
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-3">
@@ -909,10 +912,16 @@ export function DriverDashboardPage() {
                       {adProgram?.enrollment.optedIn ? "Disable ad program" : "Enable ad program"}
                     </Button>
                     <Link
+                      to="/tablet/ads"
+                      className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-ops-panel px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-surface"
+                    >
+                      Open tablet mode
+                    </Link>
+                    <Link
                       to={`/ads/display/${shareQuery.data.referralCode}`}
                       className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-ops-panel px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-surface"
                     >
-                      Open fullscreen display
+                      Open public preview
                     </Link>
                   </div>
                   {adProgramMutation.error ? <p className="text-sm text-ops-error">{adProgramMutation.error.message}</p> : null}

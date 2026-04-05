@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  LayoutPanelTop,
   MapPin,
+  Megaphone,
   Route,
   Shield,
   Sparkles,
@@ -63,6 +65,7 @@ function Stat({
 export function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const advertiseUrl = typeof window === "undefined" ? "/advertise" : new URL("/advertise", window.location.origin).toString();
   const [searchParams] = useSearchParams();
   const referredByCode = searchParams.get("ref") ?? undefined;
   const [bookingForm, setBookingForm] = useState({
@@ -231,6 +234,20 @@ export function HomePage() {
             Start booking
           </a>
           <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:gap-2">
+            <Link
+              to="/tablet/ads/login"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+            >
+              <LayoutPanelTop className="mr-2 h-4 w-4" />
+              Tablet ad login
+            </Link>
+            <Link
+              to="/advertise"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+            >
+              <Megaphone className="mr-2 h-4 w-4" />
+              Post an ad
+            </Link>
             <Link
               to="/driver/signup"
               className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
@@ -616,23 +633,39 @@ export function HomePage() {
           <Card>
             <CardHeader>
               <CardTitle>Driver and admin access</CardTitle>
-              <CardDescription>Use these for operations while the rider funnel stays public and booking-first.</CardDescription>
+              <CardDescription>Use these for operations while the rider funnel stays public, booking-first, and separate from the in-car tablet display.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-ops-muted">
               <p>Driver signup is live and requires admin approval before ride offers are unlocked.</p>
-              <p>Admin controls dispatch approvals, pricing, dues, and payout instructions.</p>
+              <p>Admin controls dispatch approvals, pricing, dues, payout instructions, and ad review.</p>
               <p>Rider referrals are tracked through booking and lead capture links.</p>
+              <p>Anyone can submit an ad request, including riders who want to promote a business or offer.</p>
               <p className="pt-2">
                 <Link to="/driver/login" className="font-semibold text-ops-primary hover:underline">
                   Approved driver login
                 </Link>
                 {" · "}
+                <Link to="/tablet/ads/login" className="font-semibold text-ops-primary hover:underline">
+                  Tablet ad login
+                </Link>
+                {" · "}
                 <Link to="/admin/login" className="font-semibold text-ops-primary hover:underline">
                   Admin login
+                </Link>
+                {" · "}
+                <Link to="/advertise" className="font-semibold text-ops-primary hover:underline">
+                  Post an ad
                 </Link>
               </p>
             </CardContent>
           </Card>
+
+          <ShareQrCard
+            title="Advertise on this screen"
+            description="Scan this QR code to open the ad form. Riders, drivers, and local businesses can all submit a screen ad request."
+            shareUrl={advertiseUrl}
+            fileName="realdrive-advertise-here"
+          />
 
           <Card>
             <CardHeader>

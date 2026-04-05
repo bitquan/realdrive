@@ -92,6 +92,14 @@ const riderItems: ShellNavItem[] = [
 
 const sharedItems: ShellNavItem[] = [
   {
+    id: "advertise",
+    label: "Advertise",
+    shortLabel: "Advertise",
+    to: "/advertise",
+    icon: Megaphone,
+    matchPatterns: ["/advertise"]
+  },
+  {
     id: "community",
     label: "Community",
     to: "/community",

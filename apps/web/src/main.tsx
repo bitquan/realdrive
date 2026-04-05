@@ -12,6 +12,8 @@ const HomePage = lazy(() => import("@/pages/home-page").then((module) => ({ defa
 const AdvertisePage = lazy(() => import("@/pages/advertise-page").then((module) => ({ default: module.AdvertisePage })));
 const AdsDisplayPage = lazy(() => import("@/pages/ads-display-page").then((module) => ({ default: module.AdsDisplayPage })));
 const AdsVisitPage = lazy(() => import("@/pages/ads-visit-page").then((module) => ({ default: module.AdsVisitPage })));
+const TabletAdLoginPage = lazy(() => import("@/pages/tablet-ad-login-page").then((module) => ({ default: module.TabletAdLoginPage })));
+const TabletAdKioskPage = lazy(() => import("@/pages/tablet-ad-kiosk-page").then((module) => ({ default: module.TabletAdKioskPage })));
 const PublicTrackPage = lazy(() => import("@/pages/public-track-page").then((module) => ({ default: module.PublicTrackPage })));
 const RideHistoryPage = lazy(() => import("@/pages/ride-history-page").then((module) => ({ default: module.RideHistoryPage })));
 const RideDetailsPage = lazy(() => import("@/pages/ride-details-page").then((module) => ({ default: module.RideDetailsPage })));
@@ -104,16 +106,53 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RequireDriverTablet({ children }: { children: React.ReactNode }) {
+  const { user, loading, switchRole } = useAuth();
+
+  useEffect(() => {
+    if (user && userHasRole(user, "driver") && user.role !== "driver") {
+      switchRole("driver");
+    }
+  }, [switchRole, user]);
+
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center bg-[#04070d] text-sm text-white/70">Loading display…</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/tablet/ads/login" replace />;
+  }
+
+  if (userHasRole(user, "driver") && user.approvalStatus !== "approved") {
+    return <Navigate to="/driver/signup" replace />;
+  }
+
+  if (!userHasRole(user, "driver")) {
+    return <Navigate to={roleHome(user.role)} replace />;
+  }
+
+  return <>{children}</>;
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <AppProviders>
       <Router>
         <Routes>
+          <Route path="/tablet/ads/login" element={<PageLoader><TabletAdLoginPage /></PageLoader>} />
+          <Route path="/ads/display/:referralCode" element={<PageLoader><AdsDisplayPage /></PageLoader>} />
+          <Route path="/ads/visit/:redirectToken" element={<PageLoader><AdsVisitPage /></PageLoader>} />
+          <Route
+            path="/tablet/ads"
+            element={
+              <RequireDriverTablet>
+                <PageLoader><TabletAdKioskPage /></PageLoader>
+              </RequireDriverTablet>
+            }
+          />
           <Route element={<AppShell />}>
             <Route path="/" element={<PageLoader><HomePage /></PageLoader>} />
             <Route path="/advertise" element={<PageLoader><AdvertisePage /></PageLoader>} />
-            <Route path="/ads/display/:referralCode" element={<PageLoader><AdsDisplayPage /></PageLoader>} />
-            <Route path="/ads/visit/:redirectToken" element={<PageLoader><AdsVisitPage /></PageLoader>} />
             <Route path="/track/:token" element={<PageLoader><PublicTrackPage /></PageLoader>} />
             <Route path="/drive-with-us" element={<PageLoader><DriverInterestPage /></PageLoader>} />
             <Route path="/driver/signup" element={<PageLoader><DriverInterestPage /></PageLoader>} />
