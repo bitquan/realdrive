@@ -44,8 +44,8 @@ function isDriverPaymentCompatible(driver: { acceptedPaymentMethods?: PaymentMet
   return acceptedPaymentMethods.includes(method);
 }
 
-function getDriverAcceptedPaymentMethods(driver: { acceptedPaymentMethods?: PaymentMethod[] }) {
-  return driver.acceptedPaymentMethods?.length ? driver.acceptedPaymentMethods : ["jim", "cashapp", "cash"];
+function getDriverAcceptedPaymentMethods(driver: { acceptedPaymentMethods?: PaymentMethod[] }): PaymentMethod[] {
+  return driver.acceptedPaymentMethods?.length ? driver.acceptedPaymentMethods : (["jim", "cashapp", "cash"] as const);
 }
 
 export function canTransitionRide(current: RideStatus, next: RideStatus): boolean {

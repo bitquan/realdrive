@@ -3,7 +3,6 @@ import type {
   AddressSuggestion,
   AdminInvite,
   AdminSetupStatusResponse,
-  AdminTransferDriverCollectorInput,
   AdminUpdatePlatformDueBatchInput,
   AdminReviewDriverDocumentInput,
   CommunityComment,

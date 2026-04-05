@@ -45,7 +45,17 @@ const driverAccount: DriverAccount = {
     nationwideEnabled: false
   },
   customRates: [],
-  vehicle: null
+  vehicle: null,
+  documents: [],
+  documentReview: {
+    requiredTypes: [],
+    submittedTypes: [],
+    approvedTypes: [],
+    missingTypes: [],
+    rejectedTypes: [],
+    pendingCount: 0,
+    readyForApproval: false
+  }
 };
 
 function makeRide(overrides: Partial<Ride> = {}): Ride {
@@ -238,14 +248,59 @@ function createStore(stubs: Partial<Store>): Store {
     updatePlatformDue: notImplemented,
     getPlatformPayoutSettings: async () => null,
     updatePlatformPayoutSettings: notImplemented,
-    markOverduePlatformDues: async () => [],
-    driverHasOverdueDues: async () => false,
-    recordLocation: async () => makeRide({ status: "en_route", driverId: driver.id, driver }),
+    getCollectorPayoutSettings: async () => null,
+    updateCollectorPayoutSettings: notImplemented,
+    listDriverDueBatches: async () => [],
+    listAllDueBatches: async () => [],
+    getDriverDueSnapshot: async () => ({
+      driver: { id: "", name: "", email: null, phone: null, available: false },
+      collector: null,
+      collectibleUnbatchedTotal: 0,
+      collectibleUnbatchedCount: 0,
+      openBatchCount: 0,
+      openBatchTotal: 0,
+      overdueBatchCount: 0,
+      overdueBatchTotal: 0,
+      lastCompletedRideAt: null
+    }),
+    listDriverDueSnapshots: async () => [],
+    createDueBatchForDriver: notImplemented,
+    updateDueBatch: notImplemented,
+    reconcileDueBatch: notImplemented,
+    assignDriverCollector: async () => driverAccount,
+    createAdminInvite: notImplemented,
+    listAdminInvites: async () => [],
+    listAdminTeamUsers: async () => [],
+    revokeAdminInvite: notImplemented,
+    acceptAdminInvite: notImplemented,
+    recordIdleLocation: async () => driver,
     createRiderLead: notImplemented,
+    reviewDriverDocument: notImplemented,
+    getDriverDocumentFile: async () => ({
+      absolutePath: "",
+      fileName: "",
+      mimeType: ""
+    }),
+    getNotificationPreference: async () => ({
+      pushEnabled: true,
+      smsCriticalOnly: false
+    }),
+    updateNotificationPreference: notImplemented,
+    upsertPushSubscription: async () => undefined,
+    removePushSubscription: async () => undefined,
+    listPushSubscriptions: async () => [],
+    listNotificationDeliveryLogs: async () => [],
+    logNotificationDelivery: async () => undefined,
+    createIssueReport: notImplemented,
+    updateIssueReportGitHubSync: notImplemented,
+    driverHasOverdueDues: async () => false,
+    markOverduePlatformDues: async () => [],
+    recordLocation: async () => makeRide({ status: "en_route", driverId: driver.id, driver }),
     listRiderLeads: async () => [],
     createDriverInterest: notImplemented,
     listDriverInterests: async () => [],
     listAdminRides: async () => [],
+    listAdminUsers: async () => [],
     listDrivers: async () => [driverAccount],
     listDriverApplications: async () => [driverAccount],
     updateDriver: async () => driverAccount,
@@ -288,7 +343,8 @@ describe("ride service", () => {
         ]
       }),
       maps: {
-        estimateRoute: vi.fn()
+        estimateRoute: vi.fn(),
+        autocompleteAddress: vi.fn()
       },
       events: {
         rideOffered,
@@ -333,7 +389,8 @@ describe("ride service", () => {
           distanceMiles: 7,
           durationMinutes: 18,
           provider: "fallback"
-        })
+        }),
+        autocompleteAddress: vi.fn()
       },
       events: {
         rideOffered: vi.fn(),
@@ -366,7 +423,8 @@ describe("ride service", () => {
         }
       }),
       maps: {
-        estimateRoute: vi.fn()
+        estimateRoute: vi.fn(),
+        autocompleteAddress: vi.fn()
       },
       events: {
         rideOffered: vi.fn(),

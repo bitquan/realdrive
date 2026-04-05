@@ -1,23 +1,17 @@
 import {
-  DriverOnboardingDocumentType as DbDriverOnboardingDocumentType,
-  type IssueReport as DbIssueReport,
   PlatformDueBatchStatus as DbPlatformDueBatchStatus,
   Prisma,
-  Role as DbRole
+  Role as DbRole,
+  type IssueReport as DbIssueReport
 } from "@prisma/client";
 import type {
-  AcceptAdminInviteInput,
-  AdminReviewDriverDocumentInput,
-  AdminUpdatePlatformDueBatchInput,
   CollectorAdminSummary,
-  CreateAdminInviteInput,
   IssueReport,
   IssueReportStatus,
   NotificationDeliveryLog,
   NotificationPreference,
   UpdateNotificationPreferenceInput,
   UpsertPushSubscriptionInput,
-  DriverDueSnapshot,
   DriverDocumentType,
   DriverDocumentUpload,
   CommunityEligibility,
@@ -1174,7 +1168,7 @@ export const store: Store = {
                       }
                     },
                     create: {
-                      collectorAdminId: user.id,
+                      collectorAdminId: admins[0].id,
                       approved: true,
                       approvalStatus: "APPROVED",
                       available: false,
@@ -2570,8 +2564,8 @@ export const store: Store = {
         inviter: toCollectorSummary(existing.inviter)!,
         acceptedBy: toCollectorSummary(existing.acceptedBy),
         expiresAt: existing.expiresAt.toISOString(),
-        acceptedAt: existing.acceptedAt?.toISOString() ?? null,
-        revokedAt: existing.revokedAt?.toISOString() ?? null,
+        acceptedAt: null,
+        revokedAt: existing.revokedAt.toISOString(),
         createdAt: existing.createdAt.toISOString(),
         updatedAt: existing.updatedAt.toISOString()
       };
@@ -3264,7 +3258,7 @@ export const store: Store = {
         status: input.status,
         errorCode: input.errorCode ?? null,
         errorText: input.errorText ?? null,
-        metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null
+        metadata: input.metadata ? (input.metadata as Prisma.InputJsonValue) : undefined
       }
     });
   },
@@ -3291,7 +3285,7 @@ export const store: Store = {
         details: input.details ?? null,
         page: input.page ?? null,
         rideId: input.rideId ?? null,
-        metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null
+        metadata: input.metadata ? (input.metadata as Prisma.InputJsonValue) : undefined
       }
     });
 

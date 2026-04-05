@@ -848,7 +848,15 @@ type PlatformDueBatchRecord = Prisma.PlatformDueBatchGetPayload<{
         driverProfile: true;
       };
     };
-    collectorAdmin: true;
+    collectorAdmin: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        phone: true;
+        referralCode: true;
+      };
+    };
     dues: {
       include: {
         driver: {
