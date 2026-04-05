@@ -13,6 +13,7 @@ import {
   PanelSection,
   SurfaceHeader
 } from "@/components/layout/ops-layout";
+import { AddressAutocompleteInput } from "@/components/ui/address-autocomplete-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -680,12 +681,22 @@ export function AdminDispatchPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="test-pickup-address">Pickup address</Label>
-                  <Input id="test-pickup-address" value={testRideForm.pickupAddress} onChange={(event) => setTestRideForm((current) => ({ ...current, pickupAddress: event.target.value }))} placeholder="123 Main St, Atlanta, GA" />
+                  <AddressAutocompleteInput
+                    id="test-pickup-address"
+                    value={testRideForm.pickupAddress}
+                    onValueChange={(value) => setTestRideForm((current) => ({ ...current, pickupAddress: value }))}
+                    placeholder="123 Main St, Atlanta, GA"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="test-dropoff-address">Dropoff address</Label>
-                  <Input id="test-dropoff-address" value={testRideForm.dropoffAddress} onChange={(event) => setTestRideForm((current) => ({ ...current, dropoffAddress: event.target.value }))} placeholder="456 Peachtree Rd, Atlanta, GA" />
+                  <AddressAutocompleteInput
+                    id="test-dropoff-address"
+                    value={testRideForm.dropoffAddress}
+                    onValueChange={(value) => setTestRideForm((current) => ({ ...current, dropoffAddress: value }))}
+                    placeholder="456 Peachtree Rd, Atlanta, GA"
+                  />
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
