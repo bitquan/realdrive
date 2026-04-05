@@ -98,6 +98,16 @@
         color: rgba(228, 233, 244, 0.88);
       }
 
+      .boot-status[data-state="warning"] {
+        border-color: rgba(245, 158, 11, 0.28);
+        background: rgba(39, 27, 12, 0.82);
+      }
+
+      .boot-status[data-state="error"] {
+        border-color: rgba(248, 113, 113, 0.28);
+        background: rgba(41, 19, 22, 0.82);
+      }
+
       .boot-pulse {
         width: 10px;
         height: 10px;
@@ -105,6 +115,56 @@
         background: #7192ff;
         box-shadow: 0 0 0 0 rgba(113, 146, 255, 0.5);
         animation: boot-pulse 1.6s infinite;
+      }
+
+      .boot-status[data-state="warning"] .boot-pulse {
+        background: #f59e0b;
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+      }
+
+      .boot-status[data-state="error"] .boot-pulse {
+        background: #f87171;
+        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.45);
+      }
+
+      .boot-actions {
+        display: none;
+        margin-top: 18px;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .boot-actions[data-visible="true"] {
+        display: flex;
+      }
+
+      .boot-button {
+        height: 42px;
+        border: 1px solid rgba(154, 163, 178, 0.18);
+        border-radius: 999px;
+        background: rgba(12, 15, 21, 0.82);
+        color: #f2f5fb;
+        padding: 0 16px;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .boot-button--primary {
+        border-color: rgba(113, 146, 255, 0.35);
+        background: rgba(113, 146, 255, 0.14);
+      }
+
+      .boot-help {
+        display: none;
+        margin-top: 14px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: rgba(201, 208, 224, 0.7);
+      }
+
+      .boot-help[data-visible="true"] {
+        display: block;
       }
 
       @keyframes boot-pulse {
@@ -129,13 +189,76 @@
           <div class="boot-eyebrow">RealDrive</div>
           <h1 class="boot-title">Loading control center</h1>
           <p class="boot-copy">Preparing the rider, driver, and admin workspace for this device.</p>
-          <div class="boot-status">
+          <div class="boot-status" id="boot-status" data-state="loading">
             <span class="boot-pulse"></span>
-            Starting app…
+            <span id="boot-status-text">Starting app…</span>
           </div>
+          <div class="boot-actions" id="boot-actions" data-visible="false">
+            <button class="boot-button boot-button--primary" type="button" id="boot-reload">Reload app</button>
+            <button class="boot-button" type="button" id="boot-home">Open home</button>
+          </div>
+          <p class="boot-help" id="boot-help" data-visible="false">
+            If this keeps happening, try reloading once or reopening the page without content blockers enabled.
+          </p>
         </div>
       </div>
     </div>
+    <script>
+      (function () {
+        var status = document.getElementById('boot-status');
+        var statusText = document.getElementById('boot-status-text');
+        var actions = document.getElementById('boot-actions');
+        var help = document.getElementById('boot-help');
+        var reloadButton = document.getElementById('boot-reload');
+        var homeButton = document.getElementById('boot-home');
+        var booted = false;
+
+        function showRecovery(state, message) {
+          if (!status || !statusText || !actions || !help) {
+            return;
+          }
+
+          status.setAttribute('data-state', state);
+          statusText.textContent = message;
+          actions.setAttribute('data-visible', 'true');
+          help.setAttribute('data-visible', 'true');
+        }
+
+        window.__REALDRIVE_MARK_BOOTED__ = function () {
+          booted = true;
+        };
+
+        window.addEventListener('error', function () {
+          if (!booted) {
+            showRecovery('error', 'App startup failed on this device.');
+          }
+        });
+
+        window.addEventListener('unhandledrejection', function () {
+          if (!booted) {
+            showRecovery('error', 'App startup failed on this device.');
+          }
+        });
+
+        window.setTimeout(function () {
+          if (!booted) {
+            showRecovery('warning', 'Still loading. Try reloading.');
+          }
+        }, 8000);
+
+        if (reloadButton) {
+          reloadButton.addEventListener('click', function () {
+            window.location.reload();
+          });
+        }
+
+        if (homeButton) {
+          homeButton.addEventListener('click', function () {
+            window.location.href = '/';
+          });
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

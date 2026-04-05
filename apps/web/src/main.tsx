@@ -51,6 +51,12 @@ const RoadmapPage = lazy(() => import("@/pages/roadmap-page").then((module) => (
 const SmsConsentPage = lazy(() => import("@/pages/sms-consent-page").then((module) => ({ default: module.SmsConsentPage })));
 const SmsHelpPage = lazy(() => import("@/pages/sms-help-page").then((module) => ({ default: module.SmsHelpPage })));
 
+declare global {
+  interface Window {
+    __REALDRIVE_MARK_BOOTED__?: () => void;
+  }
+}
+
 type ErrorBoundaryProps = {
   children: React.ReactNode;
 };
@@ -410,3 +416,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </AppErrorBoundary>
   </React.StrictMode>
 );
+
+window.__REALDRIVE_MARK_BOOTED__?.();
