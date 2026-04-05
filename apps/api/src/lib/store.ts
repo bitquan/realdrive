@@ -1767,14 +1767,18 @@ export const store: Store = {
         const profile = driver.driverProfile;
         const lat = profile.currentLat;
         const lng = profile.currentLng;
+        const lastLocationAt = profile.lastLocationAt;
         const localDistance =
           profile.localDispatchEnabled && lat != null && lng != null
             ? calculateDistanceMiles(pickup, { lat, lng })
             : null;
+        const hasFreshLocation =
+          lastLocationAt != null && Date.now() - lastLocationAt.getTime() <= 30 * 60 * 1000;
         const localMatch =
           profile.localDispatchEnabled &&
           localDistance != null &&
-          localDistance <= profile.localRadiusMiles;
+          localDistance <= profile.localRadiusMiles &&
+          hasFreshLocation;
         const serviceAreaMatch =
           profile.serviceAreaDispatchEnabled &&
           normalizedPickupState != null &&
@@ -1785,19 +1789,29 @@ export const store: Store = {
           return null;
         }
 
+        const matchScore = localMatch ? 30 : serviceAreaMatch ? 20 : nationwideMatch ? 10 : 0;
+        const distanceScore = localDistance != null ? Math.max(0, 15 - localDistance) : 0;
+        const ratingScore = Math.max(0, Math.min(10, profile.rating * 2));
+        const freshnessScore = hasFreshLocation ? 6 : 0;
+        const dispatchScore = Number((matchScore + distanceScore + ratingScore + freshnessScore).toFixed(2));
+
         return {
           ...mapDriverAccount(driver),
           lat,
           lng,
           rating: profile.rating,
-          distance: localDistance
+          distance: localDistance,
+          dispatchScore
         };
       })
       .filter(
-        (driver): driver is DriverCandidate & { distance: number | null } =>
+        (driver): driver is DriverCandidate & { distance: number | null; dispatchScore: number } =>
           Boolean(driver)
       )
       .sort((left, right) => {
+        if (left.dispatchScore !== right.dispatchScore) {
+          return right.dispatchScore - left.dispatchScore;
+        }
         if (left.distance != null && right.distance != null) {
           return left.distance - right.distance;
         }
@@ -1809,7 +1823,102 @@ export const store: Store = {
         }
         return left.name.localeCompare(right.name);
       })
-      .map(({ distance: _distance, ...driver }) => driver);
+      .map(({ distance: _distance, dispatchScore: _dispatchScore, ...driver }) => driver);
+  },
+
+  async listMarketConfigs() {
+    const grouped = await prisma.pricingRule.groupBy({
+      by: ["marketKey"],
+      _count: {
+        rideType: true
+      },
+      orderBy: {
+        marketKey: "asc"
+      }
+    });
+
+    return grouped.map((row) => ({
+      marketKey: row.marketKey,
+      rideTypeCount: row._count.rideType
+    }));
+  },
+
+  async createMarketConfig(input) {
+    const marketKey = normalizeMarketKey(input.marketKey);
+    const sourceMarketKey = normalizeMarketKey(input.copyFromMarketKey);
+
+    const existingCount = await prisma.pricingRule.count({
+      where: { marketKey }
+    });
+
+    if (existingCount === 0) {
+      const sourceRules = await prisma.pricingRule.findMany({
+        where: { marketKey: sourceMarketKey },
+        orderBy: { rideType: "asc" }
+      });
+
+      const seedRules = sourceRules.length
+        ? sourceRules.map((rule) => ({
+            marketKey,
+            rideType: rule.rideType,
+            baseFare: rule.baseFare,
+            perMile: rule.perMile,
+            perMinute: rule.perMinute,
+            multiplier: rule.multiplier
+          }))
+        : DEFAULT_PLATFORM_RULES.map((rule) => ({
+            marketKey,
+            rideType: toDbRideType(rule.rideType),
+            baseFare: rule.baseFare,
+            perMile: rule.perMile,
+            perMinute: rule.perMinute,
+            multiplier: rule.multiplier
+          }));
+
+      await prisma.pricingRule.createMany({
+        data: seedRules
+      });
+    }
+
+    const rideTypeCount = await prisma.pricingRule.count({
+      where: { marketKey }
+    });
+
+    return {
+      marketKey,
+      rideTypeCount
+    };
+  },
+
+  async listAdminAuditLogs(options) {
+    const rows = await prisma.auditLog.findMany({
+      where: {
+        ...(options?.action ? { action: { contains: options.action, mode: "insensitive" } } : {}),
+        ...(options?.entityType ? { entityType: { equals: options.entityType, mode: "insensitive" } } : {})
+      },
+      include: {
+        actor: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      take: Math.min(500, Math.max(1, options?.limit ?? 100))
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      actorId: row.actorId,
+      actorName: row.actor?.name ?? null,
+      action: row.action,
+      entityType: row.entityType,
+      entityId: row.entityId,
+      metadata: row.metadata as Record<string, unknown> | null,
+      createdAt: row.createdAt.toISOString()
+    }));
   },
 
   async createRideOffers(rideId, driverIds, expiresAt) {

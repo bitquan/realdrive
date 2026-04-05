@@ -30,6 +30,7 @@ import {
   createCommunityProposalSchema,
   createAdminInviteSchema,
   createIssueReportSchema,
+  createMarketConfigSchema,
   createDriverRoleSchema,
   driverDispatchSettingsUpdateSchema,
   driverIdleLocationSchema,
@@ -2039,6 +2040,32 @@ export function buildApp() {
     return store.listPlatformPricingRules();
   });
 
+  app.get("/admin/markets", { preHandler: requireRole("admin") }, async () => {
+    const markets = await store.listMarketConfigs();
+    return { markets };
+  });
+
+  app.post("/admin/markets", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = createMarketConfigSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    try {
+      const market = await store.createMarketConfig(parsed.data);
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "market.config.created",
+        entityType: "market",
+        entityId: market.marketKey,
+        metadata: parsed.data
+      });
+      return reply.status(201).send(market);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
   app.put("/admin/platform-rates", { preHandler: requireRole("admin") }, async (request, reply) => {
     const parsed = updatePlatformRatesSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -2140,6 +2167,22 @@ export function buildApp() {
       autoRateState.lastError = message;
       return reply.badRequest(message);
     }
+  });
+
+  app.get("/admin/audit-logs", { preHandler: requireRole("admin") }, async (request) => {
+    const query = request.query as {
+      limit?: string;
+      action?: string;
+      entityType?: string;
+    };
+
+    const logs = await store.listAdminAuditLogs({
+      limit: query.limit ? Number(query.limit) : undefined,
+      action: query.action?.trim() || undefined,
+      entityType: query.entityType?.trim() || undefined
+    });
+
+    return { logs };
   });
 
   app.get("/admin/pricing", { preHandler: requireRole("admin") }, async () => {

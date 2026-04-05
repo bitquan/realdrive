@@ -649,10 +649,17 @@ export const platformRateBenchmarksResponseSchema = z.object({
 
 export const platformRateAutoStatusSchema = z.object({
   enabled: z.boolean(),
+  runnerMode: z.enum(["api", "worker"]).optional(),
   intervalMinutes: z.number().int().positive(),
   undercutAmount: z.number().nonnegative(),
   uberFeedConfigured: z.boolean(),
   lyftFeedConfigured: z.boolean(),
+  benchmarkCounts: z
+    .object({
+      uber: z.number().int().nonnegative(),
+      lyft: z.number().int().nonnegative()
+    })
+    .optional(),
   lastRunAt: z.string().nullable(),
   lastAppliedRuleCount: z.number().int().nonnegative(),
   lastError: z.string().nullable()
@@ -666,6 +673,35 @@ export const platformRateAutoApplyResponseSchema = z.object({
   }),
   runAt: z.string(),
   undercutAmount: z.number().nonnegative()
+});
+
+export const marketConfigSchema = z.object({
+  marketKey: z.string().min(2),
+  rideTypeCount: z.number().int().nonnegative()
+});
+
+export const marketConfigsResponseSchema = z.object({
+  markets: z.array(marketConfigSchema)
+});
+
+export const createMarketConfigSchema = z.object({
+  marketKey: z.string().min(2).max(12),
+  copyFromMarketKey: z.string().min(2).max(12).optional()
+});
+
+export const adminAuditLogSchema = z.object({
+  id: z.string(),
+  actorId: z.string().nullable(),
+  actorName: z.string().nullable(),
+  action: z.string(),
+  entityType: z.string(),
+  entityId: z.string(),
+  metadata: z.record(z.unknown()).nullable(),
+  createdAt: z.string()
+});
+
+export const adminAuditLogsResponseSchema = z.object({
+  logs: z.array(adminAuditLogSchema)
 });
 
 export const updatePricingRulesSchema = updatePlatformRatesSchema;
@@ -1077,6 +1113,11 @@ export type UpdatePlatformRateBenchmarksInput = z.infer<typeof updatePlatformRat
 export type PlatformRateBenchmarksResponse = z.infer<typeof platformRateBenchmarksResponseSchema>;
 export type PlatformRateAutoStatus = z.infer<typeof platformRateAutoStatusSchema>;
 export type PlatformRateAutoApplyResponse = z.infer<typeof platformRateAutoApplyResponseSchema>;
+export type MarketConfig = z.infer<typeof marketConfigSchema>;
+export type MarketConfigsResponse = z.infer<typeof marketConfigsResponseSchema>;
+export type CreateMarketConfigInput = z.infer<typeof createMarketConfigSchema>;
+export type AdminAuditLog = z.infer<typeof adminAuditLogSchema>;
+export type AdminAuditLogsResponse = z.infer<typeof adminAuditLogsResponseSchema>;
 export type CreateDriverRoleInput = z.infer<typeof createDriverRoleSchema>;
 export type AdminUpdatePlatformDueInput = z.infer<typeof adminUpdatePlatformDueSchema>;
 export type AdminUpdatePlatformDueBatchInput = z.infer<typeof adminUpdatePlatformDueBatchSchema>;

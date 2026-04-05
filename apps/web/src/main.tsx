@@ -26,6 +26,7 @@ const AdminPricingPage = lazy(() => import("@/pages/admin-pricing-page").then((m
 const AdminSharePage = lazy(() => import("@/pages/admin-share-page").then((module) => ({ default: module.AdminSharePage })));
 const AdminDuesPage = lazy(() => import("@/pages/admin-dues-page").then((module) => ({ default: module.AdminDuesPage })));
 const AdminDataPage = lazy(() => import("@/pages/admin-data-page").then((module) => ({ default: module.AdminDataPage })));
+const AdminAuditPage = lazy(() => import("@/pages/admin-audit-page").then((module) => ({ default: module.AdminAuditPage })));
 const AdminHelpPage = lazy(() => import("@/pages/admin-help-page").then((module) => ({ default: module.AdminHelpPage })));
 const AdminInviteAcceptPage = lazy(() => import("@/pages/admin-invite-accept-page").then((module) => ({ default: module.AdminInviteAcceptPage })));
 const CommunityJoinPage = lazy(() => import("@/pages/community-join-page").then((module) => ({ default: module.CommunityJoinPage })));
@@ -246,6 +247,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDataPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/audit"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminAuditPage /></PageLoader>
                 </RequireRole>
               }
             />

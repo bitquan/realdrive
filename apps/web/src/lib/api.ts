@@ -6,6 +6,7 @@ import type {
   AdminTeamResponse,
   AdminDuesResponse,
   AdminActivityResponse,
+  AdminAuditLogsResponse,
   AdminLeadsResponse,
   AdminLogin,
   AdminReconcilePlatformDueBatchInput,
@@ -28,6 +29,7 @@ import type {
   CommunityProposal,
   CommunityVoteInput,
   CreateIssueReportInput,
+  CreateMarketConfigInput,
   CreateCommunityCommentInput,
   CreateCommunityProposalInput,
   CreateDriverRoleInput,
@@ -55,6 +57,7 @@ import type {
   PlatformRateAutoApplyResponse,
   PlatformRateAutoStatus,
   PlatformRateBenchmarksResponse,
+  MarketConfigsResponse,
   PlatformPayoutSettings,
   PricingRule,
   PublicRideRequest,
@@ -509,6 +512,15 @@ export const api = {
   listPlatformRates(token: string) {
     return apiFetch<PricingRule[]>("/admin/platform-rates", undefined, token);
   },
+  listMarketConfigs(token: string) {
+    return apiFetch<MarketConfigsResponse>("/admin/markets", undefined, token);
+  },
+  createMarketConfig(input: CreateMarketConfigInput, token: string) {
+    return apiFetch<{ marketKey: string; rideTypeCount: number }>("/admin/markets", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
   updatePlatformRates(input: UpdatePlatformRatesInput, token: string) {
     return apiFetch<PricingRule[]>("/admin/platform-rates", {
       method: "PUT",
@@ -532,6 +544,20 @@ export const api = {
       method: "POST",
       body: JSON.stringify({})
     }, token);
+  },
+  listAdminAuditLogs(token: string, query?: { limit?: number; action?: string; entityType?: string }) {
+    const params = new URLSearchParams();
+    if (query?.limit) {
+      params.set("limit", String(query.limit));
+    }
+    if (query?.action) {
+      params.set("action", query.action);
+    }
+    if (query?.entityType) {
+      params.set("entityType", query.entityType);
+    }
+    const suffix = params.size ? `?${params.toString()}` : "";
+    return apiFetch<AdminAuditLogsResponse>(`/admin/audit-logs${suffix}`, undefined, token);
   },
   listCommunityProposals(token: string) {
     return apiFetch<CommunityBoardResponse>("/community/proposals", undefined, token);

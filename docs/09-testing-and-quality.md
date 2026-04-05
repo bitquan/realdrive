@@ -30,7 +30,8 @@ Current coverage includes:
 Current status:
 
 - Frontend test runner is configured
-- No frontend tests have been added yet
+- Baseline React Testing Library + jsdom setup is in place
+- Current web test file: `apps/web/src/components/ui/button.test.tsx`
 
 ## Manual QA Checklist
 
@@ -110,12 +111,12 @@ Detailed walkthrough:
 - Integration tests for Fastify route handlers
 - Database-backed tests for Prisma store behavior
 - WebSocket event tests
-- Frontend component and route tests
+- Frontend component and route tests (expand from baseline)
 - Full end-to-end browser tests with Playwright
 
 ## Quality Risks To Watch
 
-- Frontend has no automated coverage yet
+- Frontend coverage is still very light (one baseline component test)
 - Scheduled dispatch currently runs inside the API process
 - Fallback routing can hide map provider issues if not monitored
 - The web build still produces a large Mapbox-related chunk, so code-splitting may be worth doing later

@@ -414,6 +414,18 @@ Purpose:
 
 - Get platform market rate cards
 
+### `GET /admin/markets`
+
+Purpose:
+
+- List configured market keys and pricing-rule counts
+
+### `POST /admin/markets`
+
+Purpose:
+
+- Create a new market config and seed market pricing rules from `DEFAULT` (or provided source market)
+
 ### `PUT /admin/platform-rates`
 
 Purpose:
@@ -457,6 +469,12 @@ Purpose:
 - Create Stripe hosted checkout session links for dues/ride-related payment collection
 - Store audit logs for payment-link creation activity
 - Requires driver or admin auth
+
+### `GET /admin/audit-logs`
+
+Purpose:
+
+- Return searchable audit log rows (supports `limit`, `action`, and `entityType` query filters)
 
 ## Community
 

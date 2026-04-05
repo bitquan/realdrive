@@ -163,6 +163,12 @@ function createStore(stubs: Partial<Store>): Store {
     replacePlatformPricingRules: notImplemented,
     listPlatformRateBenchmarks: async () => [],
     upsertPlatformRateBenchmarks: async () => [],
+    listMarketConfigs: async () => [],
+    createMarketConfig: async (input) => ({
+      marketKey: input.marketKey,
+      rideTypeCount: 3
+    }),
+    listAdminAuditLogs: async () => [],
     createRide: async () => makeRide(),
     getRideById: async () => makeRide(),
     getRideByPublicTrackingToken: async () => makeRide(),

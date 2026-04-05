@@ -67,6 +67,11 @@ export function AdminPricingPage() {
     queryFn: () => api.listPlatformRateBenchmarks(token!),
     enabled: Boolean(token)
   });
+  const marketConfigsQuery = useQuery({
+    queryKey: ["admin-market-configs"],
+    queryFn: () => api.listMarketConfigs(token!),
+    enabled: Boolean(token)
+  });
   const autoStatusQuery = useQuery({
     queryKey: ["admin-platform-rates-auto-status"],
     queryFn: () => api.getPlatformRateAutoStatus(token!),
@@ -184,6 +189,21 @@ export function AdminPricingPage() {
     }
   });
 
+  const createMarketMutation = useMutation({
+    mutationFn: (marketKey: string) =>
+      api.createMarketConfig(
+        {
+          marketKey,
+          copyFromMarketKey: "DEFAULT"
+        },
+        token!
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-market-configs"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-platform-rates"] });
+    }
+  });
+
   const marketCount = Object.keys(markets).length;
   const defaultRuleCount = useMemo(() => Object.values(markets.DEFAULT ?? {}).length, [markets]);
 
@@ -212,22 +232,25 @@ export function AdminPricingPage() {
                   ? `Enabled every ${autoStatusQuery.data.intervalMinutes} min` 
                   : "Disabled (manual trigger only)"}
               </p>
+              <p className="mt-1 text-xs text-ops-muted">
+                Runner: {autoStatusQuery.data?.runnerMode ?? "api"} · Snapshots: {autoStatusQuery.data?.benchmarkCounts?.uber ?? 0} Uber / {autoStatusQuery.data?.benchmarkCounts?.lyft ?? 0} Lyft
+              </p>
             </div>
             <Button
               variant="outline"
               onClick={() => autoApplyMutation.mutate()}
               disabled={autoApplyMutation.isPending || !autoStatusQuery.data?.uberFeedConfigured || !autoStatusQuery.data?.lyftFeedConfigured}
             >
-              {autoApplyMutation.isPending ? "Applying..." : "Auto-apply now from live feeds"}
+              {autoApplyMutation.isPending ? "Applying..." : "Auto-apply now from snapshots"}
             </Button>
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div className="rounded-xl border border-ops-border-soft/90 bg-ops-panel/40 p-3 text-sm text-ops-muted">
-              Uber feed: {autoStatusQuery.data?.uberFeedConfigured ? "configured" : "missing"}
+              Uber snapshots: {autoStatusQuery.data?.uberFeedConfigured ? "ready" : "missing"}
             </div>
             <div className="rounded-xl border border-ops-border-soft/90 bg-ops-panel/40 p-3 text-sm text-ops-muted">
-              Lyft feed: {autoStatusQuery.data?.lyftFeedConfigured ? "configured" : "missing"}
+              Lyft snapshots: {autoStatusQuery.data?.lyftFeedConfigured ? "ready" : "missing"}
             </div>
             <div className="rounded-xl border border-ops-border-soft/90 bg-ops-panel/40 p-3 text-sm text-ops-muted">
               Undercut amount: ${autoStatusQuery.data?.undercutAmount?.toFixed(2) ?? "0.05"}
@@ -374,16 +397,21 @@ export function AdminPricingPage() {
               if (!newMarketKey || markets[newMarketKey]) {
                 return;
               }
-              setMarkets((current) => ({
-                ...current,
-                [newMarketKey]: emptyRateForm()
-              }));
-              setNewMarketKey("");
+              createMarketMutation.mutate(newMarketKey, {
+                onSuccess: () => {
+                  setNewMarketKey("");
+                }
+              });
             }}
+            disabled={createMarketMutation.isPending}
           >
-            Add market
+            {createMarketMutation.isPending ? "Adding..." : "Add market"}
           </Button>
         </div>
+
+        <p className="mb-6 text-xs text-ops-muted">
+          Configured markets: {(marketConfigsQuery.data?.markets ?? []).map((market) => market.marketKey).join(", ") || "DEFAULT"}
+        </p>
 
         <div className="space-y-5">
           {Object.entries(markets).map(([marketKey, rateForm]) => (
@@ -483,6 +511,7 @@ export function AdminPricingPage() {
         </div>
 
         {updateMutation.error ? <p className="mt-5 text-sm text-ops-error">{updateMutation.error.message}</p> : null}
+        {createMarketMutation.error ? <p className="mt-3 text-sm text-ops-error">{createMarketMutation.error.message}</p> : null}
         <div className="mt-6">
           <Button onClick={() => updateMutation.mutate()}>Save platform rates</Button>
         </div>

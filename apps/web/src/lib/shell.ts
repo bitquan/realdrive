@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   CarFront,
+  ClipboardList,
   CreditCard,
   LayoutDashboard,
   Lightbulb,
@@ -206,6 +207,14 @@ const adminItems: ShellNavItem[] = [
     to: "/admin/data",
     icon: BarChart3,
     matchPatterns: ["/admin/data"],
+    roles: ["admin"]
+  },
+  {
+    id: "admin-audit",
+    label: "Audit",
+    to: "/admin/audit",
+    icon: ClipboardList,
+    matchPatterns: ["/admin/audit"],
     roles: ["admin"]
   },
   {

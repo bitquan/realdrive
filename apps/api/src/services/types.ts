@@ -6,6 +6,8 @@ import type {
   AdminSetupStatusResponse,
   AdminUpdatePlatformDueBatchInput,
   AdminReviewDriverDocumentInput,
+  AdminAuditLog,
+  CreateMarketConfigInput,
   CommunityComment,
   CommunityEligibility,
   CommunityProposal,
@@ -35,6 +37,7 @@ import type {
   PlatformDue,
   PlatformDueBatch,
   PlatformRateBenchmarkRule,
+  MarketConfig,
   PlatformDueStatus,
   PlatformPayoutSettings,
   PricingRule,
@@ -139,6 +142,9 @@ export interface Store {
   replacePlatformPricingRules(rules: Omit<PricingRule, "id" | "updatedAt">[]): Promise<PricingRule[]>;
   listPlatformRateBenchmarks(): Promise<PlatformRateBenchmarkRule[]>;
   upsertPlatformRateBenchmarks(rules: Array<Omit<PlatformRateBenchmarkRule, "observedAt">>): Promise<PlatformRateBenchmarkRule[]>;
+  listMarketConfigs(): Promise<MarketConfig[]>;
+  createMarketConfig(input: CreateMarketConfigInput): Promise<MarketConfig>;
+  listAdminAuditLogs(options?: { limit?: number; action?: string; entityType?: string }): Promise<AdminAuditLog[]>;
   createRide(input: CreateRideRecordInput): Promise<Ride>;
   getRideById(rideId: string): Promise<Ride | null>;
   getRideByPublicTrackingToken(token: string): Promise<Ride | null>;
