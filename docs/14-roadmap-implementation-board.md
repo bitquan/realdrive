@@ -1,6 +1,6 @@
-# Roadmap Implementation Board (25 Features)
+# Roadmap Implementation Board (26 Features)
 
-This board tracks execution of the 25-feature roadmap baseline.
+This board tracks execution of the 26-feature roadmap baseline.
 
 Source of truth for planned features:
 
@@ -47,6 +47,7 @@ Use issue template for each item:
 | [ ] | 23 | Native iOS/Android apps | Deferred | TBD | TBD | deferred | TBD |
 | [ ] | 24 | Fully automated payments integration | Deferred | TBD | TBD | deferred | TBD |
 | [ ] | 25 | Multi-language localization framework | Deferred | TBD | TBD | deferred | TBD |
+| [ ] | 26 | Public roadmap page in app | B (Next) | TBD | TBD | spec | TBD |
 
 ## How To Use This Board
 

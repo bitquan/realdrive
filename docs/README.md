@@ -36,6 +36,8 @@ This folder is the project handbook for RealDrive.
 - [12 Push Notifications Playbook](./12-push-notifications-playbook.md)
   End-to-end how-to for setup, testing tutorials, troubleshooting, and operator checks.
 - [13 Roadmap Baseline (25 Features)](./13-roadmap-baseline-25-features.md)
-  Planning baseline for 25 upcoming features, phased roadmap, UI upgrades, and deferred gaps.
+  Planning baseline for 25+ upcoming features, phased roadmap, UI upgrades, and deferred gaps.
 - [14 Roadmap Implementation Board](./14-roadmap-implementation-board.md)
-  Track owners, sprints, readiness, and issue links for all 25 roadmap features.
+  Track owners, sprints, readiness, and issue links for all 26 roadmap features.
+- [15 Public Roadmap Feature Spec](./15-public-roadmap-feature-spec.md)
+  Feature #26 specification: public-facing roadmap page with upvoting, requirements, API design, and rollout plan.

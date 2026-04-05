@@ -51,6 +51,7 @@ Status key:
 | 23 | Native iOS/Android apps | Platform | Better mobile UX and retention | Deferred | Deferred |
 | 24 | Fully automated payments integration | Finance | Real-time collection and settlement | Deferred | Deferred |
 | 25 | Multi-language localization framework | Platform / UX | Broader audience support | Deferred | Deferred |
+| 26 | Public roadmap page in app | Product / Growth | Build community trust, manage expectations, gather feature demand | Next | B |
 
 ## UI Design Upgrade Backlog
 
