@@ -1,65 +1,99 @@
 # Known Gaps And Next Steps
 
+## Recently Completed (April 2026)
+
+✅ **Admin Data Dashboard** - Real-time visitor analytics and activity tracking
+✅ **Pricing Benchmarks** - Database storage for Uber/Lyft rate snapshots
+✅ **Auto-Apply Scheduler** - Automatic or manual rate undercut application
+✅ **SEO Baseline** - Meta tags, robots.txt, sitemap.xml for search visibility
+✅ **Deployment Documentation** - Comprehensive Render/Vercel setup guide
+
+See:
+- [Admin Pricing & Benchmarks Documentation](./16-admin-pricing-benchmarks.md)
+- [Live Deployment Infrastructure](./11-live-deployment.md)
+- [BENCHMARKS.md](../BENCHMARKS.md) reference guide
+
 ## Current Gaps
 
-## Not Production-Ready Yet
+### Not Production-Ready Yet
 
 - Payments are tracked only as manual/off-platform records
-- Secrets are still local-development oriented
-- Some domain errors should be mapped to cleaner `4xx` responses
-- There is no CI/CD pipeline yet
-- There is no deployment configuration yet
-- There is no background worker separation yet
-- There are no frontend tests yet
+- Secrets are loaded from environment (use secret managers in heavily-regulated contexts)
+- Some domain errors could map to cleaner `4xx` responses
+- There is no CI/CD pipeline (only GitHub → Render auto-deploy)
+- There is no background worker separation (scheduler runs in main API process)
+- There are no frontend tests (API has unit test coverage)
+- No file upload support (for driver documents, ID verification, etc.)
 
-## Current Product Limitations
+### Current Product Limitations
 
-- Single-region assumptions
+- Single-region assumptions (markets are pre-defined in database, not auto-detected)
 - English-only UI
 - No native mobile apps
-- Push notifications depend on browser/device subscription and platform support (for example iOS web constraints)
-- No file uploads or driver document review workflow
-- No admin audit UI even though audit records are stored
+- Push notifications depend on browser/device subscription and platform support (iOS web constraints)
+- No driver document review workflow (no upload, storage, or verification flow)
+- No admin audit UI (audit records ARE stored but not viewable)
 - No advanced dispatch heuristics beyond local radius, service-area state match, and nationwide fan-out
+- Benchmark snapshots are manual entry only (no API scraping; requires human input to Admin Pricing)
 
-## Known Technical Footguns
+### Known Technical Footguns
 
-- Local env vars must exist in `apps/api/.env` and `apps/web/.env`
+- Local env vars must exist in `apps/api/.env` and `apps/web/.env` before running
 - If Mapbox is missing, routing still works but uses fallback estimates
-- If Twilio is missing, rider OTP still works but only through returned development codes
+- If Twilio is missing, rider OTP still works but only returns development codes
 - Scheduled ride release depends on the API process staying alive
+- Auto-apply scheduler depends on saved benchmarks (no external feed URLs)
+- Admin Data Dashboard heartbeat tracking requires page navigation (not ideal for SPA)
 
 ## Suggested Next Engineering Steps
 
-## Backend
+### Backend
 
-- Add domain-specific error classes and proper `4xx` mappings
-- Add health and readiness endpoints
-- Add integration tests for protected routes
-- Move scheduled release logic into a dedicated worker or job runner
-- Add refresh token or explicit token invalidation if needed
+- **Error Handling**: Add domain-specific error classes and proper `4xx` response mappings
+- **Health Checks**: Add `/health` and `/readiness` endpoints for load balancers
+- **Integration Tests**: Add Vitest/Playwright coverage for protected routes and pricing logic
+- **Background Jobs**: Move scheduler to standalone worker (Bull, Temporal, or similar)
+- **Audit Logging**: Expose audit UI for admin actions (already logged to database)
+- **Token Management**: Add refresh token strategy and invalidation for security tokens
 
-## Frontend
+### Frontend
 
-- Add Playwright end-to-end coverage
-- Add React testing for critical forms and auth flows
-- Improve admin ride detail tooling
-- Add better optimistic updates and toast feedback
-- Expose more driver operational actions in the UI
+- **E2E Tests**: Add Playwright tests for critical user flows (signup, ride booking, admin setup)
+- **Component Tests**: Add React Testing Library for complex forms and state management
+- **Admin Tools**: Improve ride detail tooling and driver management workflows
+- **UX Improvements**: Better optimistic updates, toast confirmations, error feedback
+- **Analytics**: Add heat maps, user journey tracking, A/B testing capabilities
+- **Performance**: Code-split large chunks (Mapbox bundle is 492 KB gzip)
 
-## Product
+### Product
 
-- Add payment processor integration if required
-- Add driver onboarding workflow and document collection
-- Add notifications for rider and driver updates
-- Add multi-city configuration
-- Add analytics and reporting dashboards
+- **Payments**: Integrate Stripe or Square for rider/driver settlement
+- **Driver Onboarding**: Complete workflow with document upload, background check, approval flow
+- **Push Notifications**: Expand rider notifications for ride status, driver messages, promotions
+- **Multi-City**: Add ability to configure pricing, markets, and operations per region
+- **Reporting**: Add admin dashboards for revenue, utilization, driver/rider metrics
+- **API Keys**: Support third-party integrations that use RealDrive as a backend-as-a-service
+
+### Devops
+
+- **CI/CD Pipeline**: Add GitHub Actions for linting, testing, and pre-deploy validation
+- **Database Migrations**: Add rollback strategy and automated test migrations
+- **Monitoring**: Add APM (e.g., Datadog, New Relic) for performance tracking
+- **Secrets Rotation**: Implement automatic secret rotation for API keys, JWT secret
+- **Disaster Recovery**: Document and test backup/restore procedures
+- **Cost Optimization**: Monitor and optimize database queries, bundle sizes, and infrastructure
 
 ## Documentation Maintenance Rule
 
-When the project changes, update:
+When you change code, update these docs:
 
 - `docs/README.md` if the doc structure changes
-- Setup docs if env or startup commands change
-- API docs if endpoints or payloads change
-- Database docs if the Prisma schema changes
+- `docs/02-local-setup.md` if env or startup commands change
+- `docs/03-environment-and-services.md` if third-party service needs change
+- `docs/04-architecture.md` if component responsibilities change
+- `docs/06-backend-api.md` if endpoints or payloads change
+- `docs/07-database-and-domain-model.md` if Prisma schema changes
+- `docs/08-operations-and-runbooks.md` if deployment or operational procedures change
+- `docs/11-live-deployment.md` if Render/Vercel config or env vars change
+- `docs/16-admin-pricing-benchmarks.md` if pricing logic or admin UI changes
+- `BENCHMARKS.md` when competitor rates change (reference guide for admins)
