@@ -23,6 +23,22 @@ const nextStatusOrder = {
   in_progress: "completed"
 } as const;
 
+function formatDriverStage(status: string) {
+  if (status === "en_route") {
+    return "Arriving";
+  }
+
+  if (status === "arrived") {
+    return "At pickup";
+  }
+
+  if (status === "in_progress") {
+    return "In trip";
+  }
+
+  return status.replaceAll("_", " ");
+}
+
 export function DriverRidePage() {
   const { rideId = "" } = useParams();
   const { token } = useAuth();
@@ -107,17 +123,37 @@ export function DriverRidePage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <div className="rounded-[1.55rem] border border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(12,16,23,0.96),rgba(8,11,16,0.94))] px-4 py-4 shadow-soft">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Active trip</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <p className="text-lg font-semibold text-ops-text">{ride.rider.name}</p>
+              <Badge>{formatDriverStage(ride.status)}</Badge>
+            </div>
+            <p className="mt-2 text-sm text-ops-muted">Keep the route visible and move through the trip with one tap at a time.</p>
+          </div>
+
+          <Link
+            to="/driver"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+          >
+            Back to driver home
+          </Link>
+        </div>
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-[1.16fr_0.84fr]">
         <DeferredLiveMap
           ride={ride}
-          title="Driver route"
+          title="Live trip map"
           height={460}
-          meta="Pickup, dropoff, and driver position update from the live workflow screen."
+          meta="Route progress stays visible while status changes and location updates continue in the background."
         />
 
         <MapPanel
-          title="Trip workflow"
-          meta="Advance the ride through the real driver lifecycle and keep location updates flowing."
+          title="Trip cockpit"
+          meta="Advance the ride through the live driver lifecycle and keep route context in view."
           footer={
             <div className="grid gap-3 md:grid-cols-3">
               <DataField label="Customer total" value={formatMoney(customerTotal)} />
@@ -130,9 +166,9 @@ export function DriverRidePage() {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Driver trip</p>
               <h2 className="mt-2 text-[2rem] font-extrabold tracking-[-0.04em] text-ops-text">{ride.rider.name}</h2>
-              <p className="mt-2 text-sm text-ops-muted">{ride.status.replaceAll("_", " ")}</p>
+              <p className="mt-2 text-sm text-ops-muted">{formatDriverStage(ride.status)}</p>
             </div>
-            <Badge>{ride.status.replaceAll("_", " ")}</Badge>
+            <Badge>{formatDriverStage(ride.status)}</Badge>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -183,7 +219,7 @@ export function DriverRidePage() {
           to="/driver"
           className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
         >
-          Back to dashboard
+          Driver home
         </Link>
         {nextStatus ? (
           <Button className="h-11" onClick={() => statusMutation.mutate(nextStatus)}>

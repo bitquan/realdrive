@@ -35,10 +35,11 @@ export function AppShell() {
   const navigate = useNavigate();
   const frame = getShellFrame(location.pathname, user);
   const sections = getShellSections(user);
-  const mobileItems = getMobileNavItems(user);
   const CurrentRoleIcon = user ? roleIcons[user.role] : UserRound;
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
   const [dismissedPrompt, setDismissedPrompt] = useState(false);
+  const isDriverContext = user?.role === "driver" || location.pathname.startsWith("/driver");
+  const mobileItems = getMobileNavItems(user, { driverRidePath: "/driver?tab=ride" });
 
   const canCheckNotificationApi = typeof window !== "undefined" && "Notification" in window;
   const permission = canCheckNotificationApi ? Notification.permission : "default";
@@ -139,6 +140,35 @@ export function AppShell() {
     void navigate(roleDestination(role));
   }
 
+  const shellTitle = isDriverContext ? "Driver Dispatch" : "Control Center";
+  const shellIntro = isDriverContext ? "Private dispatch" : "RealDrive";
+  const notificationPrompt = shouldShowNotificationPrompt ? (
+    <div className={cn("rounded-2xl border border-ops-primary/35 bg-ops-panel/70 shadow-soft", isDriverContext ? "p-3" : "p-4")}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-ops-text">Enable ride notifications</p>
+          <p className="mt-1 text-xs text-ops-muted">
+            {permission === "denied"
+              ? "Notifications are currently blocked in your browser. Open notification settings to re-enable push alerts."
+              : "Turn on push alerts so you get new jobs, accepts, arrivals, and ride status updates in real time."}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/notifications"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary/15 px-3 text-xs font-semibold text-ops-text transition hover:bg-ops-primary/25"
+          >
+            Open notification settings
+          </Link>
+          <Button variant="ghost" className="h-10 px-3 text-xs" onClick={dismissNotificationPrompt}>
+            Dismiss
+          </Button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ops-bg text-ops-text">
       {frame.mapMode === "ambient" ? <AmbientShellMap /> : null}
@@ -153,8 +183,8 @@ export function AppShell() {
                 <CarFront className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">RealDrive</p>
-                <p className="mt-1 text-xl font-bold tracking-[-0.03em] text-ops-text">Control Center</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">{shellIntro}</p>
+                <p className="mt-1 text-xl font-bold tracking-[-0.03em] text-ops-text">{shellTitle}</p>
               </div>
             </div>
           </Link>
@@ -165,7 +195,7 @@ export function AppShell() {
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">{section.label}</p>
                 <div className="space-y-1.5">
                   {section.items.map((item) => {
-                    const active = isNavItemActive(item, location.pathname);
+                    const active = isNavItemActive(item, location.pathname, location.search);
                     const Icon = item.icon;
 
                     return (
@@ -230,21 +260,21 @@ export function AppShell() {
                     <CarFront className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">RealDrive</p>
-                    <p className="truncate text-sm font-bold tracking-[-0.03em] text-ops-text">Control Center</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{shellIntro}</p>
+                    <p className="truncate text-sm font-bold tracking-[-0.03em] text-ops-text">{shellTitle}</p>
                   </div>
                 </Link>
 
                 <div className="flex shrink-0 items-center gap-2">
-                  {user ? (
+                  {user && !isDriverContext ? (
                     <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
                       {roleLabel(user.role)}
                     </Badge>
-                  ) : (
+                  ) : !user ? (
                     <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
                       Guest
                     </Badge>
-                  )}
+                  ) : null}
 
                   {user ? (
                     <Button variant="ghost" className="h-9 w-9 px-0" onClick={() => void logout()} aria-label="Sign out">
@@ -254,7 +284,7 @@ export function AppShell() {
                 </div>
               </div>
 
-              {user?.roles.length && user.roles.length > 1 ? (
+              {user?.roles.length && user.roles.length > 1 && !isDriverContext ? (
                 <div className="mt-2 flex gap-2 overflow-x-auto pb-0.5 lg:hidden">
                   {user.roles.map((role) => {
                     const Icon = roleIcons[role];
@@ -362,36 +392,13 @@ export function AppShell() {
           <main
             className={cn(
               "flex-1 px-4 pb-28 pt-3 md:px-6 md:pb-10 md:pt-5",
+              isDriverContext && "pt-2 md:pt-3",
               frame.layout === "immersive" && "px-3 pt-3 md:px-5 md:pt-4"
             )}
           >
-            {shouldShowNotificationPrompt ? (
-              <div className="mb-4 rounded-2xl border border-ops-primary/35 bg-ops-panel/70 p-4 shadow-soft">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-ops-text">Enable ride notifications</p>
-                    <p className="mt-1 text-xs text-ops-muted">
-                      {permission === "denied"
-                        ? "Notifications are currently blocked in your browser. Open notification settings to re-enable push alerts."
-                        : "Turn on push alerts so you get new jobs, accepts, arrivals, and ride status updates in real time."}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      to="/notifications"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary/15 px-3 text-xs font-semibold text-ops-text transition hover:bg-ops-primary/25"
-                    >
-                      Open notification settings
-                    </Link>
-                    <Button variant="ghost" className="h-10 px-3 text-xs" onClick={dismissNotificationPrompt}>
-                      Dismiss
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            {!isDriverContext ? <div className="mb-4">{notificationPrompt}</div> : null}
             <Outlet />
+            {isDriverContext ? <div className="mt-4">{notificationPrompt}</div> : null}
           </main>
         </div>
       </div>
@@ -400,7 +407,7 @@ export function AppShell() {
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))] px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-elevated lg:hidden">
           <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
             {mobileItems.map((item) => {
-              const active = isNavItemActive(item, location.pathname);
+              const active = isNavItemActive(item, location.pathname, location.search);
               const Icon = item.icon;
 
               return (

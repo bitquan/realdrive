@@ -41,6 +41,9 @@ export interface ShellNavItem {
   to: string;
   icon: LucideIcon;
   matchPatterns: string[];
+  searchParamKey?: string;
+  searchParamValue?: string;
+  activeWhenSearchMissing?: boolean;
   roles?: Role[];
   requiresAuth?: boolean;
   hidden?: (user: SessionUser | null) => boolean;
@@ -139,8 +142,8 @@ const sharedItems: ShellNavItem[] = [
 const driverItems: ShellNavItem[] = [
   {
     id: "driver-dashboard",
-    label: "Dashboard",
-    shortLabel: "Driver",
+    label: "Home",
+    shortLabel: "Home",
     to: "/driver",
     icon: Route,
     matchPatterns: ["/driver", "/driver/rides/:rideId"],
@@ -443,19 +446,21 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     patterns: ["/driver"],
     frame: {
       eyebrow: "Driver",
-      title: "Driver dashboard",
-      description: "Manage availability, pricing, dispatch settings, active rides, dues, and community access.",
-      mapMode: "ambient"
+      title: "Driver home",
+      description: "Sign on fast, keep the map visible, and move from offer to active trip without the admin-dashboard feel.",
+      mapMode: "ambient",
+      mobileHeaderMode: "minimal"
     }
   },
   {
     patterns: ["/driver/rides/:rideId"],
     frame: {
       eyebrow: "Driver",
-      title: "Active ride",
-      description: "Advance the live trip workflow, keep location updates moving, and watch payout details.",
+      title: "Active trip",
+      description: "Stay in the live trip flow with route context, rider details, and one-tap status changes.",
       layout: "immersive",
       mapMode: "immersive",
+      mobileHeaderMode: "minimal",
       actions: [{ label: "Dashboard", to: "/driver", icon: Route, variant: "secondary" }]
     }
   },
@@ -636,7 +641,7 @@ export function getShellSections(user: SessionUser | null): ShellSection[] {
   return sections;
 }
 
-export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
+export function getMobileNavItems(user: SessionUser | null, options?: { driverRidePath?: string }): ShellNavItem[] {
   const driverItem = getDriverNavItem(user);
   const notificationsItem = sharedItems.find((item) => item.id === "notifications");
 
@@ -653,7 +658,60 @@ export function getMobileNavItems(user: SessionUser | null): ShellNavItem[] {
   }
 
   if (user?.role === "driver") {
-    return [driverItem, riderItems[0], notificationsItem, riderItems[1]]
+    const driverHomeItem: ShellNavItem = {
+      id: "driver-home-mobile",
+      label: "Home",
+      shortLabel: "Home",
+      to: "/driver?tab=home",
+      icon: LayoutDashboard,
+      matchPatterns: ["/driver"],
+      searchParamKey: "tab",
+      searchParamValue: "home",
+      activeWhenSearchMissing: true,
+      roles: ["driver"]
+    };
+
+    const driverRideItem: ShellNavItem = {
+      id: "driver-ride-mobile",
+      label: "Ride",
+      shortLabel: "Ride",
+      to: options?.driverRidePath ?? "/driver?tab=ride",
+      icon: Route,
+      matchPatterns: options?.driverRidePath?.startsWith("/driver/rides/") ? ["/driver/rides/:rideId"] : ["/driver"],
+      ...(options?.driverRidePath?.startsWith("/driver/rides/")
+        ? {}
+        : {
+            searchParamKey: "tab",
+            searchParamValue: "ride"
+          }),
+      roles: ["driver"]
+    };
+
+    const driverInboxItem: ShellNavItem = {
+      id: "driver-inbox-mobile",
+      label: "Inbox",
+      shortLabel: "Inbox",
+      to: "/driver?tab=inbox",
+      icon: ClipboardList,
+      matchPatterns: ["/driver"],
+      searchParamKey: "tab",
+      searchParamValue: "inbox",
+      roles: ["driver"]
+    };
+
+    const driverAccountItem: ShellNavItem = {
+      id: "driver-account-mobile",
+      label: "Account",
+      shortLabel: "Account",
+      to: "/driver?tab=account",
+      icon: UserRound,
+      matchPatterns: ["/driver"],
+      searchParamKey: "tab",
+      searchParamValue: "account",
+      roles: ["driver"]
+    };
+
+    return [driverHomeItem, driverRideItem, driverInboxItem, notificationsItem, driverAccountItem]
       .filter((item): item is ShellNavItem => item !== null)
       .filter((item) => canRenderItem(item, user));
   }
@@ -680,8 +738,26 @@ export function getShellFrame(pathname: string, user: SessionUser | null): Shell
   };
 }
 
-export function isNavItemActive(item: ShellNavItem, pathname: string) {
-  return item.matchPatterns.some((pattern) => matchPath({ path: pattern, end: pattern === item.to }, pathname));
+export function isNavItemActive(item: ShellNavItem, pathname: string, search = "") {
+  const destinationPath = item.to.split(/[?#]/)[0];
+  const pathMatches = item.matchPatterns.some((pattern) => matchPath({ path: pattern, end: pattern === destinationPath }, pathname));
+
+  if (!pathMatches) {
+    return false;
+  }
+
+  if (!item.searchParamKey) {
+    return true;
+  }
+
+  const params = new URLSearchParams(search);
+  const value = params.get(item.searchParamKey);
+
+  if (!value) {
+    return Boolean(item.activeWhenSearchMissing);
+  }
+
+  return value === item.searchParamValue;
 }
 
 function canRenderItem(item: ShellNavItem, user: SessionUser | null) {
