@@ -51,6 +51,51 @@ const RoadmapPage = lazy(() => import("@/pages/roadmap-page").then((module) => (
 const SmsConsentPage = lazy(() => import("@/pages/sms-consent-page").then((module) => ({ default: module.SmsConsentPage })));
 const SmsHelpPage = lazy(() => import("@/pages/sms-help-page").then((module) => ({ default: module.SmsHelpPage })));
 
+type ErrorBoundaryProps = {
+  children: React.ReactNode;
+};
+
+type ErrorBoundaryState = {
+  hasError: boolean;
+};
+
+class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("RealDrive failed to render", error);
+  }
+
+  render() {
+    if (!this.state.hasError) {
+      return this.props.children;
+    }
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#05070b] px-4 py-8 text-ops-text">
+        <div className="w-full max-w-md rounded-[2rem] border border-ops-border bg-[linear-gradient(180deg,rgba(17,21,29,0.98),rgba(11,14,20,0.98))] p-6 shadow-panel">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">RealDrive</p>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">This device hit a loading issue.</h1>
+          <p className="mt-3 text-sm leading-6 text-ops-muted">
+            Try reloading once. If the problem continues, reopen the page from Safari and make sure low-power or content-blocking rules are not stopping scripts.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl border border-ops-primary/40 bg-ops-primary/15 px-4 text-sm font-semibold text-ops-text transition hover:bg-ops-primary/25"
+          >
+            Reload app
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
 function PageLoader({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<div className="rounded-4xl border border-ops-border-soft bg-ops-surface p-8 text-sm text-ops-muted">Loading...</div>}>
@@ -137,9 +182,10 @@ function RequireDriverTablet({ children }: { children: React.ReactNode }) {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AppProviders>
-      <Router>
-        <Routes>
+    <AppErrorBoundary>
+      <AppProviders>
+        <Router>
+          <Routes>
           <Route path="/tablet/ads/login" element={<PageLoader><TabletAdLoginPage /></PageLoader>} />
           <Route path="/ads/display/:referralCode" element={<PageLoader><AdsDisplayPage /></PageLoader>} />
           <Route path="/ads/visit/:redirectToken" element={<PageLoader><AdsVisitPage /></PageLoader>} />
@@ -358,8 +404,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               }
             />
           </Route>
-        </Routes>
-      </Router>
-    </AppProviders>
+          </Routes>
+        </Router>
+      </AppProviders>
+    </AppErrorBoundary>
   </React.StrictMode>
 );
