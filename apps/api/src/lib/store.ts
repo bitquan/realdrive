@@ -3305,5 +3305,51 @@ export const store: Store = {
     });
 
     return mapIssueReport(report);
+  },
+
+  // Roadmap feature voting
+  async createRoadmapFeatureVote(userId: string, featureId: string) {
+    await prisma.roadmapFeatureVote.upsert({
+      where: {
+        featureId_userId: {
+          featureId,
+          userId
+        }
+      },
+      update: {},
+      create: {
+        featureId,
+        userId
+      }
+    });
+  },
+
+  async removeRoadmapFeatureVote(userId: string, featureId: string) {
+    await prisma.roadmapFeatureVote.deleteMany({
+      where: {
+        featureId,
+        userId
+      }
+    });
+  },
+
+  async hasUserVotedForFeature(userId: string, featureId: string): Promise<boolean> {
+    const vote = await prisma.roadmapFeatureVote.findUnique({
+      where: {
+        featureId_userId: {
+          featureId,
+          userId
+        }
+      }
+    });
+    return !!vote;
+  },
+
+  async getFeatureVoteCount(featureId: string): Promise<number> {
+    return prisma.roadmapFeatureVote.count({
+      where: {
+        featureId
+      }
+    });
   }
 };

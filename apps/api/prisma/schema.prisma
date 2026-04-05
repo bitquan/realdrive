@@ -156,6 +156,8 @@ model User {
   pushSubscriptions     PushSubscription[]
   notificationPreference NotificationPreference?
   notificationLogs      NotificationDeliveryLog[]
+  roadmapFeatureVotes   RoadmapFeatureVote[]
+  featureRequests       FeatureRequest[]
 }
 
 model RiderProfile {
@@ -547,3 +549,33 @@ model AuditLog {
   createdAt  DateTime @default(now())
   actor      User?    @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
 }
+
+model RoadmapFeatureVote {
+  id        String   @id @default(cuid())
+  featureId String
+  userId    String
+  votedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([featureId, userId])
+  @@index([featureId])
+  @@index([userId])
+}
+
+model FeatureRequest {
+  id          String   @id @default(cuid())
+  requesterId String
+  title       String
+  description String?
+  category    String?
+  status      String   @default("submitted")
+  voteCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  requester   User     @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@index([requesterId])
+  @@index([status])
+  @@index([voteCount])
+}
+

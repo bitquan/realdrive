@@ -76,6 +76,30 @@ export interface StoredAuth {
   user: SessionUser;
 }
 
+export interface RoadmapFeature {
+  id: string;
+  title: string;
+  description: string;
+  category: "rider" | "driver" | "admin" | "shared" | "product";
+  area: string;
+  phase: "now" | "next" | "later" | "deferred";
+  impact: "high" | "medium" | "low";
+  order: number;
+  voteCount: number;
+  userVoted: boolean;
+}
+
+export interface RoadmapResponse {
+  features: RoadmapFeature[];
+  totalVotes: number;
+}
+
+export interface RoadmapVoteResponse {
+  featureId: string;
+  voteCount: number;
+  userVoted: boolean;
+}
+
 export function loadStoredAuth(): StoredAuth | null {
   const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
@@ -515,6 +539,15 @@ export const api = {
     return apiFetch<IssueReportResponse>("/issues/report", {
       method: "POST",
       body: JSON.stringify(input)
+    }, token);
+  },
+  getRoadmap(token: string) {
+    return apiFetch<RoadmapResponse>("/roadmap", undefined, token);
+  },
+  voteRoadmapFeature(featureId: string, vote: boolean, token: string) {
+    return apiFetch<RoadmapVoteResponse>(`/me/roadmap/vote/${featureId}`, {
+      method: "POST",
+      body: JSON.stringify({ vote })
     }, token);
   }
 };

@@ -34,6 +34,7 @@ const RequestFeaturePage = lazy(() => import("@/pages/request-feature-page").the
 const NotificationPreferencesPage = lazy(() =>
   import("@/pages/notification-preferences-page").then((module) => ({ default: module.NotificationPreferencesPage }))
 );
+const RoadmapPage = lazy(() => import("@/pages/roadmap-page").then((module) => ({ default: module.RoadmapPage })));
 const SmsConsentPage = lazy(() => import("@/pages/sms-consent-page").then((module) => ({ default: module.SmsConsentPage })));
 const SmsHelpPage = lazy(() => import("@/pages/sms-help-page").then((module) => ({ default: module.SmsHelpPage })));
 
@@ -128,6 +129,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireAuth>
                   <PageLoader><NotificationPreferencesPage /></PageLoader>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/roadmap"
+              element={
+                <RequireAuth>
+                  <PageLoader><RoadmapPage /></PageLoader>
                 </RequireAuth>
               }
             />

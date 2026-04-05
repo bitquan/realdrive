@@ -1145,6 +1145,61 @@ export function buildApp() {
     };
   });
 
+  // Roadmap endpoints
+  app.get("/roadmap", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
+    const { getRoadmapFeatures } = await import("./data/roadmap-features.js");
+    const features = getRoadmapFeatures(true); // publicOnly=true, hides deferred
+    
+    const votes = await Promise.all(
+      features.map(async (feature) => ({
+        featureId: feature.id,
+        count: await store.getFeatureVoteCount(feature.id),
+        userVoted: await store.hasUserVotedForFeature(request.userContext.id, feature.id)
+      }))
+    );
+    
+    const voteMap = new Map(votes.map(v => [v.featureId, v]));
+    
+    const featuresWithVotes = features.map(f => ({
+      ...f,
+      voteCount: voteMap.get(f.id)?.count ?? 0,
+      userVoted: voteMap.get(f.id)?.userVoted ?? false
+    }));
+
+    return {
+      features: featuresWithVotes,
+      totalVotes: votes.reduce((sum, v) => sum + v.count, 0)
+    };
+  });
+
+  app.post(
+    "/me/roadmap/vote/:featureId",
+    { preHandler: requireRole("rider", "driver", "admin") },
+    async (request, reply) => {
+      const { featureId } = request.params as { featureId: string };
+      const { vote } = request.body as { vote: boolean };
+
+      if (typeof vote !== "boolean") {
+        return reply.badRequest("vote must be true or false");
+      }
+
+      if (vote) {
+        await store.createRoadmapFeatureVote(request.userContext.id, featureId);
+      } else {
+        await store.removeRoadmapFeatureVote(request.userContext.id, featureId);
+      }
+
+      const voteCount = await store.getFeatureVoteCount(featureId);
+      const userVoted = await store.hasUserVotedForFeature(request.userContext.id, featureId);
+
+      return {
+        featureId,
+        voteCount,
+        userVoted
+      };
+    }
+  );
+
   app.post("/issues/report", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
     const parsed = createIssueReportSchema.safeParse(request.body);
     if (!parsed.success) {

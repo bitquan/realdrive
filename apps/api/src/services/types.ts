@@ -331,6 +331,12 @@ export interface Store {
     errorText?: string | null;
     metadata?: Record<string, string | number | boolean | null> | null;
   }): Promise<void>;
+
+  // Roadmap feature voting
+  createRoadmapFeatureVote(userId: string, featureId: string): Promise<void>;
+  removeRoadmapFeatureVote(userId: string, featureId: string): Promise<void>;
+  hasUserVotedForFeature(userId: string, featureId: string): Promise<boolean>;
+  getFeatureVoteCount(featureId: string): Promise<number>;
 }
 
 export interface MapsService {
