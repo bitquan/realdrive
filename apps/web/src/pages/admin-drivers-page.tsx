@@ -39,6 +39,7 @@ function documentStatusBadgeClass(status: DriverDocumentStatus) {
 function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const [bgCheckExternalId, setBgCheckExternalId] = useState(driver.bgCheckExternalId ?? "");
   const [form, setForm] = useState({
     name: driver.name,
     homeState: driver.homeState ?? "",
@@ -54,9 +55,11 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
     Object.fromEntries(driver.documents.map((document) => [document.id, document.reviewNote ?? ""]))
   );
   const [documentError, setDocumentError] = useState<string | null>(null);
+  const [bgCheckError, setBgCheckError] = useState<string | null>(null);
   const [downloadingDocumentId, setDownloadingDocumentId] = useState<string | null>(null);
 
   useEffect(() => {
+    setBgCheckExternalId(driver.bgCheckExternalId ?? "");
     setForm({
       name: driver.name,
       homeState: driver.homeState ?? "",
@@ -70,6 +73,7 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
     });
     setDocumentNotes(Object.fromEntries(driver.documents.map((document) => [document.id, document.reviewNote ?? ""])));
     setDocumentError(null);
+    setBgCheckError(null);
     setDownloadingDocumentId(null);
   }, [driver]);
 
@@ -128,6 +132,17 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
     },
     onError: (error) => {
       setDocumentError(error instanceof Error ? error.message : "Unable to review that document");
+    }
+  });
+
+  const bgCheckMutation = useMutation({
+    mutationFn: () => api.orderDriverBgCheck(driver.id, { externalId: bgCheckExternalId.trim() || undefined }, token!),
+    onSuccess: () => {
+      setBgCheckError(null);
+      invalidateDrivers();
+    },
+    onError: (error) => {
+      setBgCheckError(error instanceof Error ? error.message : "Unable to order background check");
     }
   });
 
@@ -217,6 +232,11 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
             label="Created"
             value={driver.createdAt ? new Date(driver.createdAt).toLocaleDateString() : "Existing driver"}
           />
+          <DataField
+            label="Background check"
+            value={driver.bgCheckOrderedAt ? formatDateTime(driver.bgCheckOrderedAt) : "Not ordered"}
+            subtle={driver.bgCheckExternalId ? `Reference: ${driver.bgCheckExternalId}` : "No external reference saved"}
+          />
         </div>
 
         {!canApproveDriver ? (
@@ -224,6 +244,37 @@ function DriverEditorPanel({ driver }: { driver: DriverAccount }) {
             Admin approval stays locked until insurance, registration, background check, and MVR are all approved.
           </div>
         ) : null}
+      </div>
+
+      <div className="rounded-[1.8rem] border border-ops-border-soft/90 bg-ops-surface/72 p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-lg font-semibold tracking-[-0.02em] text-ops-text">Background check workflow</p>
+            <p className="mt-1 text-sm text-ops-muted">
+              Save the vendor reference used for manual or external screening and keep the onboarding queue current.
+            </p>
+            <p className="mt-2 text-xs text-ops-muted">
+              {driver.bgCheckOrderedAt ? `Last ordered ${formatDateTime(driver.bgCheckOrderedAt)}` : "No background check has been ordered yet."}
+            </p>
+          </div>
+
+          <div className="w-full max-w-xl space-y-2">
+            <Label htmlFor={`bg-check-${driver.id}`}>External reference ID</Label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                id={`bg-check-${driver.id}`}
+                value={bgCheckExternalId}
+                onChange={(event) => setBgCheckExternalId(event.target.value)}
+                placeholder="optional vendor order id"
+                className="font-mono"
+              />
+              <Button disabled={bgCheckMutation.isPending} onClick={() => bgCheckMutation.mutate()}>
+                {bgCheckMutation.isPending ? "Saving…" : driver.bgCheckOrderedAt ? "Re-order" : "Order background check"}
+              </Button>
+            </div>
+            {bgCheckError ? <p className="text-xs text-ops-error">{bgCheckError}</p> : null}
+          </div>
+        </div>
       </div>
 
       <div className="rounded-[1.8rem] border border-ops-border-soft/90 bg-ops-surface/72 p-5">

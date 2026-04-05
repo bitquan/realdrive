@@ -21,7 +21,14 @@ import type {
   DriverProfileUpdateInput,
   DuePaymentMethod,
   PaymentMethod,
-  RideType
+  RideType,
+  ApiKey,
+  CreateApiKeyInput,
+  CreateMarketRegionInput,
+  UpdateMarketRegionInput,
+  MarketRegion,
+  AdminOrderBgCheckInput,
+  AdminReportOverview
 } from "@shared/contracts";
 import { env } from "../config/env.js";
 import { calculateDistanceMiles } from "../services/maps.js";
@@ -3640,5 +3647,311 @@ export const store: Store = {
         featureId
       }
     });
+  },
+
+  // ─── Market Regions ──────────────────────────────────────────────────
+
+  async listMarketRegions(): Promise<MarketRegion[]> {
+    const regions = await prisma.marketRegion.findMany({
+      orderBy: { createdAt: "asc" }
+    });
+    return regions.map((r) => ({
+      id: r.id,
+      marketKey: r.marketKey,
+      displayName: r.displayName,
+      timezone: r.timezone,
+      serviceStates: r.serviceStates,
+      serviceHours: r.serviceHours as MarketRegion["serviceHours"],
+      dispatchWeightMultiplier: r.dispatchWeightMultiplier,
+      active: r.active,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString()
+    }));
+  },
+
+  async createMarketRegion(input: CreateMarketRegionInput): Promise<MarketRegion> {
+    const region = await prisma.marketRegion.create({
+      data: {
+        marketKey: input.marketKey.trim().toUpperCase(),
+        displayName: input.displayName,
+        timezone: input.timezone ?? "America/New_York",
+        serviceStates: input.serviceStates ?? [],
+        serviceHours: input.serviceHours ?? undefined,
+        dispatchWeightMultiplier: input.dispatchWeightMultiplier ?? 1.0
+      }
+    });
+    return {
+      id: region.id,
+      marketKey: region.marketKey,
+      displayName: region.displayName,
+      timezone: region.timezone,
+      serviceStates: region.serviceStates,
+      serviceHours: region.serviceHours as MarketRegion["serviceHours"],
+      dispatchWeightMultiplier: region.dispatchWeightMultiplier,
+      active: region.active,
+      createdAt: region.createdAt.toISOString(),
+      updatedAt: region.updatedAt.toISOString()
+    };
+  },
+
+  async updateMarketRegion(id: string, input: UpdateMarketRegionInput): Promise<MarketRegion> {
+    const region = await prisma.marketRegion.update({
+      where: { id },
+      data: {
+        ...(input.displayName !== undefined && { displayName: input.displayName }),
+        ...(input.timezone !== undefined && { timezone: input.timezone }),
+        ...(input.serviceStates !== undefined && { serviceStates: input.serviceStates }),
+        ...(input.serviceHours !== undefined && { serviceHours: input.serviceHours ?? Prisma.JsonNull }),
+        ...(input.dispatchWeightMultiplier !== undefined && { dispatchWeightMultiplier: input.dispatchWeightMultiplier }),
+        ...(input.active !== undefined && { active: input.active })
+      }
+    });
+    return {
+      id: region.id,
+      marketKey: region.marketKey,
+      displayName: region.displayName,
+      timezone: region.timezone,
+      serviceStates: region.serviceStates,
+      serviceHours: region.serviceHours as MarketRegion["serviceHours"],
+      dispatchWeightMultiplier: region.dispatchWeightMultiplier,
+      active: region.active,
+      createdAt: region.createdAt.toISOString(),
+      updatedAt: region.updatedAt.toISOString()
+    };
+  },
+
+  async deleteMarketRegion(id: string): Promise<void> {
+    await prisma.marketRegion.delete({ where: { id } });
+  },
+
+  // ─── API Keys ─────────────────────────────────────────────────────────
+
+  async listApiKeys(ownerId: string): Promise<ApiKey[]> {
+    const keys = await prisma.apiKey.findMany({
+      where: { ownerId },
+      orderBy: { createdAt: "desc" }
+    });
+    return keys.map((k) => ({
+      id: k.id,
+      label: k.label,
+      keyPrefix: k.keyPrefix,
+      scopes: k.scopes as ApiKey["scopes"],
+      ownerId: k.ownerId,
+      lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : null,
+      createdAt: k.createdAt.toISOString(),
+      revokedAt: k.revokedAt ? k.revokedAt.toISOString() : null
+    }));
+  },
+
+  async createApiKey(input: CreateApiKeyInput & { ownerId: string; keyHash: string; keyPrefix: string }): Promise<ApiKey> {
+    const key = await prisma.apiKey.create({
+      data: {
+        label: input.label,
+        keyPrefix: input.keyPrefix,
+        keyHash: input.keyHash,
+        scopes: input.scopes,
+        ownerId: input.ownerId
+      }
+    });
+    return {
+      id: key.id,
+      label: key.label,
+      keyPrefix: key.keyPrefix,
+      scopes: key.scopes as ApiKey["scopes"],
+      ownerId: key.ownerId,
+      lastUsedAt: null,
+      createdAt: key.createdAt.toISOString(),
+      revokedAt: null
+    };
+  },
+
+  async revokeApiKey(id: string): Promise<void> {
+    await prisma.apiKey.update({
+      where: { id },
+      data: { revokedAt: new Date() }
+    });
+  },
+
+  async findApiKeyByHash(hash: string): Promise<ApiKey | null> {
+    const key = await prisma.apiKey.findUnique({
+      where: { keyHash: hash }
+    });
+    if (!key || key.revokedAt) return null;
+    return {
+      id: key.id,
+      label: key.label,
+      keyPrefix: key.keyPrefix,
+      scopes: key.scopes as ApiKey["scopes"],
+      ownerId: key.ownerId,
+      lastUsedAt: key.lastUsedAt ? key.lastUsedAt.toISOString() : null,
+      createdAt: key.createdAt.toISOString(),
+      revokedAt: null
+    };
+  },
+
+  async touchApiKeyLastUsed(id: string): Promise<void> {
+    await prisma.apiKey.update({
+      where: { id },
+      data: { lastUsedAt: new Date() }
+    });
+  },
+
+  // ─── Admin Reporting ─────────────────────────────────────────────────
+
+  async getAdminReportOverview(period: "7d" | "30d" | "90d" | "all"): Promise<AdminReportOverview> {
+    const now = new Date();
+    const since = period === "all"
+      ? undefined
+      : new Date(now.getTime() - ({ "7d": 7, "30d": 30, "90d": 90 }[period] * 86400 * 1000));
+    const whereCreated = since ? { createdAt: { gte: since } } : {};
+    const whereCompleted = since ? { completedAt: { gte: since } } : { completedAt: { not: null } };
+
+    const [totalRides, completedRides, canceledRides, requestedRides, approvedDrivers, pendingDrivers, availableDrivers, allDrivers, allRiders, newRiders, platformDues] = await Promise.all([
+      prisma.ride.count({ where: whereCreated }),
+      prisma.ride.count({ where: { status: "COMPLETED", ...whereCompleted } }),
+      prisma.ride.count({ where: { status: "CANCELED", ...whereCreated } }),
+      prisma.ride.count({ where: { status: "REQUESTED", ...whereCreated } }),
+      prisma.driverProfile.count({ where: { approvalStatus: "APPROVED" } }),
+      prisma.driverProfile.count({ where: { approvalStatus: "PENDING" } }),
+      prisma.driverProfile.count({ where: { available: true, approvalStatus: "APPROVED" } }),
+      prisma.driverProfile.count(),
+      prisma.riderProfile.count(),
+      prisma.riderProfile.count({ where: { ...(since ? { createdAt: { gte: since } } : {}) } }),
+      prisma.platformDue.findMany({
+        where: whereCreated,
+        select: { amount: true, status: true }
+      })
+    ]);
+
+    const revenueTotal = platformDues
+      .filter((d) => d.status === "PAID")
+      .reduce((sum, d) => sum + Number(d.amount), 0);
+    const revenuePending = platformDues
+      .filter((d) => d.status === "PENDING" || d.status === "OVERDUE")
+      .reduce((sum, d) => sum + Number(d.amount), 0);
+
+    // Revenue from finalFare of completed rides in period
+    const ridesRevenue = await prisma.ride.aggregate({
+      where: { status: "COMPLETED", ...whereCompleted },
+      _sum: { finalFare: true }
+    });
+
+    // Top drivers by ride count
+    const topDriverRaw = await prisma.ride.groupBy({
+      by: ["driverId"],
+      where: { status: "COMPLETED", driverId: { not: null }, ...whereCompleted },
+      _count: { id: true },
+      _sum: { finalFare: true },
+      orderBy: { _count: { id: "desc" } },
+      take: 10
+    });
+
+    const driverIds = topDriverRaw.map((r) => r.driverId!).filter(Boolean);
+    const driverUsers = driverIds.length > 0
+      ? await prisma.user.findMany({ where: { id: { in: driverIds } }, select: { id: true, name: true } })
+      : [];
+    const driverNameMap = Object.fromEntries(driverUsers.map((u) => [u.id, u.name]));
+
+    const topDrivers = topDriverRaw.map((r) => ({
+      driverId: r.driverId!,
+      name: driverNameMap[r.driverId!] ?? "Unknown",
+      rideCount: r._count.id,
+      revenue: Number(r._sum.finalFare ?? 0)
+    }));
+
+    // Rides per day (last N days, capped at 30 days for chart)
+    const chartDays = period === "90d" || period === "all" ? 30 : period === "30d" ? 30 : 7;
+    const chartSince = new Date(now.getTime() - chartDays * 86400 * 1000);
+    const ridesPerDayRaw = await prisma.ride.findMany({
+      where: { status: "COMPLETED", completedAt: { gte: chartSince } },
+      select: { completedAt: true }
+    });
+    const perDayMap: Record<string, number> = {};
+    for (let i = 0; i < chartDays; i++) {
+      const d = new Date(chartSince.getTime() + i * 86400 * 1000);
+      perDayMap[d.toISOString().slice(0, 10)] = 0;
+    }
+    for (const r of ridesPerDayRaw) {
+      if (r.completedAt) {
+        const key = r.completedAt.toISOString().slice(0, 10);
+        if (key in perDayMap) perDayMap[key]++;
+      }
+    }
+    const ridesPerDay = Object.entries(perDayMap).map(([date, count]) => ({ date, count }));
+
+    return {
+      period,
+      revenue: {
+        total: Number(ridesRevenue._sum.finalFare ?? 0),
+        platformDuesCollected: revenueTotal,
+        platformDuesPending: revenuePending
+      },
+      rides: {
+        total: totalRides,
+        completed: completedRides,
+        canceled: canceledRides,
+        requested: requestedRides
+      },
+      drivers: {
+        total: allDrivers,
+        approved: approvedDrivers,
+        available: availableDrivers,
+        pendingApproval: pendingDrivers
+      },
+      riders: {
+        total: allRiders,
+        newInPeriod: newRiders
+      },
+      topDrivers,
+      ridesPerDay
+    };
+  },
+
+  // ─── Driver BG Check ─────────────────────────────────────────────────
+
+  async orderDriverBgCheck(driverId: string, input: AdminOrderBgCheckInput) {
+    await prisma.driverProfile.update({
+      where: { userId: driverId },
+      data: {
+        bgCheckExternalId: input.externalId ?? null,
+        bgCheckOrderedAt: new Date()
+      }
+    });
+    const driver = await this.getDriverAccount(driverId);
+    if (!driver) {
+      throw new Error("Driver not found");
+    }
+    return driver;
+  },
+
+  // ─── Stripe Webhook ───────────────────────────────────────────────────
+
+  async resolveStripeDue(stripeCheckoutSessionId: string): Promise<void> {
+    const due = await prisma.platformDue.findFirst({
+      where: { stripeCheckoutSessionId }
+    });
+    if (!due) return; // idempotent – session may not have a matching due
+    if (due.status === "PAID") return; // already settled
+    await prisma.platformDue.update({
+      where: { id: due.id },
+      data: {
+        status: "PAID",
+        paymentMethod: "STRIPE",
+        paidAt: new Date()
+      }
+    });
+  },
+
+  // ─── Broadcast targets ────────────────────────────────────────────────
+
+  async listUserIdsForBroadcast(roles: Array<"rider" | "driver">): Promise<string[]> {
+    const dbRoles = roles.map((r) => (r === "rider" ? "RIDER" : "DRIVER"));
+    const users = await prisma.user.findMany({
+      where: {
+        roles: { hasSome: dbRoles as never[] }
+      },
+      select: { id: true }
+    });
+    return users.map((u) => u.id);
   }
 };

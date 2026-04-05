@@ -7,7 +7,13 @@ import type {
   AdminUpdatePlatformDueBatchInput,
   AdminReviewDriverDocumentInput,
   AdminAuditLog,
+  AdminOrderBgCheckInput,
+  AdminReportOverview,
+  ApiKey,
+  CreateApiKeyInput,
   CreateMarketConfigInput,
+  CreateMarketRegionInput,
+  UpdateMarketRegionInput,
   CommunityComment,
   CommunityEligibility,
   CommunityProposal,
@@ -23,6 +29,7 @@ import type {
   DriverIdleLocationInput,
   DriverInterest,
   DriverInterestInput,
+  MarketRegion,
   NotificationDeliveryLog,
   NotificationPreference,
   IssueReport,
@@ -356,6 +363,31 @@ export interface Store {
   removeRoadmapFeatureVote(userId: string, featureId: string): Promise<void>;
   hasUserVotedForFeature(userId: string, featureId: string): Promise<boolean>;
   getFeatureVoteCount(featureId: string): Promise<number>;
+
+  // Market regions (full multi-city config)
+  listMarketRegions(): Promise<MarketRegion[]>;
+  createMarketRegion(input: CreateMarketRegionInput): Promise<MarketRegion>;
+  updateMarketRegion(id: string, input: UpdateMarketRegionInput): Promise<MarketRegion>;
+  deleteMarketRegion(id: string): Promise<void>;
+
+  // API keys
+  listApiKeys(ownerId: string): Promise<ApiKey[]>;
+  createApiKey(input: CreateApiKeyInput & { ownerId: string; keyHash: string; keyPrefix: string }): Promise<ApiKey>;
+  revokeApiKey(id: string): Promise<void>;
+  findApiKeyByHash(hash: string): Promise<ApiKey | null>;
+  touchApiKeyLastUsed(id: string): Promise<void>;
+
+  // Admin reporting
+  getAdminReportOverview(period: "7d" | "30d" | "90d" | "all"): Promise<AdminReportOverview>;
+
+  // Driver background check
+  orderDriverBgCheck(driverId: string, input: AdminOrderBgCheckInput): Promise<DriverAccount>;
+
+  // Stripe webhook settlement
+  resolveStripeDue(stripeCheckoutSessionId: string): Promise<void>;
+
+  // Broadcast notification targets
+  listUserIdsForBroadcast(roles: Array<"rider" | "driver">): Promise<string[]>;
 }
 
 export interface MapsService {

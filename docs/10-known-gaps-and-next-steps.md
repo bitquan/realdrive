@@ -11,10 +11,16 @@
 ✅ **CI Baseline** - GitHub Actions runs API tests and type/build checks on push/PR
 ✅ **Background Worker Option** - Auto-pricing scheduler can run in dedicated worker process
 ✅ **Payment Integration Foundation** - Stripe checkout-link endpoint with audit logging
+✅ **Stripe Settlement Automation** - Webhook verification and due settlement now support paid reconciliation while manual fallback remains available
 ✅ **Frontend Test Baseline** - Vitest + React Testing Library configured for `apps/web`
 ✅ **Admin Audit Log UI** - `/admin/audit` page with searchable logs
 ✅ **Multi-city Market Config** - API-backed market creation from admin pricing
 ✅ **Dispatch Heuristics Baseline** - Driver ranking now includes mode, distance, rating, and location freshness
+✅ **Driver Background Check Workflow** - Admins can order and track external screening references during onboarding
+✅ **Admin Reporting Dashboard** - Revenue, utilization, rider growth, and top-driver metrics are now exposed in API and web UI
+✅ **Scoped API Keys** - External systems can authenticate against `/v1/*` endpoints with revocable scoped credentials
+✅ **Region Operations UI** - Admins can manage multi-city regions, activation state, and dispatch weighting from the web app
+✅ **Push Broadcast Controls** - Admins can broadcast push notifications to selected role audiences
 
 See:
 - [Admin Pricing & Benchmarks Documentation](./16-admin-pricing-benchmarks.md)
@@ -72,12 +78,12 @@ See:
 
 ### Product
 
-- **Payments**: Integrate Stripe or Square for rider/driver settlement
-- **Driver Onboarding**: Complete workflow with document upload, background check, approval flow
-- **Push Notifications**: Expand rider notifications for ride status, driver messages, promotions
-- **Multi-City**: Expand from market key config to full region operations (hours, service rules, dispatch weighting)
-- **Reporting**: Add admin dashboards for revenue, utilization, driver/rider metrics
-- **API Keys**: Support third-party integrations that use RealDrive as a backend-as-a-service
+- **Payments**: Square is still not integrated, and Stripe remains optional while manual payment fallback stays active
+- **Driver Onboarding**: External screening order tracking exists, but there is no direct vendor API integration yet
+- **Push Notifications**: Broadcasts and ride pushes exist, but driver-to-rider messaging and richer campaign tooling still need expansion
+- **Multi-City**: Region operations exist, but service hours and advanced service-rule automation are still lightly modeled
+- **Reporting**: Dashboard coverage exists, but exports, saved views, and finance-grade reconciliation still need work
+- **API Keys**: Read-focused integrations are available, but rotation policies, quotas, and webhook write flows need expansion
 
 ### Devops
 

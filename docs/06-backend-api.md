@@ -21,6 +21,7 @@ Main server files:
 - Admin routes require admin JWT
 - One session can now include multiple roles in `roles[]`, with `role` representing the current/default UI role
 - Protected requests use `Authorization: Bearer <token>`
+- Third-party integration routes under `/v1/*` use `X-Api-Key: <plaintext key>` instead of JWT
 
 ## HTTP Endpoints
 
@@ -150,6 +151,14 @@ Purpose:
 
 - Resolve a referral code into the public rider destination URL
 - Used by the QR/referral flow
+
+### `POST /payments/webhook`
+
+Purpose:
+
+- Receive Stripe webhook events
+- Verify `Stripe-Signature` using `STRIPE_WEBHOOK_SECRET`
+- Mark platform dues as paid when `checkout.session.completed` is received
 
 ## Authenticated Shared
 
@@ -389,6 +398,13 @@ Purpose:
 
 - Approve or reject a driver account
 
+### `POST /admin/drivers/:id/bg-check`
+
+Purpose:
+
+- Save or update an external background-check vendor reference for one driver
+- Stamp `bgCheckOrderedAt` so onboarding review can track the screening workflow
+
 ### `PATCH /admin/drivers/:id/documents/:documentId`
 
 Purpose:
@@ -462,6 +478,60 @@ Purpose:
 
 - Replace pricing rule values
 
+### `GET /admin/regions`
+
+Purpose:
+
+- List all market regions used for multi-city operations
+
+### `POST /admin/regions`
+
+Purpose:
+
+- Create a market region with `marketKey`, `displayName`, `timezone`, `serviceStates`, and dispatch weighting
+
+### `PATCH /admin/regions/:id`
+
+Purpose:
+
+- Update region metadata, active state, service footprint, and dispatch multiplier
+
+### `DELETE /admin/regions/:id`
+
+Purpose:
+
+- Remove an unused market region
+
+### `GET /admin/reports/overview?period=7d|30d|90d|all`
+
+Purpose:
+
+- Return aggregate revenue, ride counts, driver/rider metrics, top drivers, and daily ride counts
+
+### `GET /admin/api-keys`
+
+Purpose:
+
+- List all scoped integration API keys, including revoked keys for audit history
+
+### `POST /admin/api-keys`
+
+Purpose:
+
+- Create a scoped API key and return its plaintext value once
+
+### `DELETE /admin/api-keys/:id`
+
+Purpose:
+
+- Revoke an API key without deleting historical auditability
+
+### `POST /admin/notifications/broadcast`
+
+Purpose:
+
+- Send a push notification broadcast to selected role groups such as riders or drivers
+
 ### `POST /payments/checkout-link`
 
 Purpose:
@@ -475,6 +545,32 @@ Purpose:
 Purpose:
 
 - Return searchable audit log rows (supports `limit`, `action`, and `entityType` query filters)
+
+## Third-Party Integrations
+
+### `GET /v1/rides`
+
+Purpose:
+
+- Read ride data with `rides:read`
+
+### `GET /v1/drivers`
+
+Purpose:
+
+- Read driver data with `drivers:read`
+
+### `GET /v1/pricing`
+
+Purpose:
+
+- Read pricing configuration with `pricing:read`
+
+### `GET /v1/reports`
+
+Purpose:
+
+- Read reporting data with `reports:read`
 
 ## Community
 

@@ -32,6 +32,7 @@ export const env = {
   twilioVerifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID ?? "",
   twilioFromNumber: process.env.TWILIO_FROM_NUMBER ?? "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   stripeSuccessUrl: process.env.STRIPE_SUCCESS_URL ?? "",
   stripeCancelUrl: process.env.STRIPE_CANCEL_URL ?? "",
   webPushVapidPublicKey: process.env.WEB_PUSH_VAPID_PUBLIC_KEY ?? "",

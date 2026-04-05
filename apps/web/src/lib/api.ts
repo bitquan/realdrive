@@ -20,6 +20,16 @@ import type {
   AdminUpdatePlatformDueBatchInput,
   AdminUpdatePlatformDueInput,
   AdminUpdateRideInput,
+  AdminBroadcastNotificationInput,
+  AdminOrderBgCheckInput,
+  AdminReportOverview,
+  ApiKeysResponse,
+  CreateApiKeyInput,
+  CreateApiKeyResponse,
+  CreateMarketRegionInput,
+  UpdateMarketRegionInput,
+  MarketRegion,
+  MarketRegionsResponse,
   AuthOtpRequest,
   AuthOtpVerify,
   CommunityAccessExchangeInput,
@@ -608,6 +618,62 @@ export const api = {
     return apiFetch<RoadmapVoteResponse>(`/me/roadmap/vote/${featureId}`, {
       method: "POST",
       body: JSON.stringify({ vote })
+    }, token);
+  },
+
+  // Market Regions
+  listMarketRegions(token: string) {
+    return apiFetch<MarketRegionsResponse>("/admin/regions", undefined, token);
+  },
+  createMarketRegion(input: CreateMarketRegionInput, token: string) {
+    return apiFetch<MarketRegion>("/admin/regions", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  updateMarketRegion(id: string, input: UpdateMarketRegionInput, token: string) {
+    return apiFetch<MarketRegion>(`/admin/regions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  deleteMarketRegion(id: string, token: string) {
+    return apiFetch<void>(`/admin/regions/${id}`, { method: "DELETE" }, token);
+  },
+
+  // API Keys
+  listApiKeys(token: string) {
+    return apiFetch<ApiKeysResponse>("/admin/api-keys", undefined, token);
+  },
+  createApiKey(input: CreateApiKeyInput, token: string) {
+    return apiFetch<CreateApiKeyResponse>("/admin/api-keys", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }, token);
+  },
+  revokeApiKey(id: string, token: string) {
+    return apiFetch<void>(`/admin/api-keys/${id}`, { method: "DELETE" }, token);
+  },
+
+  // Reporting
+  getReportOverview(token: string, period: "7d" | "30d" | "90d" | "all" = "30d") {
+    return apiFetch<AdminReportOverview>(`/admin/reports/overview?period=${period}`, undefined, token);
+  },
+
+  // Broadcast notifications
+  broadcastNotification(input: AdminBroadcastNotificationInput, token: string) {
+    return apiFetch<{ sentCount: number; failedCount: number; targetCount: number }>(
+      "/admin/notifications/broadcast",
+      { method: "POST", body: JSON.stringify(input) },
+      token
+    );
+  },
+
+  // Driver bg check order
+  orderDriverBgCheck(driverId: string, input: AdminOrderBgCheckInput, token: string) {
+    return apiFetch<DriverAccount>(`/admin/drivers/${driverId}/bg-check`, {
+      method: "POST",
+      body: JSON.stringify(input)
     }, token);
   }
 };

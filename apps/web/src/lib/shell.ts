@@ -6,6 +6,8 @@ import {
   CarFront,
   ClipboardList,
   CreditCard,
+  Globe,
+  KeyRound,
   LayoutDashboard,
   Lightbulb,
   MessageSquare,
@@ -178,6 +180,30 @@ const adminItems: ShellNavItem[] = [
     roles: ["admin"]
   },
   {
+    id: "admin-reports",
+    label: "Reports",
+    to: "/admin/reports",
+    icon: BarChart3,
+    matchPatterns: ["/admin/reports"],
+    roles: ["admin"]
+  },
+  {
+    id: "admin-regions",
+    label: "Regions",
+    to: "/admin/regions",
+    icon: Globe,
+    matchPatterns: ["/admin/regions"],
+    roles: ["admin"]
+  },
+  {
+    id: "admin-api-keys",
+    label: "API keys",
+    to: "/admin/api-keys",
+    icon: KeyRound,
+    matchPatterns: ["/admin/api-keys"],
+    roles: ["admin"]
+  },
+  {
     id: "admin-dues",
     label: "Dues",
     to: "/admin/dues",
@@ -267,6 +293,36 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       eyebrow: "Admin",
       title: "Driver operations",
       description: "Review applications, update driver settings, and keep availability aligned with the live network.",
+      mapMode: "ambient",
+      actions: [{ label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" }]
+    }
+  },
+  {
+    patterns: ["/admin/reports"],
+    frame: {
+      eyebrow: "Admin",
+      title: "Reporting",
+      description: "Review revenue, fleet utilization, rider growth, and top-driver performance from one analytics surface.",
+      mapMode: "ambient",
+      actions: [{ label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" }]
+    }
+  },
+  {
+    patterns: ["/admin/regions"],
+    frame: {
+      eyebrow: "Admin",
+      title: "Regions",
+      description: "Manage market-level operations, dispatch weighting, and activation across supported cities.",
+      mapMode: "ambient",
+      actions: [{ label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" }]
+    }
+  },
+  {
+    patterns: ["/admin/api-keys"],
+    frame: {
+      eyebrow: "Admin",
+      title: "API integrations",
+      description: "Issue scoped credentials for external systems that read rides, drivers, pricing, and reporting data.",
       mapMode: "ambient",
       actions: [{ label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" }]
     }

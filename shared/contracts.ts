@@ -4,7 +4,7 @@ export const roleSchema = z.enum(["rider", "driver", "admin"]);
 export const rideTypeSchema = z.enum(["standard", "suv", "xl"]);
 export const paymentMethodSchema = z.enum(["jim", "cashapp", "cash"]);
 export const paymentStatusSchema = z.enum(["pending", "collected", "waived"]);
-export const duePaymentMethodSchema = z.enum(["cashapp", "zelle", "jim", "cash", "other"]);
+export const duePaymentMethodSchema = z.enum(["cashapp", "zelle", "jim", "cash", "other", "stripe"]);
 export const platformDueStatusSchema = z.enum(["pending", "paid", "waived", "overdue"]);
 export const platformDueBatchStatusSchema = z.enum(["open", "paid", "waived", "overdue", "void"]);
 export const driverInterestStatusSchema = z.enum(["pending", "approved", "rejected"]);
@@ -202,7 +202,9 @@ export const driverAccountSchema = sessionUserSchema.extend({
   documentReview: driverDocumentReviewSummarySchema,
   collectorAdminId: z.string().nullable().optional(),
   collectorAdmin: collectorAdminSummarySchema.nullable().optional(),
-  createdAt: z.string().optional()
+  createdAt: z.string().optional(),
+  bgCheckExternalId: z.string().nullable().optional(),
+  bgCheckOrderedAt: z.string().nullable().optional()
 });
 
 export const ridePartySchema = z.object({
@@ -375,6 +377,8 @@ export const platformDueSchema = z.object({
   dueAt: z.string(),
   paidAt: z.string().nullable(),
   paymentMethod: duePaymentMethodSchema.nullable(),
+  stripeCheckoutSessionId: z.string().nullable().optional(),
+  stripeCheckoutUrl: z.string().nullable().optional(),
   note: z.string().nullable(),
   resolvedById: z.string().nullable(),
   createdAt: z.string(),
@@ -702,6 +706,115 @@ export const adminAuditLogSchema = z.object({
 
 export const adminAuditLogsResponseSchema = z.object({
   logs: z.array(adminAuditLogSchema)
+});
+
+// Market Region (full multi-city region config)
+export const marketRegionSchema = z.object({
+  id: z.string(),
+  marketKey: z.string(),
+  displayName: z.string(),
+  timezone: z.string(),
+  serviceStates: z.array(z.string()),
+  serviceHours: z.record(z.object({ open: z.string(), close: z.string() })).nullable(),
+  dispatchWeightMultiplier: z.number(),
+  active: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const createMarketRegionSchema = z.object({
+  marketKey: z.string().min(2).max(20),
+  displayName: z.string().min(2).max(80),
+  timezone: z.string().min(3).max(60).optional(),
+  serviceStates: z.array(z.string().min(2).max(2)).max(60).optional(),
+  serviceHours: z.record(z.object({ open: z.string(), close: z.string() })).nullable().optional(),
+  dispatchWeightMultiplier: z.number().min(0.1).max(10).optional()
+});
+
+export const updateMarketRegionSchema = createMarketRegionSchema.partial().extend({
+  active: z.boolean().optional()
+});
+
+export const marketRegionsResponseSchema = z.object({
+  regions: z.array(marketRegionSchema)
+});
+
+// API Keys
+export const apiKeyScopeSchema = z.enum(["rides:read", "drivers:read", "pricing:read", "reports:read", "webhooks:write"]);
+
+export const apiKeySchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  keyPrefix: z.string(),
+  scopes: z.array(apiKeyScopeSchema),
+  ownerId: z.string(),
+  lastUsedAt: z.string().nullable(),
+  createdAt: z.string(),
+  revokedAt: z.string().nullable()
+});
+
+export const createApiKeySchema = z.object({
+  label: z.string().min(2).max(80),
+  scopes: z.array(apiKeyScopeSchema).min(1)
+});
+
+export const createApiKeyResponseSchema = z.object({
+  key: apiKeySchema,
+  plaintext: z.string() // returned ONCE, never stored
+});
+
+export const apiKeysResponseSchema = z.object({
+  keys: z.array(apiKeySchema)
+});
+
+// Admin broadcast notification
+export const adminBroadcastNotificationSchema = z.object({
+  title: z.string().min(2).max(100),
+  body: z.string().min(2).max(500),
+  url: z.string().max(500).optional(),
+  targetRoles: z.array(z.enum(["rider", "driver"])).min(1)
+});
+
+// Admin bg-check order
+export const adminOrderBgCheckSchema = z.object({
+  externalId: z.string().min(2).max(120).optional(),
+  note: z.string().max(500).nullable().optional()
+});
+
+// Reporting
+export const adminReportOverviewSchema = z.object({
+  period: z.enum(["7d", "30d", "90d", "all"]),
+  revenue: z.object({
+    total: z.number().nonnegative(),
+    platformDuesCollected: z.number().nonnegative(),
+    platformDuesPending: z.number().nonnegative()
+  }),
+  rides: z.object({
+    total: z.number().int().nonnegative(),
+    completed: z.number().int().nonnegative(),
+    canceled: z.number().int().nonnegative(),
+    requested: z.number().int().nonnegative()
+  }),
+  drivers: z.object({
+    total: z.number().int().nonnegative(),
+    approved: z.number().int().nonnegative(),
+    available: z.number().int().nonnegative(),
+    pendingApproval: z.number().int().nonnegative()
+  }),
+  riders: z.object({
+    total: z.number().int().nonnegative(),
+    newInPeriod: z.number().int().nonnegative()
+  }),
+  topDrivers: z.array(z.object({
+    driverId: z.string(),
+    name: z.string(),
+    rideCount: z.number().int().nonnegative(),
+    revenue: z.number().nonnegative()
+  })),
+  ridesPerDay: z.array(z.object({
+    date: z.string(),
+    count: z.number().int().nonnegative()
+  }))
 });
 
 export const updatePricingRulesSchema = updatePlatformRatesSchema;
@@ -1118,6 +1231,18 @@ export type MarketConfigsResponse = z.infer<typeof marketConfigsResponseSchema>;
 export type CreateMarketConfigInput = z.infer<typeof createMarketConfigSchema>;
 export type AdminAuditLog = z.infer<typeof adminAuditLogSchema>;
 export type AdminAuditLogsResponse = z.infer<typeof adminAuditLogsResponseSchema>;
+export type MarketRegion = z.infer<typeof marketRegionSchema>;
+export type MarketRegionsResponse = z.infer<typeof marketRegionsResponseSchema>;
+export type CreateMarketRegionInput = z.infer<typeof createMarketRegionSchema>;
+export type UpdateMarketRegionInput = z.infer<typeof updateMarketRegionSchema>;
+export type ApiKeyScope = z.infer<typeof apiKeyScopeSchema>;
+export type ApiKey = z.infer<typeof apiKeySchema>;
+export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;
+export type CreateApiKeyResponse = z.infer<typeof createApiKeyResponseSchema>;
+export type ApiKeysResponse = z.infer<typeof apiKeysResponseSchema>;
+export type AdminBroadcastNotificationInput = z.infer<typeof adminBroadcastNotificationSchema>;
+export type AdminOrderBgCheckInput = z.infer<typeof adminOrderBgCheckSchema>;
+export type AdminReportOverview = z.infer<typeof adminReportOverviewSchema>;
 export type CreateDriverRoleInput = z.infer<typeof createDriverRoleSchema>;
 export type AdminUpdatePlatformDueInput = z.infer<typeof adminUpdatePlatformDueSchema>;
 export type AdminUpdatePlatformDueBatchInput = z.infer<typeof adminUpdatePlatformDueBatchSchema>;

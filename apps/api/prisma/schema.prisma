@@ -56,6 +56,7 @@ enum DuePaymentMethod {
   JIM
   CASH
   OTHER
+  STRIPE
 }
 
 enum PlatformDueStatus {
@@ -141,6 +142,7 @@ model User {
   receivedOffers        RideOffer[]         @relation("DriverOffers")
   locationPings         LocationPing[]      @relation("DriverPings")
   auditLogs             AuditLog[]          @relation("ActorAuditLogs")
+  apiKeys               ApiKey[]            @relation("ApiKeyOwner")
   referredRides         Ride[]              @relation("RideReferrals")
   riderLeads            RiderLead[]         @relation("RiderLeadUsers")
   referredLeads         RiderLead[]         @relation("RiderLeadReferrals")
@@ -195,6 +197,8 @@ model DriverProfile {
   nationwideDispatchEnabled  Boolean              @default(false)
   acceptedPaymentMethods     PaymentMethod[]      @default([JIM, CASHAPP, CASH])
   pricingMode                DriverPricingMode    @default(PLATFORM)
+  bgCheckExternalId          String?
+  bgCheckOrderedAt           DateTime?
   createdAt                  DateTime             @default(now())
   updatedAt                  DateTime             @updatedAt
   vehicle                    Vehicle?
@@ -391,11 +395,13 @@ model PlatformDue {
   batchId       String?
   amount        Decimal           @db.Decimal(10, 2)
   status        PlatformDueStatus @default(PENDING)
-  collectibleAt DateTime          @default(now())
-  dueAt         DateTime
-  paidAt        DateTime?
-  paymentMethod DuePaymentMethod?
-  note          String?
+  collectibleAt              DateTime          @default(now())
+  dueAt                      DateTime
+  paidAt                     DateTime?
+  paymentMethod              DuePaymentMethod?
+  stripeCheckoutSessionId    String?
+  stripeCheckoutUrl          String?
+  note                       String?
   resolvedById  String?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
@@ -618,5 +624,36 @@ model FeatureRequest {
   @@index([requesterId])
   @@index([status])
   @@index([voteCount])
+}
+
+model MarketRegion {
+  id                       String   @id @default(cuid())
+  marketKey                String   @unique
+  displayName              String
+  timezone                 String   @default("America/New_York")
+  serviceStates            String[] @default([])
+  serviceHours             Json?    // { mon: { open: "08:00", close: "22:00" }, ... }
+  dispatchWeightMultiplier Float    @default(1.0)
+  active                   Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([active])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  label       String
+  keyPrefix   String
+  keyHash     String    @unique
+  scopes      String[]  @default([])
+  ownerId     String
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  owner       User      @relation("ApiKeyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([revokedAt])
 }
 

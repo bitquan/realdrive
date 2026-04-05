@@ -75,7 +75,8 @@ const duePaymentMethodMap = {
   zelle: DbDuePaymentMethod.ZELLE,
   jim: DbDuePaymentMethod.JIM,
   cash: DbDuePaymentMethod.CASH,
-  other: DbDuePaymentMethod.OTHER
+  other: DbDuePaymentMethod.OTHER,
+  stripe: DbDuePaymentMethod.STRIPE
 } satisfies Record<DuePaymentMethod, DbDuePaymentMethod>;
 
 const platformDueStatusMap = {
@@ -334,6 +335,8 @@ type DriverProfileRecord = {
   serviceAreaDispatchEnabled: boolean;
   serviceAreaStates: string[];
   nationwideDispatchEnabled: boolean;
+  bgCheckExternalId: string | null;
+  bgCheckOrderedAt: Date | null;
   vehicle?: VehicleRecord | null;
 };
 
@@ -600,7 +603,9 @@ export function mapDriverAccount(user: UserWithDriver): DriverAccount {
     documentReview: mapDriverDocumentReviewSummary(documents),
     collectorAdminId: user.driverProfile.collectorAdminId,
     collectorAdmin: mapCollectorAdminSummary(user.driverProfile.collectorAdmin),
-    createdAt: user.createdAt?.toISOString()
+    createdAt: user.createdAt?.toISOString(),
+    bgCheckExternalId: user.driverProfile.bgCheckExternalId,
+    bgCheckOrderedAt: user.driverProfile.bgCheckOrderedAt?.toISOString() ?? null
   };
 }
 
@@ -817,6 +822,8 @@ export function mapPlatformDue(due: PlatformDueRecord): PlatformDue {
     dueAt: due.dueAt.toISOString(),
     paidAt: toIso(due.paidAt),
     paymentMethod: due.paymentMethod ? fromDbDuePaymentMethod(due.paymentMethod) : null,
+    stripeCheckoutSessionId: due.stripeCheckoutSessionId ?? null,
+    stripeCheckoutUrl: due.stripeCheckoutUrl ?? null,
     note: due.note,
     resolvedById: due.resolvedById,
     createdAt: due.createdAt.toISOString(),

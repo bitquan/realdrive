@@ -345,6 +345,58 @@ function createStore(stubs: Partial<Store>): Store {
     updateCommunityProposal: notImplemented,
     updateCommunityComment: notImplemented,
     addAuditLog: async () => undefined,
+    listMarketRegions: async () => [],
+    createMarketRegion: async (input) => ({
+      id: "region-1",
+      marketKey: input.marketKey,
+      displayName: input.displayName,
+      timezone: input.timezone ?? "America/New_York",
+      serviceStates: input.serviceStates ?? [],
+      serviceHours: null,
+      dispatchWeightMultiplier: input.dispatchWeightMultiplier ?? 1.0,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }),
+    updateMarketRegion: async (_id, input) => ({
+      id: "region-1",
+      marketKey: "DEFAULT",
+      displayName: input.displayName ?? "Default",
+      timezone: "America/New_York",
+      serviceStates: [],
+      serviceHours: null,
+      dispatchWeightMultiplier: 1.0,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }),
+    deleteMarketRegion: async () => undefined,
+    listApiKeys: async () => [],
+    createApiKey: async (input) => ({
+      id: "key-1",
+      label: input.label,
+      keyPrefix: "rd_test12",
+      scopes: input.scopes,
+      ownerId: input.ownerId,
+      lastUsedAt: null,
+      createdAt: new Date().toISOString(),
+      revokedAt: null
+    }),
+    revokeApiKey: async () => undefined,
+    findApiKeyByHash: async () => null,
+    touchApiKeyLastUsed: async () => undefined,
+    getAdminReportOverview: async (period) => ({
+      period,
+      revenue: { total: 0, platformDuesCollected: 0, platformDuesPending: 0 },
+      rides: { total: 0, completed: 0, canceled: 0, requested: 0 },
+      drivers: { total: 0, approved: 0, available: 0, pendingApproval: 0 },
+      riders: { total: 0, newInPeriod: 0 },
+      topDrivers: [],
+      ridesPerDay: []
+    }),
+    orderDriverBgCheck: async (driverId) => ({ ...driverAccount, id: driverId }),
+    resolveStripeDue: async () => undefined,
+    listUserIdsForBroadcast: async () => [],
     ...stubs
   };
 }

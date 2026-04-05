@@ -1,3 +1,4 @@
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { env } from "../config/env.js";
 
 export interface CreateCheckoutLinkInput {
@@ -70,4 +71,66 @@ export async function createStripeCheckoutLink(input: CreateCheckoutLinkInput): 
     sessionId: payload.id,
     checkoutUrl: payload.url
   };
+}
+
+/**
+ * Verify a Stripe webhook signature and return the parsed event payload.
+ * Returns null if STRIPE_WEBHOOK_SECRET is not configured (manual fallback mode).
+ * Throws if the signature is invalid.
+ */
+export function verifyStripeWebhookSignature(
+  rawBody: Buffer | string,
+  signatureHeader: string
+): { type: string; data: { object: Record<string, unknown> } } | null {
+  if (!env.stripeWebhookSecret) {
+    return null; // Webhook verification disabled — Stripe not in active use yet
+  }
+
+  // Stripe-Signature: t=timestamp,v1=sig,...
+  const parts = Object.fromEntries(
+    signatureHeader.split(",").map((part) => {
+      const [k, ...rest] = part.split("=");
+      return [k, rest.join("=")];
+    })
+  );
+  const timestamp = parts["t"];
+  const signature = parts["v1"];
+  if (!timestamp || !signature) {
+    throw new Error("Invalid Stripe-Signature header");
+  }
+
+  const body = typeof rawBody === "string" ? rawBody : rawBody.toString("utf8");
+  const signedPayload = `${timestamp}.${body}`;
+
+  const computedSig = createHmac("sha256", env.stripeWebhookSecret)
+    .update(signedPayload)
+    .digest("hex");
+
+  const a = Buffer.from(computedSig, "hex");
+  const b = Buffer.from(signature, "hex");
+  const isValid = a.length === b.length && timingSafeEqual(a, b);
+
+  if (!isValid) {
+    throw new Error("Stripe webhook signature verification failed");
+  }
+
+  return JSON.parse(body) as { type: string; data: { object: Record<string, unknown> } };
+}
+
+/**
+ * Hash an API key for secure storage. Returns the SHA-256 hex digest.
+ */
+export function hashApiKey(plaintext: string): string {
+  return createHash("sha256").update(plaintext).digest("hex");
+}
+
+/**
+ * Generate a new API key. Returns { plaintext, prefix, hash }.
+ */
+export function generateApiKey(): { plaintext: string; prefix: string; hash: string } {
+  const raw = randomBytes(32).toString("base64url");
+  const plaintext = `rd_${raw}`;
+  const prefix = plaintext.slice(0, 10); // "rd_" + 7 chars
+  const hash = hashApiKey(plaintext);
+  return { plaintext, prefix, hash };
 }

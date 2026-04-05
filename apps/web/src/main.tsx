@@ -22,6 +22,9 @@ const AdminDashboardPage = lazy(() => import("@/pages/admin-dashboard-page").the
 const AdminDispatchPage = lazy(() => import("@/pages/admin-dispatch-page").then((module) => ({ default: module.AdminDispatchPage })));
 const AdminTeamPage = lazy(() => import("@/pages/admin-team-page").then((module) => ({ default: module.AdminTeamPage })));
 const AdminDriversPage = lazy(() => import("@/pages/admin-drivers-page").then((module) => ({ default: module.AdminDriversPage })));
+const AdminReportingPage = lazy(() => import("@/pages/admin-reporting-page").then((module) => ({ default: module.AdminReportingPage })));
+const AdminRegionsPage = lazy(() => import("@/pages/admin-regions-page").then((module) => ({ default: module.AdminRegionsPage })));
+const AdminApiKeysPage = lazy(() => import("@/pages/admin-api-keys-page").then((module) => ({ default: module.AdminApiKeysPage })));
 const AdminPricingPage = lazy(() => import("@/pages/admin-pricing-page").then((module) => ({ default: module.AdminPricingPage })));
 const AdminSharePage = lazy(() => import("@/pages/admin-share-page").then((module) => ({ default: module.AdminSharePage })));
 const AdminDuesPage = lazy(() => import("@/pages/admin-dues-page").then((module) => ({ default: module.AdminDuesPage })));
@@ -207,6 +210,30 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminDriversPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/reports"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminReportingPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/regions"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminRegionsPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/api-keys"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminApiKeysPage /></PageLoader>
                 </RequireRole>
               }
             />

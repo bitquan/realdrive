@@ -31,6 +31,11 @@ import {
   createAdminInviteSchema,
   createIssueReportSchema,
   createMarketConfigSchema,
+  createMarketRegionSchema,
+  updateMarketRegionSchema,
+  createApiKeySchema,
+  adminBroadcastNotificationSchema,
+  adminOrderBgCheckSchema,
   createDriverRoleSchema,
   driverDispatchSettingsUpdateSchema,
   driverIdleLocationSchema,
@@ -68,7 +73,7 @@ import { createPushService } from "./services/push.js";
 import { createRideService } from "./services/ride-service.js";
 import { createSmsService } from "./services/sms.js";
 import { applyAutoPlatformRates as runAutoPlatformRates } from "./services/platform-rate-auto-runner.js";
-import { createStripeCheckoutLink } from "./services/payments.js";
+import { createStripeCheckoutLink, generateApiKey, hashApiKey, verifyStripeWebhookSignature } from "./services/payments.js";
 
 function resolvePublicBaseUrl(request: FastifyRequest) {
   const origin = typeof request.headers.origin === "string" ? request.headers.origin : "";
@@ -714,6 +719,32 @@ export function buildApp() {
 
   function signToken(userId: string) {
     return app.jwt.sign({ sub: userId }, { expiresIn: "7d" });
+  }
+
+  /**
+   * Middleware: authenticate via X-Api-Key header. Attaches the resolved key
+   * to request.apiKey. Also accepts required scopes.
+   */
+  function requireApiKey(...requiredScopes: string[]) {
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+      const rawKey = request.headers["x-api-key"];
+      if (!rawKey || typeof rawKey !== "string") {
+        return reply.status(401).send({ error: "Missing X-Api-Key header" });
+      }
+      const keyHash = hashApiKey(rawKey);
+      const apiKey = await store.findApiKeyByHash(keyHash);
+      if (!apiKey) {
+        return reply.status(401).send({ error: "Invalid or revoked API key" });
+      }
+      if (requiredScopes.length > 0) {
+        const hasAll = requiredScopes.every((s) => apiKey.scopes.includes(s as never));
+        if (!hasAll) {
+          return reply.status(403).send({ error: `API key missing required scopes: ${requiredScopes.join(", ")}` });
+        }
+      }
+      void store.touchApiKeyLastUsed(apiKey.id);
+      (request as FastifyRequest & { apiKey: typeof apiKey }).apiKey = apiKey;
+    };
   }
 
   function sendValidationError(reply: FastifyReply, details: unknown) {
@@ -1958,6 +1989,30 @@ export function buildApp() {
         approvalStatus: parsed.data.approvalStatus
       });
       io.emit("driver.availability.changed", driver);
+
+      // Push notification: inform driver of approval decision
+      const driverId = (request.params as { id: string }).id;
+      const isApproved = parsed.data.approvalStatus === "approved";
+      const isRejected = parsed.data.approvalStatus === "rejected";
+      if (isApproved || isRejected) {
+        await store.addAuditLog({
+          actorId: request.userContext.id,
+          action: isApproved ? "driver.approved" : "driver.rejected",
+          entityType: "driver",
+          entityId: driverId
+        });
+        void sendPushForUser({
+          userId: driverId,
+          rideId: null,
+          eventKey: isApproved ? "driver.approved" : "driver.rejected",
+          title: isApproved ? "You're approved! 🎉" : "Application update",
+          body: isApproved
+            ? "Your driver application has been approved. You can now go online and accept rides."
+            : "Your driver application status has been updated. Contact support for more information.",
+          url: "/driver/dashboard"
+        });
+      }
+
       return reply.send(driver);
     } catch (error) {
       return sendKnownOperationalError(reply, error);
@@ -2139,6 +2194,22 @@ export function buildApp() {
         }
       });
 
+      // Persist the session ID on the PlatformDue so the webhook can reconcile it
+      if (parsed.data.dueId) {
+        try {
+          const { prisma } = await import("./lib/db.js");
+          await prisma.platformDue.update({
+            where: { id: parsed.data.dueId },
+            data: {
+              stripeCheckoutSessionId: checkout.sessionId,
+              stripeCheckoutUrl: checkout.checkoutUrl
+            }
+          });
+        } catch {
+          // Non-fatal — due may not exist or already updated
+        }
+      }
+
       await store.addAuditLog({
         actorId: request.userContext.id,
         action: "payment.checkout_link.created",
@@ -2156,6 +2227,31 @@ export function buildApp() {
     } catch (error) {
       return sendKnownOperationalError(reply, error);
     }
+  });
+
+  // ─── Third-party API key endpoints (/v1/*) ────────────────────────────────
+
+  app.get("/v1/rides", { preHandler: requireApiKey("rides:read") }, async (_request, reply) => {
+    const rides = await store.listAdminRides();
+    return reply.send({ rides });
+  });
+
+  app.get("/v1/drivers", { preHandler: requireApiKey("drivers:read") }, async (_request, reply) => {
+    const drivers = await store.listDrivers();
+    return reply.send({ drivers });
+  });
+
+  app.get("/v1/pricing", { preHandler: requireApiKey("pricing:read") }, async (_request, reply) => {
+    const rules = await store.listPlatformPricingRules();
+    return reply.send({ rules });
+  });
+
+  app.get("/v1/reports", { preHandler: requireApiKey("reports:read") }, async (request, reply) => {
+    const q = request.query as Record<string, string>;
+    const period = (["7d", "30d", "90d", "all"] as const).includes(q.period as never)
+      ? (q.period as "7d" | "30d" | "90d" | "all")
+      : "30d";
+    return reply.send(await store.getAdminReportOverview(period));
   });
 
   app.post("/admin/platform-rates/auto-apply", { preHandler: requireRole("admin") }, async (_request, reply) => {
@@ -2333,6 +2429,207 @@ export function buildApp() {
     }
 
     return reply.send(await store.updateCommunityComment((request.params as { id: string }).id, parsed.data));
+  });
+
+  // ─── Driver Background Check ──────────────────────────────────────────────
+
+  app.post("/admin/drivers/:id/bg-check", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminOrderBgCheckSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+    try {
+      const driver = await store.orderDriverBgCheck((request.params as { id: string }).id, parsed.data);
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "driver.bg_check.ordered",
+        entityType: "driver",
+        entityId: driver.id,
+        metadata: { externalId: parsed.data.externalId ?? null }
+      });
+      return reply.status(200).send(driver);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  // ─── Stripe Webhook (settlement automation) ───────────────────────────────
+  // Raw-body needed for signature verification; Fastify parses JSON by default,
+  // so we use the onSend hook approach — instead, we add a json content-type
+  // override by reading rawBody from request.rawBody when available.
+
+  app.post("/payments/webhook", { config: { rawBody: true } }, async (request, reply) => {
+    const sigHeader = request.headers["stripe-signature"];
+    if (!sigHeader || typeof sigHeader !== "string") {
+      return reply.status(400).send({ error: "Missing Stripe-Signature header" });
+    }
+
+    let event: { type: string; data: { object: Record<string, unknown> } } | null = null;
+    try {
+      const rawBody = (request as unknown as { rawBody?: Buffer }).rawBody ?? Buffer.from(JSON.stringify(request.body));
+      event = verifyStripeWebhookSignature(rawBody, sigHeader);
+    } catch (err) {
+      return reply.status(400).send({ error: "Invalid webhook signature" });
+    }
+
+    if (!event) {
+      // Stripe not fully configured — ack the webhook and do nothing
+      return reply.status(200).send({ received: true, action: "skipped" });
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const sessionId = String(session["id"] ?? "");
+      if (sessionId) {
+        await store.resolveStripeDue(sessionId);
+        await store.addAuditLog({
+          action: "stripe.checkout.completed",
+          entityType: "platformDue",
+          entityId: sessionId,
+          metadata: { sessionId }
+        });
+      }
+    }
+
+    return reply.status(200).send({ received: true });
+  });
+
+  // ─── Market Regions ───────────────────────────────────────────────────────
+
+  app.get("/admin/regions", { preHandler: requireRole("admin") }, async () => {
+    return { regions: await store.listMarketRegions() };
+  });
+
+  app.post("/admin/regions", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = createMarketRegionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+    try {
+      const region = await store.createMarketRegion(parsed.data);
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "market.region.created",
+        entityType: "marketRegion",
+        entityId: region.id,
+        metadata: { marketKey: region.marketKey, displayName: region.displayName }
+      });
+      return reply.status(201).send(region);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  app.patch("/admin/regions/:id", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = updateMarketRegionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+    try {
+      const region = await store.updateMarketRegion((request.params as { id: string }).id, parsed.data);
+      await store.addAuditLog({
+        actorId: request.userContext.id,
+        action: "market.region.updated",
+        entityType: "marketRegion",
+        entityId: region.id,
+        metadata: { marketKey: region.marketKey }
+      });
+      return reply.send(region);
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  app.delete("/admin/regions/:id", { preHandler: requireRole("admin") }, async (request, reply) => {
+    try {
+      await store.deleteMarketRegion((request.params as { id: string }).id);
+      return reply.status(204).send();
+    } catch (error) {
+      return sendKnownOperationalError(reply, error);
+    }
+  });
+
+  // ─── Admin Reporting ──────────────────────────────────────────────────────
+
+  app.get("/admin/reports/overview", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const q = request.query as Record<string, string>;
+    const period = (["7d", "30d", "90d", "all"] as const).includes(q.period as never)
+      ? (q.period as "7d" | "30d" | "90d" | "all")
+      : "30d";
+    return reply.send(await store.getAdminReportOverview(period));
+  });
+
+  // ─── API Keys ─────────────────────────────────────────────────────────────
+
+  app.get("/admin/api-keys", { preHandler: requireRole("admin") }, async (request, reply) => {
+    return reply.send({ keys: await store.listApiKeys(request.userContext.id) });
+  });
+
+  app.post("/admin/api-keys", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = createApiKeySchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+    const { plaintext, prefix, hash } = generateApiKey();
+    const key = await store.createApiKey({
+      ...parsed.data,
+      ownerId: request.userContext.id,
+      keyHash: hash,
+      keyPrefix: prefix
+    });
+    await store.addAuditLog({
+      actorId: request.userContext.id,
+      action: "api_key.created",
+      entityType: "apiKey",
+      entityId: key.id,
+      metadata: { label: key.label, scopes: key.scopes }
+    });
+    return reply.status(201).send({ key, plaintext });
+  });
+
+  app.delete("/admin/api-keys/:id", { preHandler: requireRole("admin") }, async (request, reply) => {
+    await store.revokeApiKey((request.params as { id: string }).id);
+    return reply.status(204).send();
+  });
+
+  // ─── Broadcast Notifications ──────────────────────────────────────────────
+
+  app.post("/admin/notifications/broadcast", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = adminBroadcastNotificationSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+    const { title, body, url, targetRoles } = parsed.data;
+    const userIds = await store.listUserIdsForBroadcast(targetRoles);
+
+    let sentCount = 0;
+    let failedCount = 0;
+    for (const userId of userIds) {
+      try {
+        const result = await sendPushForUser({
+          userId,
+          rideId: null,
+          eventKey: "admin.broadcast",
+          title,
+          body,
+          url: url ?? "/"
+        });
+        sentCount += result.sentCount;
+        failedCount += result.failedCount;
+      } catch {
+        failedCount++;
+      }
+    }
+
+    await store.addAuditLog({
+      actorId: request.userContext.id,
+      action: "admin.broadcast.sent",
+      entityType: "notification",
+      entityId: "broadcast",
+      metadata: { title, targetRoles, sentCount, failedCount }
+    });
+
+    return reply.send({ sentCount, failedCount, targetCount: userIds.length });
   });
 
   return app;
