@@ -1,9 +1,19 @@
+import { useEffect, useState } from "react";
 import type { Ride } from "@shared/contracts";
-import { MapPinned } from "lucide-react";
+import Map, { Marker } from "react-map-gl/mapbox";
+import { MapPinned, Navigation } from "lucide-react";
 import { DataField } from "@/components/layout/ops-layout";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? "";
+const DEFAULT_IDLE_CENTER = {
+  longitude: -77.436,
+  latitude: 37.5407,
+  zoom: 10.4
+};
 
 export interface DriverMapSurfaceProps {
   ride: Ride | null;
@@ -22,7 +32,30 @@ export function DriverMapSurface({
   mobileOverlayMode = false,
   mobileFitPaddingBottom
 }: DriverMapSurfaceProps) {
+  const [idleCenter, setIdleCenter] = useState(DEFAULT_IDLE_CENTER);
   const mobileShellClass = "relative min-h-[calc(100dvh-10.5rem)] overflow-hidden rounded-[2.25rem] bg-slate-950 shadow-[0_32px_100px_rgba(2,6,23,0.58)] ring-1 ring-white/10";
+
+  useEffect(() => {
+    if (ride || !mobileOverlayMode || !navigator.geolocation) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setIdleCenter({
+          longitude: position.coords.longitude,
+          latitude: position.coords.latitude,
+          zoom: 11.8
+        });
+      },
+      () => undefined,
+      {
+        enableHighAccuracy: true,
+        maximumAge: 60_000,
+        timeout: 8_000
+      }
+    );
+  }, [mobileOverlayMode, ride]);
 
   if (ride) {
     return (
@@ -53,6 +86,37 @@ export function DriverMapSurface({
   }
 
   if (mobileOverlayMode) {
+    if (MAPBOX_TOKEN) {
+      return (
+        <div className={mobileShellClass}>
+          <Map
+            initialViewState={idleCenter}
+            longitude={idleCenter.longitude}
+            latitude={idleCenter.latitude}
+            zoom={idleCenter.zoom}
+            style={{ width: "100%", height: 760 }}
+            mapStyle="mapbox://styles/mapbox/dark-v11"
+            mapboxAccessToken={MAPBOX_TOKEN}
+            attributionControl={false}
+          >
+            <Marker longitude={idleCenter.longitude} latitude={idleCenter.latitude}>
+              <div className="relative">
+                <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/20" />
+                <div className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/25" />
+                <div className="relative rounded-full border border-white/30 bg-slate-950/90 p-2.5 text-white shadow-[0_12px_32px_rgba(2,6,23,0.45)]">
+                  <Navigation className="h-4 w-4 text-teal-300" />
+                </div>
+              </div>
+            </Marker>
+          </Map>
+
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(56,189,248,0.06),transparent_20%),radial-gradient(circle_at_78%_74%,rgba(45,212,191,0.08),transparent_24%)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-slate-950/70 via-slate-950/20 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-slate-950 via-slate-950/82 to-transparent" />
+        </div>
+      );
+    }
+
     return (
       <div className={mobileShellClass}>
         <div className="absolute inset-0 bg-slate-900" />
