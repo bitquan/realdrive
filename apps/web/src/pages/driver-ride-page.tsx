@@ -155,6 +155,18 @@ export function DriverRidePage() {
   const compactTripSize = `${formatDriverMilesCompact(ride.estimatedMiles)} · ${formatDriverMinutesCompact(ride.estimatedMinutes)}`;
   const compactSubtotal = formatDriverMoneyCompact(subtotal);
   const timingLabel = ride.scheduledFor ?? ride.requestedAt ? new Date(ride.scheduledFor ?? ride.requestedAt!).toLocaleString() : "Now";
+  const mobileStageLabel = stageLabel.replace(/^./, (value) => value.toUpperCase());
+  const mobileRoutePriority = ride.status === "in_progress" ? "Dropoff priority" : "Pickup priority";
+  const mobileTripMode =
+    ride.status === "in_progress"
+      ? "Active trip"
+      : ride.status === "arrived"
+        ? "Pickup live"
+        : ride.status === "en_route"
+          ? "Approaching pickup"
+          : ride.status === "completed"
+            ? "Trip closed"
+            : "Route locked";
 
   return (
     <div className="space-y-5 md:space-y-6">
@@ -204,66 +216,109 @@ export function DriverRidePage() {
                 </div>
 
                 <div className="max-h-[calc(100dvh-18rem)] overflow-y-auto overscroll-contain px-4 pb-3.5">
-                  <div className="mb-3 rounded-[1.1rem] border border-white/8 bg-white/[0.03] p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">Active trip</p>
-                        <p className="mt-1 text-[1.2rem] font-semibold tracking-[-0.02em] text-white">{stageLabel}</p>
-                        <p className="mt-1 text-xs text-slate-300">{ride.rider.name}</p>
-                      </div>
-                      <Badge className="border-white/10 bg-slate-950/70 text-slate-100">{ride.payment.status}</Badge>
-                    </div>
-                    <p className="mt-2 max-w-[16rem] text-[11px] leading-4 text-slate-400">{supportCopy}</p>
-                  </div>
-
-                  <div className="rounded-[1.1rem] border border-white/10 bg-slate-950/28 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Trip control</p>
-                      <span className="text-[11px] font-medium text-slate-400">{compactTripSize}</span>
-                    </div>
-                    <div className="space-y-2.5">
-                      <div className="flex items-start gap-2.5 rounded-[0.95rem] bg-white/[0.02] px-2.5 py-2">
-                        <div className="mt-1 flex flex-col items-center gap-1">
-                          <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
-                          <div className="h-5 w-0.5 bg-white/10" />
+                  <div className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(8,14,24,0.9))] shadow-[0_18px_44px_rgba(2,6,23,0.28)]">
+                    <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.16),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.9),rgba(8,14,24,0.86))] px-3.5 py-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Trip cockpit</p>
+                          <h1 className="mt-1 text-[1.32rem] font-semibold tracking-[-0.03em] text-white">{mobileStageLabel}</h1>
+                          <p className="mt-1 text-[11px] font-medium text-teal-300">{mobileTripMode}</p>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-0.5 text-[11px] font-medium text-cyan-400">Pickup</div>
-                          <div className="text-sm font-medium leading-4.5 text-white">{ride.pickup.address}</div>
-                        </div>
+                        <Badge className="border-white/10 bg-slate-950/72 text-slate-100">{ride.payment.status}</Badge>
                       </div>
 
-                      <div className="flex items-start gap-2.5 rounded-[0.95rem] bg-white/[0.02] px-2.5 py-2">
-                        <div className="mt-1 h-2.5 w-2.5 rounded-full bg-slate-600" />
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-0.5 text-[11px] text-slate-400">Dropoff</div>
-                          <div className="text-sm font-medium leading-4.5 text-white">{ride.dropoff.address}</div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-teal-400/18 bg-teal-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-200">
+                          {mobileRoutePriority}
+                        </span>
+                        <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-slate-300">
+                          {ride.rideType.toUpperCase()}
+                        </span>
+                        <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-slate-300">
+                          {compactTripSize}
+                        </span>
+                      </div>
+
+                      <p className="mt-3 text-[11px] leading-4 text-slate-400">{supportCopy}</p>
+                    </div>
+
+                    <div className="space-y-2.5 px-3.5 py-3.5">
+                      <div className="rounded-[1rem] border border-white/8 bg-slate-950/48 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Live route</p>
+                          <span className="text-[11px] font-medium text-slate-400">{compactTripSize}</span>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <div className="flex items-start gap-2.5 rounded-[0.95rem] bg-white/[0.02] px-2.5 py-2">
+                            <div className="mt-1 flex flex-col items-center gap-1">
+                              <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
+                              <div className="h-5 w-0.5 bg-white/10" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-0.5 text-[11px] font-medium text-cyan-400">Pickup</div>
+                              <div className="text-sm font-medium leading-4.5 text-white">{ride.pickup.address}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2.5 rounded-[0.95rem] bg-white/[0.02] px-2.5 py-2">
+                            <div className="mt-1 h-2.5 w-2.5 rounded-full bg-slate-600" />
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-0.5 text-[11px] text-slate-400">Dropoff</div>
+                              <div className="text-sm font-medium leading-4.5 text-white">{ride.dropoff.address}</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="mt-2.5 grid grid-cols-2 gap-2">
-                    <div className="rounded-[0.95rem] border border-white/8 bg-white/[0.03] px-3 py-2.5">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Timing</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{compactTripSize}</div>
-                      <div className="mt-0.5 text-[11px] text-slate-400">{timingLabel}</div>
-                    </div>
-                    <div className="rounded-[0.95rem] border border-white/8 bg-white/[0.03] px-3 py-2.5">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Payment</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{formatPaymentMethod(ride.payment.method)}</div>
-                      <div className="mt-0.5 text-[11px] text-slate-400">Customer {formatDriverMoneyCompact(customerTotal)}</div>
+                      <div className="rounded-[1rem] border border-white/8 bg-white/[0.03] p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Operations</p>
+                          <span className="text-sm font-semibold text-white">{compactSubtotal}</span>
+                        </div>
+
+                        <div className="space-y-2 rounded-[0.95rem] bg-slate-950/42 p-2.5">
+                          <div className="flex items-start justify-between gap-3 text-sm">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Rider</p>
+                              <p className="mt-0.5 font-medium text-white">{ride.rider.name}</p>
+                            </div>
+                            <p className="max-w-[8.5rem] text-right text-[11px] text-slate-300">{ride.rider.phone ?? "No rider phone"}</p>
+                          </div>
+
+                          <div className="h-px bg-white/6" />
+
+                          <div className="flex items-start justify-between gap-3 text-sm">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Payment</p>
+                              <p className="mt-0.5 font-medium text-white">{formatPaymentMethod(ride.payment.method)}</p>
+                            </div>
+                            <p className="text-right text-[11px] text-slate-300">Customer {formatDriverMoneyCompact(customerTotal)}</p>
+                          </div>
+
+                          <div className="h-px bg-white/6" />
+
+                          <div className="flex items-start justify-between gap-3 text-sm">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Timing</p>
+                              <p className="mt-0.5 font-medium text-white">{timingLabel}</p>
+                            </div>
+                            <p className="text-right text-[11px] text-slate-300">Keep this route open</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {nextStatus ? (
-                    <div className="mt-2.5 space-y-2 rounded-[1rem] border border-teal-500/16 bg-teal-500/[0.07] p-3">
+                    <div className="mt-2.5 space-y-2 rounded-[1rem] border border-teal-500/18 bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(6,182,212,0.08))] p-3.5 shadow-[0_18px_40px_rgba(13,148,136,0.14)]">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Next action</p>
-                          <p className="mt-1 text-sm font-semibold text-white">Mark as {nextActionLabel}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Primary action</p>
+                          <p className="mt-1 text-base font-semibold text-white">Mark as {nextActionLabel}</p>
+                          <p className="mt-1 text-[11px] text-slate-300">Advance the live trip state with one tap.</p>
                         </div>
-                        <Badge className="border-white/10 bg-slate-950/60 text-slate-100">{stageLabel}</Badge>
+                        <Badge className="border-white/10 bg-slate-950/60 text-slate-100">{mobileStageLabel}</Badge>
                       </div>
                       <Button className="h-11 w-full rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-sm font-bold text-white shadow-xl shadow-teal-500/30 hover:from-teal-400 hover:to-cyan-400" disabled={statusMutation.isPending} onClick={() => statusMutation.mutate(nextStatus)}>
                         <Navigation className="mr-2 h-4 w-4" />
@@ -277,16 +332,11 @@ export function DriverRidePage() {
                     </div>
                   )}
 
-                  <div className="mt-2.5 grid grid-cols-[1fr_auto] gap-2">
-                    <Link
-                      to="/driver"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/60 px-4 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
-                    >
+                  <div className="mt-2.5 flex items-center justify-between gap-3 px-1">
+                    <p className="text-[11px] text-slate-400">Trip route stays live while this screen is open.</p>
+                    <Link to="/driver" className="text-[11px] font-medium text-slate-300 underline-offset-4 transition hover:text-white hover:underline">
                       Driver home
                     </Link>
-                    <div className="inline-flex h-10 items-center rounded-xl border border-white/8 bg-white/[0.03] px-3.5 text-[11px] text-slate-300">
-                      {ride.rider.phone ?? "No rider phone"}
-                    </div>
                   </div>
                 </div>
               </div>
