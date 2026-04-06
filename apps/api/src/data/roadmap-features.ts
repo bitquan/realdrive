@@ -209,7 +209,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Measure referral and campaign effectiveness",
     category: "admin",
     area: "Growth / Admin",
-    phase: "later",
+    phase: "completed",
     impact: "medium",
     order: 19
   },

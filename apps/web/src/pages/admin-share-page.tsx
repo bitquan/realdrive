@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Link2, Route, Share2, ShieldCheck, Users } from "lucide-react";
 import {
+  DataField,
+  EntityList,
   MetricCard,
   MetricStrip,
   PanelSection,
@@ -25,6 +27,16 @@ export function AdminSharePage() {
     queryFn: () => api.meShare(token!),
     enabled: Boolean(token)
   });
+  const ridesQuery = useQuery({
+    queryKey: ["admin-rides", "share-analytics"],
+    queryFn: () => api.listAdminRides(token!),
+    enabled: Boolean(token)
+  });
+  const leadsQuery = useQuery({
+    queryKey: ["admin-leads", "share-analytics"],
+    queryFn: () => api.listAdminLeads(token!),
+    enabled: Boolean(token)
+  });
 
   const baseUrl = publicOrigin();
   const riderUrl = `${baseUrl}/`;
@@ -32,6 +44,30 @@ export function AdminSharePage() {
   const collectorDriverUrl = shareQuery.data?.referralCode
     ? `${baseUrl}/driver/signup?ref=${encodeURIComponent(shareQuery.data.referralCode)}`
     : genericDriverUrl;
+  const rides = ridesQuery.data ?? [];
+  const riderLeads = leadsQuery.data?.riderLeads ?? [];
+  const referredRides = rides.filter((ride) => Boolean(ride.referredByCode));
+  const referredCompletedRides = referredRides.filter((ride) => ride.status === "completed");
+  const referredRides30d = referredRides.filter((ride) => isWithinDays(ride.requestedAt, 30));
+  const referredLeads = riderLeads.filter((lead) => Boolean(lead.referredByCode));
+  const byCode = buildReferralCodeStats(referredLeads, referredRides);
+  const topCodes = Array.from(byCode.values())
+    .sort((left, right) => {
+      if (right.completedRides !== left.completedRides) {
+        return right.completedRides - left.completedRides;
+      }
+
+      if (right.rides !== left.rides) {
+        return right.rides - left.rides;
+      }
+
+      return right.leads - left.leads;
+    })
+    .slice(0, 6);
+  const myCodeStats = shareQuery.data?.referralCode ? byCode.get(shareQuery.data.referralCode) : undefined;
+  const completionRate = referredRides.length
+    ? `${Math.round((referredCompletedRides.length / referredRides.length) * 100)}%`
+    : "0%";
 
   return (
     <div className="space-y-6">
@@ -47,6 +83,65 @@ export function AdminSharePage() {
         <MetricCard label="Team management" value="/admin/team" meta="Trusted operator invites now live in the Team tab" icon={Users} />
         <MetricCard label="Guide" value="/admin/help" meta="Collector FAQ and workflow notes" icon={ShieldCheck} />
       </MetricStrip>
+
+      <PanelSection title="Share and referral analytics" description="Track referral-code performance across lead capture and ride completion.">
+        <MetricStrip className="xl:grid-cols-5">
+          <MetricCard label="Referred leads" value={referredLeads.length} meta="Captured with a referral code" icon={Users} tone="primary" />
+          <MetricCard label="Referred rides" value={referredRides.length} meta="Booked rides tied to a code" icon={Route} />
+          <MetricCard label="Completed rides" value={referredCompletedRides.length} meta="Referred rides that completed" icon={ShieldCheck} />
+          <MetricCard label="Last 30 days" value={referredRides30d.length} meta="Recent referred booking volume" icon={Share2} />
+          <MetricCard label="Completion rate" value={completionRate} meta="Completed / referred rides" icon={Link2} />
+        </MetricStrip>
+
+        <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <Card className="border-ops-border-soft/90 bg-ops-surface/72">
+            <CardHeader>
+              <CardTitle>My code performance</CardTitle>
+              <CardDescription>Snapshot for your collector referral code.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {shareQuery.data?.referralCode ? (
+                <>
+                  <DataField label="Referral code" value={shareQuery.data.referralCode} subtle="Use this for driver recruitment and campaign attribution." />
+                  <DataField label="Referred leads" value={myCodeStats?.leads ?? 0} subtle="Leads captured with your code." />
+                  <DataField label="Referred rides" value={myCodeStats?.rides ?? 0} subtle="Rides booked with your code." />
+                  <DataField label="Completed referred rides" value={myCodeStats?.completedRides ?? 0} subtle="Completed bookings attributed to your code." />
+                </>
+              ) : (
+                <div className="rounded-[1.25rem] border border-dashed border-ops-border p-4 text-sm text-ops-muted">
+                  Referral code still initializing. Refresh this page after your account code is issued.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-ops-border-soft/90 bg-ops-surface/72">
+            <CardHeader>
+              <CardTitle>Top referral codes</CardTitle>
+              <CardDescription>Ranked by completed rides, then total referred rides.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EntityList>
+                {topCodes.length ? (
+                  topCodes.map((entry) => (
+                    <div key={entry.code} className="rounded-[1.25rem] border border-ops-border-soft/80 bg-ops-panel/46 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-semibold text-ops-text">{entry.code}</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-ops-muted">{entry.completedRides} completed</p>
+                      </div>
+                      <p className="mt-2 text-sm text-ops-muted">{entry.rides} rides · {entry.leads} leads</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[1.25rem] border border-dashed border-ops-border p-4 text-sm text-ops-muted">
+                    No referral activity yet. Share campaigns will appear here once leads and rides begin flowing.
+                  </div>
+                )}
+              </EntityList>
+            </CardContent>
+          </Card>
+        </div>
+      </PanelSection>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <ShareQrCard
@@ -126,4 +221,63 @@ export function AdminSharePage() {
       </div>
     </div>
   );
+}
+
+function isWithinDays(isoDate: string | null, days: number) {
+  if (!isoDate) {
+    return false;
+  }
+
+  const timestamp = Date.parse(isoDate);
+  if (Number.isNaN(timestamp)) {
+    return false;
+  }
+
+  const age = Date.now() - timestamp;
+  return age >= 0 && age <= days * 24 * 60 * 60 * 1000;
+}
+
+function buildReferralCodeStats(
+  leads: Array<{ referredByCode: string | null }>,
+  rides: Array<{ referredByCode: string | null; status: string }>
+) {
+  const stats = new Map<string, { code: string; leads: number; rides: number; completedRides: number }>();
+
+  for (const lead of leads) {
+    if (!lead.referredByCode) {
+      continue;
+    }
+
+    const current = stats.get(lead.referredByCode) ?? {
+      code: lead.referredByCode,
+      leads: 0,
+      rides: 0,
+      completedRides: 0
+    };
+
+    current.leads += 1;
+    stats.set(lead.referredByCode, current);
+  }
+
+  for (const ride of rides) {
+    if (!ride.referredByCode) {
+      continue;
+    }
+
+    const current = stats.get(ride.referredByCode) ?? {
+      code: ride.referredByCode,
+      leads: 0,
+      rides: 0,
+      completedRides: 0
+    };
+
+    current.rides += 1;
+    if (ride.status === "completed") {
+      current.completedRides += 1;
+    }
+
+    stats.set(ride.referredByCode, current);
+  }
+
+  return stats;
 }

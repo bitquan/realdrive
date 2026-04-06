@@ -226,7 +226,8 @@ Primary docs:
 
 Checklist:
 
-- [ ] Share/referral analytics panel.
+- [x] Share/referral analytics panel.
+	- Added a live referral analytics panel to [apps/web/src/pages/admin-share-page.tsx](../apps/web/src/pages/admin-share-page.tsx) using existing admin rides and leads workflows.
 - [ ] Service-area map editor.
 - [ ] Surge and market condition indicators.
 - [ ] Automated anomaly alerts.
