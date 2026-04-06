@@ -380,10 +380,14 @@ export function DriverDashboardPage() {
 
                 <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="pointer-events-auto flex max-w-[76%] items-center gap-2 rounded-full border border-white/10 bg-slate-950/72 px-4 py-2.5 shadow-[0_18px_44px_rgba(2,6,23,0.35)] backdrop-blur-2xl">
-                      <span className={`h-2 w-2 rounded-full ${suspended ? "bg-red-400" : profileQuery.data?.available ? "bg-teal-400 shadow-lg shadow-teal-400/45" : "bg-slate-500"}`} />
-                      <span className="truncate text-sm font-medium text-white">{statusLabel}</span>
-                      <span className="truncate text-xs text-slate-400">• {dispatchSummary}</span>
+                    <div className="pointer-events-auto flex max-w-[68%] flex-col gap-1.5">
+                      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/72 px-3.5 py-2 shadow-[0_18px_44px_rgba(2,6,23,0.35)] backdrop-blur-2xl">
+                        <span className={`h-2 w-2 rounded-full ${suspended ? "bg-red-400" : profileQuery.data?.available ? "bg-teal-400 shadow-lg shadow-teal-400/45" : "bg-slate-500"}`} />
+                        <span className="truncate text-sm font-medium text-white">{statusLabel}</span>
+                      </div>
+                      <div className="rounded-full border border-white/8 bg-slate-950/56 px-3.5 py-1.5 text-[11px] text-slate-300 shadow-[0_14px_32px_rgba(2,6,23,0.24)] backdrop-blur-xl">
+                        <span className="block truncate">{dispatchSummary}</span>
+                      </div>
                     </div>
 
                     <div className="pointer-events-auto flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-slate-950/68 px-3 py-2 shadow-[0_18px_44px_rgba(2,6,23,0.32)] backdrop-blur-2xl">
@@ -394,8 +398,8 @@ export function DriverDashboardPage() {
 
                   {liveOffer && mobileHomeState !== "ride" ? (
                     <div className="mt-2 flex justify-center">
-                      <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-slate-950/72 px-4 py-2 shadow-[0_18px_44px_rgba(2,6,23,0.32)] backdrop-blur-2xl">
-                        <span className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Offer</span>
+                      <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-500/22 bg-slate-950/70 px-3.5 py-1.5 shadow-[0_18px_44px_rgba(2,6,23,0.28)] backdrop-blur-2xl">
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Offer</span>
                         <span className="text-sm font-bold text-white">{getDriverOfferCountdown(liveOffer, now) ?? "Queued"}</span>
                       </div>
                     </div>
@@ -449,7 +453,7 @@ export function DriverDashboardPage() {
                       </div>
 
                       {hasActiveTrip && mobileHomeState !== "ride" ? (
-                        <div className="mb-2">
+                        <div className="mt-1 mb-1.5">
                           <DriverActiveRideCard ride={activeRide} emphasize={requestedTab === "ride" || (!liveOffer && hasActiveTrip)} mobileDocked />
                         </div>
                       ) : null}

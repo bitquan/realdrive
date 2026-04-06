@@ -38,7 +38,7 @@ export function DriverOfferInbox({
 }: DriverOfferInboxProps) {
   if (mobile) {
     return offers.length ? (
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         {offers.map((ride) => {
           const pricing = getDriverRidePricing(ride);
           const countdown = getDriverOfferCountdown(ride, now);
@@ -47,7 +47,7 @@ export function DriverOfferInbox({
           const displayMinutes = formatDriverMinutesCompact(ride.estimatedMinutes);
 
           return (
-            <div key={ride.id} className="rounded-[1.1rem] border border-white/10 bg-slate-950/30 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div key={ride.id} className="rounded-[1rem] border border-white/10 bg-slate-950/28 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{ride.pickup.address}</p>
@@ -56,22 +56,16 @@ export function DriverOfferInbox({
                 <Badge className="border-white/10 bg-slate-950/70 px-2 py-1 text-[11px] text-slate-200">{countdown ?? "Queued"}</Badge>
               </div>
 
-              <div className="mt-2.5 grid grid-cols-2 gap-2">
-                <div className="rounded-[0.95rem] border border-white/8 bg-slate-900/28 p-2.5">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Payout</p>
-                  <p className="mt-1.5 font-semibold text-white">{displayPayout}</p>
-                </div>
-                <div className="rounded-[0.95rem] border border-white/8 bg-slate-900/28 p-2.5">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Trip size</p>
-                  <p className="mt-1.5 font-semibold text-white">{displayMiles} · {displayMinutes}</p>
-                </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-slate-400">
+                <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-slate-200">{displayPayout}</span>
+                <span>{displayMiles} · {displayMinutes}</span>
               </div>
 
-              <div className="mt-2.5 grid grid-cols-[1fr_auto] gap-2">
-                <Button className="h-10 text-sm" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
+              <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                <Button className="h-9 text-sm" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
                   {acceptMutation.isPending ? "Accepting..." : "Accept"}
                 </Button>
-                <Button variant="outline" className="h-10 min-w-[96px] border-slate-700/50 bg-slate-800/60 px-4 text-sm text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
+                <Button variant="outline" className="h-9 min-w-[88px] border-slate-700/50 bg-slate-800/60 px-3.5 text-sm text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
                   Decline
                 </Button>
               </div>
