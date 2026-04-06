@@ -570,27 +570,72 @@ export function AdminDispatchPage() {
 
   return (
     <div className="space-y-5">
-      <SurfaceHeader
-        eyebrow="Dispatch"
-        title="Ride-first admin dispatch"
-        description="Monitor live queues, spin up real test jobs with real addresses, and keep rider and driver workflow checks in one admin workspace."
-        actions={[
-          { label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" },
-          { label: "Driver settings", to: "/admin/drivers", icon: Users, variant: "secondary" }
-        ]}
-        aside={
-          <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Dispatch model</p>
-            <div className="mt-4 space-y-3 text-sm leading-6 text-ops-muted">
-              <p>V1 dispatch stays ride-first and reuses the live ride, offer, payment, and tracking system already in production.</p>
-              <p>Test rides are clearly labeled, can target one approved driver account, and still use real address routing and pricing.</p>
-              <p>The split-screen lab keeps rider context on top and driver context on bottom so admin can validate both sides together.</p>
-            </div>
+      <div className="space-y-4 lg:hidden">
+        <div className="rounded-[1.7rem] border border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.98),rgba(9,12,17,0.98))] p-4 shadow-panel">
+          <Badge className="border-ops-border-soft bg-ops-panel/92">Dispatch</Badge>
+          <h2 className="mt-3 text-[1.45rem] font-extrabold tracking-[-0.035em] text-ops-text">Ride-first admin dispatch</h2>
+          <p className="mt-2 text-sm leading-6 text-ops-muted">Live queue, ride detail, and route context tuned for the phone control surface.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              to="/admin"
+              className="inline-flex h-10 items-center justify-center rounded-2xl border border-ops-border px-3.5 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+            >
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Overview
+            </Link>
+            <Link
+              to="/admin/drivers"
+              className="inline-flex h-10 items-center justify-center rounded-2xl border border-ops-border px-3.5 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Driver settings
+            </Link>
           </div>
-        }
-      />
+        </div>
 
-      <MetricStrip className="xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Active</p>
+            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{activeRides.length}</p>
+          </div>
+          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Scheduled</p>
+            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{scheduledRides.length}</p>
+          </div>
+          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Awaiting pay</p>
+            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{ridesAwaitingCollection}</p>
+          </div>
+          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Live pings</p>
+            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{livePingCount}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="hidden lg:block">
+        <SurfaceHeader
+          eyebrow="Dispatch"
+          title="Ride-first admin dispatch"
+          description="Monitor live queues, spin up real test jobs with real addresses, and keep rider and driver workflow checks in one admin workspace."
+          actions={[
+            { label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" },
+            { label: "Driver settings", to: "/admin/drivers", icon: Users, variant: "secondary" }
+          ]}
+          aside={
+            <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Dispatch model</p>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-ops-muted">
+                <p>V1 dispatch stays ride-first and reuses the live ride, offer, payment, and tracking system already in production.</p>
+                <p>Test rides are clearly labeled, can target one approved driver account, and still use real address routing and pricing.</p>
+                <p>The split-screen lab keeps rider context on top and driver context on bottom so admin can validate both sides together.</p>
+              </div>
+            </div>
+          }
+        />
+      </div>
+
+      <MetricStrip className="hidden lg:grid xl:grid-cols-5">
         <MetricCard label="Active rides" value={activeRides.length} meta="Requested through in-progress rides" icon={Route} />
         <MetricCard label="Scheduled rides" value={scheduledRides.length} meta="Future dispatch holds" icon={Navigation} tone="primary" />
         <MetricCard label="Awaiting collection" value={ridesAwaitingCollection} meta="Dispatch rides not marked collected yet" icon={CreditCard} tone="warning" />
@@ -729,10 +774,10 @@ export function AdminDispatchPage() {
             <DispatchDetailCard ride={selectedRide} updateRideMutation={updateRideMutation} />
 
             {selectedRide ? (
-              <DeferredLiveMap ride={selectedRide} title="Live route map" height={520} meta="Ride-first dispatch uses the selected ride's pickup, dropoff, and latest driver ping when the live workflow has already sent one." />
+              <DeferredLiveMap ride={selectedRide} title="Live route map" height={360} meta="Ride-first dispatch uses the selected ride's pickup, dropoff, and latest driver ping when the live workflow has already sent one." />
             ) : (
               <Card className="overflow-hidden">
-                <CardContent className="flex min-h-[520px] items-center justify-center p-8 text-center">
+                <CardContent className="flex min-h-[360px] items-center justify-center p-6 text-center">
                   <EmptyState title="No ride in focus" description="Select a ride from the queue to load the live route context here." className="max-w-md" />
                 </CardContent>
               </Card>
