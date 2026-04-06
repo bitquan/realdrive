@@ -253,11 +253,11 @@ export function AppShell() {
           </div>
         </aside>
 
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-40 border-b border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(7,9,13,0.96),rgba(6,8,12,0.94))] backdrop-blur supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
             <div className="px-3 py-2.5 md:px-6 md:py-4">
-              <div className="flex items-center justify-between gap-2 lg:hidden">
-                <Link to="/" className="flex min-w-0 items-center gap-2.5">
+              <div className="flex min-w-0 items-center justify-between gap-2 lg:hidden">
+                <Link to="/" className="flex min-w-0 flex-1 items-center gap-2.5">
                   <div className="rounded-2xl border border-ops-border bg-ops-panel/88 p-2 text-ops-primary">
                     <CarFront className="h-4 w-4" />
                   </div>
@@ -267,7 +267,7 @@ export function AppShell() {
                   </div>
                 </Link>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1.5">
                   {user && !isDriverContext ? (
                     <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
                       {roleLabel(user.role)}
@@ -297,35 +297,37 @@ export function AppShell() {
               </div>
 
               {user?.roles.length && user.roles.length > 1 && !isDriverContext ? (
-                <div className="mt-2 flex gap-2 overflow-x-auto pb-0.5 lg:hidden">
-                  {user.roles.map((role) => {
-                    const Icon = roleIcons[role];
-                    const active = user.role === role;
+                <div className="mt-2 max-w-full overflow-x-auto pb-0.5 lg:hidden">
+                  <div className="flex w-max gap-2">
+                    {user.roles.map((role) => {
+                      const Icon = roleIcons[role];
+                      const active = user.role === role;
 
-                    return (
-                      <button
-                        key={role}
-                        type="button"
-                        onClick={() => goToRole(role)}
-                        className={cn(
-                          "inline-flex h-9 shrink-0 items-center rounded-2xl border px-3 text-xs font-semibold transition",
-                          active
-                            ? "border-ops-primary/40 bg-ops-primary/16 text-ops-text"
-                            : "border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] text-ops-muted hover:border-ops-primary/28 hover:text-ops-text"
-                        )}
-                      >
-                        <Icon className={cn("mr-2 h-3.5 w-3.5", active ? "text-ops-primary" : "text-ops-muted")} />
-                        {roleLabel(role)}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={role}
+                          type="button"
+                          onClick={() => goToRole(role)}
+                          className={cn(
+                            "inline-flex h-9 shrink-0 items-center rounded-2xl border px-3 text-xs font-semibold transition",
+                            active
+                              ? "border-ops-primary/40 bg-ops-primary/16 text-ops-text"
+                              : "border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] text-ops-muted hover:border-ops-primary/28 hover:text-ops-text"
+                          )}
+                        >
+                          <Icon className={cn("mr-2 h-3.5 w-3.5", active ? "text-ops-primary" : "text-ops-muted")} />
+                          {roleLabel(role)}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
 
               {!mobileHeaderMinimal ? (
-                <div className="mt-2.5 lg:hidden">
+                <div className="mt-2.5 min-w-0 lg:hidden">
                   <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{frame.eyebrow}</p>
-                  <h1 className="mt-1 text-lg font-extrabold tracking-[-0.03em] text-ops-text">{frame.title}</h1>
+                  <h1 className="mt-1 truncate text-lg font-extrabold tracking-[-0.03em] text-ops-text">{frame.title}</h1>
                 </div>
               ) : null}
 
@@ -413,7 +415,7 @@ export function AppShell() {
 
           <main
             className={cn(
-              "flex-1 px-4 pb-28 pt-3 md:px-6 md:pb-10 md:pt-5",
+              "min-w-0 flex-1 px-4 pb-28 pt-3 md:px-6 md:pb-10 md:pt-5",
               isDriverContext && "pt-2 md:pt-3",
               frame.layout === "immersive" && "px-3 pt-3 md:px-5 md:pt-4"
             )}

@@ -315,6 +315,7 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       title: "Dispatch workspace",
       description: "Watch active and scheduled ride routes from one ride-first workspace. V1 dispatch is ride-first and does not add a new idle-driver live-location API.",
       mapMode: "ambient",
+      mobileHeaderMode: "minimal",
       actions: [
         { label: "Overview", to: "/admin", icon: LayoutDashboard, variant: "secondary" },
         { label: "Drivers", to: "/admin/drivers", icon: Users, variant: "secondary" }
