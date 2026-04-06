@@ -20,6 +20,7 @@ const RideDetailsPage = lazy(() => import("@/pages/ride-details-page").then((mod
 const DriverInterestPage = lazy(() => import("@/pages/driver-interest-page").then((module) => ({ default: module.DriverInterestPage })));
 const DriverLoginPage = lazy(() => import("@/pages/driver-login-page").then((module) => ({ default: module.DriverLoginPage })));
 const DriverDashboardPage = lazy(() => import("@/pages/driver-dashboard-page").then((module) => ({ default: module.DriverDashboardPage })));
+const DriverInboxPage = lazy(() => import("@/pages/driver-inbox-page").then((module) => ({ default: module.DriverInboxPage })));
 const DriverRidePage = lazy(() => import("@/pages/driver-ride-page").then((module) => ({ default: module.DriverRidePage })));
 const MockDriverIdlePage = lazy(() => import("@/pages/mock-driver-idle-page").then((module) => ({ default: module.MockDriverIdlePage })));
 const MockDriverOfferPage = lazy(() => import("@/pages/mock-driver-offer-page").then((module) => ({ default: module.MockDriverOfferPage })));
@@ -287,6 +288,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRole role="driver">
                   <PageLoader><DriverDashboardPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="driver/inbox"
+              element={
+                <RequireRole role="driver">
+                  <PageLoader><DriverInboxPage /></PageLoader>
                 </RequireRole>
               }
             />

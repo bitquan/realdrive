@@ -25,6 +25,7 @@ export interface DriverOfferInboxProps {
   acceptMutation: RideActionMutation;
   declineMutation: RideActionMutation;
   mobile?: boolean;
+  shellMode?: "home" | "route";
 }
 
 export function DriverOfferInbox({
@@ -34,7 +35,8 @@ export function DriverOfferInbox({
   now,
   acceptMutation,
   declineMutation,
-  mobile = false
+  mobile = false,
+  shellMode = "home"
 }: DriverOfferInboxProps) {
   if (mobile) {
     return offers.length ? (
@@ -47,7 +49,7 @@ export function DriverOfferInbox({
           const displayMinutes = formatDriverMinutesCompact(ride.estimatedMinutes);
 
           return (
-            <div key={ride.id} className="rounded-[1rem] border border-white/10 bg-slate-950/28 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div key={ride.id} className={`rounded-[1rem] border p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] ${shellMode === "route" ? "border-teal-500/14 bg-[linear-gradient(180deg,rgba(10,16,28,0.92),rgba(6,10,18,0.92))]" : "border-white/10 bg-slate-950/28"}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{ride.pickup.address}</p>
@@ -57,9 +59,11 @@ export function DriverOfferInbox({
               </div>
 
               <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-slate-400">
-                <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-slate-200">{displayPayout}</span>
+                <span className={`rounded-full border px-2.5 py-1 text-slate-200 ${shellMode === "route" ? "border-teal-400/16 bg-teal-400/10" : "border-white/8 bg-white/[0.03]"}`}>{displayPayout}</span>
                 <span>{displayMiles} · {displayMinutes}</span>
               </div>
+
+              {shellMode === "route" ? <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-slate-500">{formatPaymentMethod(ride.payment.method)} · {ride.rideType.toUpperCase()}</p> : null}
 
               <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
                 <Button className="h-9 text-sm" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
@@ -74,7 +78,7 @@ export function DriverOfferInbox({
         })}
       </div>
     ) : (
-      <div className="rounded-[1.35rem] border border-dashed border-white/10 bg-slate-950/28 px-4 py-6 text-center">
+      <div className={`rounded-[1.35rem] border border-dashed px-4 py-6 text-center ${shellMode === "route" ? "border-teal-500/16 bg-slate-950/46" : "border-white/10 bg-slate-950/28"}`}>
         <p className="text-sm text-slate-200">{available ? "No offers in the inbox right now." : "Go online to start receiving jobs in the inbox."}</p>
       </div>
     );

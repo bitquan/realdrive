@@ -39,7 +39,7 @@ export function AppShell() {
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
   const [dismissedPrompt, setDismissedPrompt] = useState(false);
   const isDriverContext = user?.role === "driver" || location.pathname.startsWith("/driver");
-  const mobileItems = getMobileNavItems(user, { driverRidePath: "/driver?tab=ride" });
+  const mobileItems = getMobileNavItems(user, { driverRidePath: "/driver?tab=ride", driverInboxPath: "/driver/inbox" });
 
   const canCheckNotificationApi = typeof window !== "undefined" && "Notification" in window;
   const permission = canCheckNotificationApi ? Notification.permission : "default";

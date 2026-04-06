@@ -465,6 +465,18 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     }
   },
   {
+    patterns: ["/driver/inbox"],
+    frame: {
+      eyebrow: "Driver",
+      title: "Offer inbox",
+      description: "Triaging pending jobs stays inside the same live map shell instead of dropping into a separate admin page.",
+      layout: "immersive",
+      mapMode: "immersive",
+      mobileHeaderMode: "minimal",
+      actions: [{ label: "Dashboard", to: "/driver", icon: Route, variant: "secondary" }]
+    }
+  },
+  {
     patterns: ["/ads/display/:referralCode"],
     frame: {
       eyebrow: "Ads",
@@ -641,7 +653,7 @@ export function getShellSections(user: SessionUser | null): ShellSection[] {
   return sections;
 }
 
-export function getMobileNavItems(user: SessionUser | null, options?: { driverRidePath?: string }): ShellNavItem[] {
+export function getMobileNavItems(user: SessionUser | null, options?: { driverRidePath?: string; driverInboxPath?: string }): ShellNavItem[] {
   const notificationsItem = sharedItems.find((item) => item.id === "notifications");
 
   if (user?.role === "admin") {
@@ -690,11 +702,18 @@ export function getMobileNavItems(user: SessionUser | null, options?: { driverRi
       id: "driver-inbox-mobile",
       label: "Inbox",
       shortLabel: "Inbox",
-      to: "/driver?tab=inbox",
+      to: options?.driverInboxPath ?? "/driver?tab=inbox",
       icon: ClipboardList,
-      matchPatterns: ["/driver"],
-      searchParamKey: "tab",
-      searchParamValue: "inbox",
+      matchPatterns: options?.driverInboxPath?.startsWith("/driver/inbox") ? ["/driver/inbox", "/driver"] : ["/driver"],
+      ...(options?.driverInboxPath?.startsWith("/driver/inbox")
+        ? {
+            searchParamKey: "tab",
+            searchParamValue: "inbox"
+          }
+        : {
+            searchParamKey: "tab",
+            searchParamValue: "inbox"
+          }),
       roles: ["driver"]
     };
 
@@ -753,7 +772,7 @@ export function isNavItemActive(item: ShellNavItem, pathname: string, search = "
   const value = params.get(item.searchParamKey);
 
   if (!value) {
-    return Boolean(item.activeWhenSearchMissing);
+    return Boolean(item.activeWhenSearchMissing) || pathname === destinationPath;
   }
 
   return value === item.searchParamValue;
