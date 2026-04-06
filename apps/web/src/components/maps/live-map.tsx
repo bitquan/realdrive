@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Map, { Marker } from "react-map-gl/mapbox";
+import Map, { Layer, Marker, Source } from "react-map-gl/mapbox";
 import { MapPin, Navigation } from "lucide-react";
 import type { Ride } from "@shared/contracts";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -11,6 +11,31 @@ function midpoint(ride: Ride) {
   return {
     longitude: (ride.pickup.lng + ride.dropoff.lng) / 2,
     latitude: (ride.pickup.lat + ride.dropoff.lat) / 2
+  };
+}
+
+function getRouteSegments(ride: Ride) {
+  const pickup: [number, number] = [ride.pickup.lng, ride.pickup.lat];
+  const dropoff: [number, number] = [ride.dropoff.lng, ride.dropoff.lat];
+  const current: [number, number] | null = ride.latestLocation ? [ride.latestLocation.lng, ride.latestLocation.lat] : null;
+
+  if (ride.status === "in_progress") {
+    return {
+      primary: current ? [current, dropoff] : [pickup, dropoff],
+      secondary: current ? [pickup, current] : null
+    };
+  }
+
+  if (["accepted", "en_route", "arrived"].includes(ride.status)) {
+    return {
+      primary: current ? [current, pickup] : [pickup, dropoff],
+      secondary: [pickup, dropoff]
+    };
+  }
+
+  return {
+    primary: [pickup, dropoff],
+    secondary: null
   };
 }
 
@@ -28,6 +53,7 @@ export function LiveMap({
   surfaceChrome?: "card" | "bare";
 }) {
   const center = midpoint(ride);
+  const routeSegments = getRouteSegments(ride);
 
   const renderFallbackMap = () => {
     if (surfaceChrome === "bare") {
@@ -57,14 +83,22 @@ export function LiveMap({
           <div className="absolute bottom-0 top-0 left-[36%] w-px bg-gradient-to-b from-transparent via-slate-500/40 to-transparent" />
           <div className="absolute bottom-0 top-0 left-[68%] w-0.5 bg-gradient-to-b from-transparent via-slate-500/45 to-transparent" />
 
-          <div className="absolute left-[26%] top-[26%] flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.55)]" />
-            <span className="h-px w-20 bg-gradient-to-r from-cyan-400/70 to-transparent" />
-          </div>
-          <div className="absolute bottom-[32%] right-[28%] flex items-center gap-2">
-            <span className="h-px w-20 bg-gradient-to-r from-transparent to-teal-400/70" />
-            <span className="h-3 w-3 rounded-full bg-teal-400 shadow-[0_0_24px_rgba(45,212,191,0.55)]" />
-          </div>
+          <svg className="absolute inset-[12%] h-[76%] w-[76%]" viewBox="0 0 100 100" aria-hidden="true">
+            {ride.status === "in_progress" ? (
+              <>
+                <path d="M 28 76 Q 44 60 51 56" fill="none" stroke="rgba(148,163,184,0.35)" strokeWidth="2.5" strokeDasharray="5 5" strokeLinecap="round" />
+                <path d="M 51 56 Q 66 46 78 24" fill="none" stroke="rgba(45,212,191,0.88)" strokeWidth="3.5" strokeLinecap="round" />
+              </>
+            ) : (
+              <>
+                <path d="M 40 44 Q 58 36 78 24" fill="none" stroke="rgba(148,163,184,0.35)" strokeWidth="2.5" strokeDasharray="5 5" strokeLinecap="round" />
+                <path d="M 52 66 Q 46 58 40 44" fill="none" stroke="rgba(45,212,191,0.88)" strokeWidth="3.5" strokeLinecap="round" />
+              </>
+            )}
+          </svg>
+
+          <div className="absolute left-[37%] top-[34%] h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.55)]" />
+          <div className="absolute right-[19%] top-[19%] h-3 w-3 rounded-full bg-teal-400 shadow-[0_0_24px_rgba(45,212,191,0.55)]" />
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="relative">
@@ -119,6 +153,50 @@ export function LiveMap({
         mapStyle="mapbox://styles/mapbox/dark-v11"
         mapboxAccessToken={MAPBOX_TOKEN}
       >
+        {routeSegments.secondary && routeSegments.secondary.length > 1 ? (
+          <Source
+            id={`driver-route-secondary-${ride.id}`}
+            type="geojson"
+            data={{
+              type: "Feature",
+              properties: {},
+              geometry: { type: "LineString", coordinates: routeSegments.secondary }
+            }}
+          >
+            <Layer
+              id={`driver-route-secondary-layer-${ride.id}`}
+              type="line"
+              paint={{
+                "line-color": "rgba(148,163,184,0.52)",
+                "line-width": 3,
+                "line-dasharray": [2, 2]
+              }}
+            />
+          </Source>
+        ) : null}
+
+        {routeSegments.primary && routeSegments.primary.length > 1 ? (
+          <Source
+            id={`driver-route-primary-${ride.id}`}
+            type="geojson"
+            data={{
+              type: "Feature",
+              properties: {},
+              geometry: { type: "LineString", coordinates: routeSegments.primary }
+            }}
+          >
+            <Layer
+              id={`driver-route-primary-layer-${ride.id}`}
+              type="line"
+              paint={{
+                "line-color": "rgba(45,212,191,0.94)",
+                "line-width": 4,
+                "line-blur": 0.2
+              }}
+            />
+          </Source>
+        ) : null}
+
         <Marker longitude={ride.pickup.lng} latitude={ride.pickup.lat}>
           <div className="rounded-full bg-ops-primary p-2 text-white shadow-lg">
             <MapPin className="h-4 w-4" />
