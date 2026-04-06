@@ -43,6 +43,9 @@ const AdminDuesPage = lazy(() => import("@/pages/admin-dues-page").then((module)
 const AdminDataPage = lazy(() => import("@/pages/admin-data-page").then((module) => ({ default: module.AdminDataPage })));
 const AdminAuditPage = lazy(() => import("@/pages/admin-audit-page").then((module) => ({ default: module.AdminAuditPage })));
 const AdminHelpPage = lazy(() => import("@/pages/admin-help-page").then((module) => ({ default: module.AdminHelpPage })));
+const AdminFeatureRequestsPage = lazy(() =>
+  import("@/pages/admin-feature-requests-page").then((module) => ({ default: module.AdminFeatureRequestsPage }))
+);
 const AdminInviteAcceptPage = lazy(() => import("@/pages/admin-invite-accept-page").then((module) => ({ default: module.AdminInviteAcceptPage })));
 const CommunityJoinPage = lazy(() => import("@/pages/community-join-page").then((module) => ({ default: module.CommunityJoinPage })));
 const CommunityPage = lazy(() => import("@/pages/community-page").then((module) => ({ default: module.CommunityPage })));
@@ -401,6 +404,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <RequireRole role="admin">
                   <PageLoader><AdminHelpPage /></PageLoader>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="admin/feature-requests"
+              element={
+                <RequireRole role="admin">
+                  <PageLoader><AdminFeatureRequestsPage /></PageLoader>
                 </RequireRole>
               }
             />

@@ -287,6 +287,14 @@ const adminItems: ShellNavItem[] = [
     icon: BookOpen,
     matchPatterns: ["/admin/help"],
     roles: ["admin"]
+  },
+  {
+    id: "admin-feature-requests",
+    label: "Feature triage",
+    to: "/admin/feature-requests",
+    icon: Lightbulb,
+    matchPatterns: ["/admin/feature-requests"],
+    roles: ["admin"]
   }
 ];
 

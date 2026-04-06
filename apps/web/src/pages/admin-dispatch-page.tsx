@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { CarFront, CreditCard, ExternalLink, LayoutDashboard, Navigation, Route, Search, TestTubeDiagonal, UserRound, Users } from "lucide-react";
 import type { AdminCreateTestRideInput, DriverAccount, Ride, RideStatus } from "@shared/contracts";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
+import { RideTimeline } from "@/components/ride/ride-timeline";
 import {
   DataField,
   EntityList,
@@ -17,11 +18,20 @@ import { AddressAutocompleteInput } from "@/components/ui/address-autocomplete-i
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
+import {
+  type DispatchPriorityMode,
+  getDispatchPriorityMeta,
+  getScheduledRideOpsMeta,
+  sortDispatchQueue
+} from "./admin-ops.utils";
 
 const ACTIVE_DISPATCH_STATUSES: RideStatus[] = ["requested", "offered", "accepted", "en_route", "arrived", "in_progress"];
 
@@ -130,8 +140,11 @@ function DispatchDetailCard({
   if (!ride) {
     return (
       <Card className="overflow-hidden">
-        <CardContent className="p-6 text-sm text-ops-muted">
-          Choose an active or scheduled ride to inspect the real route and dispatch controls.
+        <CardContent className="p-6">
+          <EmptyState
+            title="No ride selected"
+            description="Choose an active or scheduled ride to inspect the real route and dispatch controls."
+          />
         </CardContent>
       </Card>
     );
@@ -146,6 +159,8 @@ function DispatchDetailCard({
           {ride.test.isTest ? <Badge className="bg-amber-500/20 text-amber-200">Test ride</Badge> : null}
           {ride.driver ? <Badge className="bg-ops-surface">{ride.driver.name}</Badge> : null}
         </div>
+
+        <RideTimeline ride={ride} compact />
 
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Selected ride</p>
@@ -255,8 +270,11 @@ function TestRideSplitView({
   if (!ride) {
     return (
       <Card>
-        <CardContent className="p-6 text-sm text-ops-muted">
-          Create or select a test ride to open the rider-on-top and driver-on-bottom workflow monitor.
+        <CardContent className="p-6">
+          <EmptyState
+            title="No test ride selected"
+            description="Create or select a test ride to open the rider-on-top and driver-on-bottom workflow monitor."
+          />
         </CardContent>
       </Card>
     );
@@ -403,9 +421,11 @@ function TestRideSplitView({
 
 export function AdminDispatchPage() {
   const { token } = useAuth();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const [workspaceTab, setWorkspaceTab] = useState<DispatchWorkspaceTab>("queue");
   const [bucket, setBucket] = useState<DispatchQueueBucket>("active");
+  const [priorityMode, setPriorityMode] = useState<DispatchPriorityMode>("dispatch_balance");
   const [selectedRideId, setSelectedRideId] = useState("");
   const [selectedTestRideId, setSelectedTestRideId] = useState("");
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
@@ -430,6 +450,10 @@ export function AdminDispatchPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin-rides"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-dues"] });
+      toast.success("Dispatch ride updated", "Queue and dues data are refreshed.");
+    },
+    onError: (error) => {
+      toast.error("Dispatch update failed", error instanceof Error ? error.message : "Please try again.");
     }
   });
 
@@ -442,6 +466,10 @@ export function AdminDispatchPage() {
       setTrackingUrl(result.trackingUrl);
       setTestRideForm(initialTestRideForm);
       void queryClient.invalidateQueries({ queryKey: ["admin-rides"] });
+      toast.success("Test ride created", "Split-screen validation is ready.");
+    },
+    onError: (error) => {
+      toast.error("Could not create test ride", error instanceof Error ? error.message : "Please try again.");
     }
   });
 
@@ -482,10 +510,13 @@ export function AdminDispatchPage() {
     }
   }, [selectedTestRideId, testRides]);
 
-  const queueRides = bucket === "active" ? filteredActiveRides : filteredScheduledRides;
-  const alternateQueue = bucket === "active" ? filteredScheduledRides : filteredActiveRides;
-  const selectedRide = [...filteredActiveRides, ...filteredScheduledRides].find((ride) => ride.id === selectedRideId) ?? queueRides[0] ?? alternateQueue[0] ?? null;
+  const prioritizedActiveRides = useMemo(() => sortDispatchQueue(filteredActiveRides, priorityMode), [filteredActiveRides, priorityMode]);
+  const prioritizedScheduledRides = useMemo(() => sortDispatchQueue(filteredScheduledRides, priorityMode), [filteredScheduledRides, priorityMode]);
+  const queueRides = bucket === "active" ? prioritizedActiveRides : prioritizedScheduledRides;
+  const alternateQueue = bucket === "active" ? prioritizedScheduledRides : prioritizedActiveRides;
+  const selectedRide = [...prioritizedActiveRides, ...prioritizedScheduledRides].find((ride) => ride.id === selectedRideId) ?? queueRides[0] ?? alternateQueue[0] ?? null;
   const selectedTestRide = testRides.find((ride) => ride.id === selectedTestRideId) ?? testRides[0] ?? null;
+  const scheduledOpsRows = prioritizedScheduledRides.slice(0, 6).map((ride) => ({ ride, meta: getScheduledRideOpsMeta(ride) }));
 
   useEffect(() => {
     if (selectedTestRide?.publicTrackingToken) {
@@ -498,6 +529,16 @@ export function AdminDispatchPage() {
   const ridesAwaitingCollection = rides.filter((ride) => [...ACTIVE_DISPATCH_STATUSES, "scheduled"].includes(ride.status) && ride.payment.status !== "collected").length;
   const livePingCount = rides.filter((ride) => [...ACTIVE_DISPATCH_STATUSES, "scheduled"].includes(ride.status) && ride.latestLocation).length;
   const openTestRideCount = testRides.filter((ride) => !["completed", "canceled", "expired"].includes(ride.status)).length;
+
+  if (ridesQuery.isLoading || driversQuery.isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-80 w-full" />
+      </div>
+    );
+  }
 
   function handleCreateTestRide() {
     createTestRideMutation.mutate({
@@ -588,6 +629,20 @@ export function AdminDispatchPage() {
         </select>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/60 p-4">
+        <p className="text-sm font-semibold text-ops-text">Queue priority</p>
+        <select
+          value={priorityMode}
+          onChange={(event) => setPriorityMode(event.target.value as DispatchPriorityMode)}
+          className="h-11 rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 text-sm text-ops-text outline-none transition focus:border-ops-primary/70"
+        >
+          <option value="dispatch_balance">Release timing</option>
+          <option value="manual_attention">Manual attention</option>
+          <option value="highest_value">Highest value</option>
+        </select>
+        <p className="text-sm text-ops-muted">Sort live and scheduled queues by release timing, manual follow-up risk, or rider total.</p>
+      </div>
+
       {workspaceTab === "queue" ? (
         <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
           <PanelSection title="Ride queue" description="Filter by rider, driver, ride status, payment method, and test labels without leaving the live dispatch view." contentClassName="space-y-4">
@@ -616,20 +671,48 @@ export function AdminDispatchPage() {
                     </div>
                     <p className="mt-3 line-clamp-2 text-sm leading-6 text-ops-text">{ride.pickup.address}</p>
                     <p className="mt-1 line-clamp-2 text-sm leading-6 text-ops-muted">{ride.dropoff.address}</p>
+                    <p className="mt-2 text-sm text-ops-muted">{getDispatchPriorityMeta(ride, priorityMode).detail}</p>
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
                       <span>{formatPaymentMethod(ride.payment.method)}</span>
-                      <span>{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</span>
+                      <span>{getDispatchPriorityMeta(ride, priorityMode).label}</span>
                     </div>
                     {ride.test.label ? <p className="mt-2 text-xs text-amber-200">{ride.test.label}</p> : null}
                   </EntityListItem>
                 ))
               ) : (
-                <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">No rides match this dispatch queue right now.</div>
+                <EmptyState title="No queue matches" description="No rides match this dispatch queue right now." />
               )}
             </EntityList>
           </PanelSection>
 
           <div className="space-y-6">
+            <PanelSection title="Scheduled ride ops" description="The next future rides releasing into dispatch are grouped here for proactive handling.">
+              <EntityList>
+                {scheduledOpsRows.length ? (
+                  scheduledOpsRows.map(({ ride, meta }) => (
+                    <button
+                      key={ride.id}
+                      type="button"
+                      onClick={() => {
+                        setBucket("scheduled");
+                        setSelectedRideId(ride.id);
+                      }}
+                      className="w-full rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4 text-left transition hover:border-ops-primary/35"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-semibold text-ops-text">{ride.rider.name}</p>
+                        <Badge>{meta.label}</Badge>
+                      </div>
+                      <p className="mt-2 text-sm text-ops-muted">{meta.detail}</p>
+                      <p className="mt-3 text-xs uppercase tracking-[0.18em] text-ops-muted">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)} · {ride.pickup.address}</p>
+                    </button>
+                  ))
+                ) : (
+                  <EmptyState title="No scheduled rides" description="No scheduled rides are waiting right now." />
+                )}
+              </EntityList>
+            </PanelSection>
+
             <div className="xl:hidden">
               <DispatchDetailCard ride={selectedRide} updateRideMutation={updateRideMutation} />
             </div>
@@ -639,8 +722,8 @@ export function AdminDispatchPage() {
                 <DeferredLiveMap ride={selectedRide} title="Live route map" height={860} meta="Ride-first dispatch uses the selected ride's pickup, dropoff, and latest driver ping when the live workflow has already sent one." />
               ) : (
                 <Card className="overflow-hidden">
-                  <CardContent className="flex min-h-[860px] items-center justify-center p-8 text-center text-sm text-ops-muted">
-                    Select a ride from the queue to load the live route context here.
+                  <CardContent className="flex min-h-[860px] items-center justify-center p-8 text-center">
+                    <EmptyState title="No ride in focus" description="Select a ride from the queue to load the live route context here." className="max-w-md" />
                   </CardContent>
                 </Card>
               )}

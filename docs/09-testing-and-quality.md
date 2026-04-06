@@ -26,7 +26,7 @@ Current coverage includes:
 - Scheduled ride release behavior
 - First-accept-wins dispatch protection
 - Driver-owned ride cancellation with reason logging
-- Route-level integration coverage for protected driver endpoints and quote pricing
+- Route-level integration coverage for protected driver endpoints, quote pricing, and admin issue-report triage filtering
 
 ## Current Frontend Test State
 
@@ -35,6 +35,7 @@ Current status:
 - Frontend test runner is configured
 - Baseline React Testing Library + jsdom setup is in place
 - Frontend component coverage now includes `Button`, `DriverLiveOfferCard`, `DriverOfferInbox`, and `DriverOnboardingChecklist`
+- Admin ops utility coverage now includes driver review priority, dispatch sorting, dues validation, moderation priority, and issue-intake summaries in `apps/web/src/pages/admin-ops.utils.test.ts`
 - Playwright now covers both screenshot baselines and one interactive mobile driver continuity flow from live offer acceptance into the trip cockpit
 
 ## Manual QA Checklist

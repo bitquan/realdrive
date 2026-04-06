@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { Clock3, CreditCard, Phone, Share2, User, Vote } from "lucide-react";
+import { CreditCard, Phone, Share2, User, Vote } from "lucide-react";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import {
   BottomActionBar,
@@ -8,11 +8,41 @@ import {
   MapPanel,
   PanelSection
 } from "@/components/layout/ops-layout";
+import { RideTimeline } from "@/components/ride/ride-timeline";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
+
+function statusSupportCopy(status: string) {
+  if (status === "requested" || status === "offered") {
+    return "Dispatch is still matching a driver. This page refreshes automatically every few seconds.";
+  }
+
+  if (status === "accepted" || status === "en_route") {
+    return "Driver is assigned and heading to pickup. Contact and route details stay live here.";
+  }
+
+  if (status === "arrived") {
+    return "Driver reached pickup. Confirm trip handoff and continue watching progress from this link.";
+  }
+
+  if (status === "in_progress") {
+    return "Trip is active. Route and ETA remain synced with the latest ride status.";
+  }
+
+  if (status === "completed") {
+    return "Trip completed. Keep this link for history and referral follow-up.";
+  }
+
+  if (status === "canceled") {
+    return "Trip canceled. This tracking view preserves final trip context for support follow-up.";
+  }
+
+  return "Trip status is synced from the live dispatch workflow.";
+}
 
 export function PublicTrackPage() {
   const { token = "" } = useParams();
@@ -26,12 +56,17 @@ export function PublicTrackPage() {
   if (!trackQuery.data) {
     return (
       <Card>
-        <CardContent className="p-8 text-sm text-ops-muted">Loading trip tracking...</CardContent>
+        <CardContent className="space-y-3 p-6">
+          <Skeleton className="h-5 w-44" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </CardContent>
       </Card>
     );
   }
 
   const { ride, share, communityAccess } = trackQuery.data;
+  const supportCopy = statusSupportCopy(ride.status);
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -44,8 +79,8 @@ export function PublicTrackPage() {
         />
 
         <MapPanel
-          title="Tracking panel"
-          meta="This public link stays focused on the actual ride state, driver assignment, and rider follow-up tools."
+          title="Public tracking panel"
+          meta="Live rider status, ETA context, and referral follow-up stay in one public tracking workspace."
           footer={
             <div className="grid gap-3 md:grid-cols-3">
               <DataField label="Status" value={ride.status.replaceAll("_", " ")} />
@@ -93,15 +128,11 @@ export function PublicTrackPage() {
               ) : null}
             </div>
 
+            <RideTimeline ride={ride} compact />
+
             <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
-              <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                <Clock3 className="h-4 w-4" />
-                Timing
-              </div>
-              <p className="font-semibold text-ops-text">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
-              <p className="mt-1 text-sm text-ops-muted">
-                {ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes
-              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Status clarity</p>
+              <p className="mt-2 text-sm leading-6 text-ops-muted">{supportCopy}</p>
             </div>
 
             <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">

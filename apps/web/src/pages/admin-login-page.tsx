@@ -3,15 +3,17 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormActions, FormField, FormLayout } from "@/components/ui/form-layout";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
   const { user, loginAdmin } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -24,7 +26,11 @@ export function AdminLoginPage() {
   const loginMutation = useMutation({
     mutationFn: loginAdmin,
     onSuccess: () => {
+      toast.success("Signed in", "Admin session is active.");
       void navigate("/admin");
+    },
+    onError: (error) => {
+      toast.error("Sign-in failed", error instanceof Error ? error.message : "Unable to sign in.");
     }
   });
 
@@ -57,33 +63,35 @@ export function AdminLoginPage() {
               {setupStatusQuery.error.message}
             </div>
           ) : null}
-          <form className="space-y-4" onSubmit={onSubmit}>
-          <div className="space-y-2">
-            <Label htmlFor="adminEmail">Email</Label>
-            <Input
-              id="adminEmail"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="adminPassword">Password</Label>
-            <Input
-              id="adminPassword"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
-            />
-          </div>
-          {loginMutation.error ? <p className="text-sm text-ops-error">{loginMutation.error.message}</p> : null}
-          <Button className="w-full" type="submit" disabled={loginMutation.isPending || !email || !password}>
-            Sign in
-          </Button>
+          <form onSubmit={onSubmit}>
+            <FormLayout>
+              <FormField label="Email" htmlFor="adminEmail">
+                <Input
+                  id="adminEmail"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                />
+              </FormField>
+              <FormField label="Password" htmlFor="adminPassword">
+                <Input
+                  id="adminPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Password"
+                />
+              </FormField>
+              {loginMutation.error ? <p className="text-sm text-ops-error">{loginMutation.error.message}</p> : null}
+              <FormActions>
+                <Button className="w-full" type="submit" disabled={loginMutation.isPending || !email || !password}>
+                  Sign in
+                </Button>
+              </FormActions>
+            </FormLayout>
           </form>
         </CardContent>
       </Card>

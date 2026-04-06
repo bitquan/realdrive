@@ -4085,6 +4085,46 @@ export const store: Store = {
     return comments.map(mapCommunityComment);
   },
 
+  async listAdminCommunityProposals(viewerId) {
+    const proposals = await prisma.communityProposal.findMany({
+      orderBy: [{ hidden: "asc" }, { pinned: "desc" }, { updatedAt: "desc" }],
+      include: {
+        author: true,
+        votes: true,
+        comments: true
+      }
+    });
+
+    return proposals.map((proposal) => mapCommunityProposal(proposal, viewerId));
+  },
+
+  async getAdminCommunityProposalById(proposalId, viewerId) {
+    const proposal = await prisma.communityProposal.findUnique({
+      where: { id: proposalId },
+      include: {
+        author: true,
+        votes: true,
+        comments: true
+      }
+    });
+
+    return proposal ? mapCommunityProposal(proposal, viewerId) : null;
+  },
+
+  async listAdminCommunityComments(proposalId) {
+    const comments = await prisma.communityComment.findMany({
+      where: {
+        proposalId
+      },
+      orderBy: { createdAt: "asc" },
+      include: {
+        author: true
+      }
+    });
+
+    return comments.map(mapCommunityComment);
+  },
+
   async createCommunityComment(proposalId, authorId, input) {
     const comment = await prisma.communityComment.create({
       data: {
@@ -4412,6 +4452,15 @@ export const store: Store = {
     });
 
     return mapIssueReport(report);
+  },
+
+  async listIssueReports(limit = 120) {
+    const reports = await prisma.issueReport.findMany({
+      orderBy: { createdAt: "desc" },
+      take: Math.min(Math.max(limit, 1), 200)
+    });
+
+    return reports.map(mapIssueReport);
   },
 
   async updateIssueReportGitHubSync(reportId, patch) {

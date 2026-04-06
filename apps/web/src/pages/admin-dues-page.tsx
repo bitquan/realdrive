@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { getDueWorkflowValidation, getPayoutInstructionPreview } from "./admin-ops.utils";
 
 type ScopeFilter = "owned" | "all";
 
@@ -220,6 +221,14 @@ function BatchEditor({
       void queryClient.invalidateQueries({ queryKey: ["driver-dues"] });
     }
   });
+  const validation = getDueWorkflowValidation({
+    status,
+    paymentMethod,
+    observedTitle,
+    observedNote,
+    adminNote,
+    referenceCode: batch.referenceCode
+  });
 
   return (
     <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-surface/72 p-5">
@@ -253,6 +262,10 @@ function BatchEditor({
 
       <div className="mt-4 rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm text-ops-muted">
         Pending driver ad credit available: <span className="font-semibold text-ops-text">{formatMoney(pendingAdCredit)}</span>
+      </div>
+
+      <div className="mt-4 rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm text-ops-muted">
+        Detected dues code: <span className="font-semibold text-ops-text">{validation.referenceCode ?? "Not detected yet"}</span>
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
@@ -305,10 +318,17 @@ function BatchEditor({
         >
           Apply ad credits to this batch
         </Button>
-        <Button disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+        <Button disabled={mutation.isPending || !validation.ready} onClick={() => mutation.mutate()}>
           Save batch
         </Button>
       </div>
+      {validation.warnings.length ? (
+        <div className="mt-3 rounded-[1.2rem] border border-ops-warning/25 bg-ops-warning/10 p-4 text-sm text-ops-warning">
+          {validation.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </div>
+      ) : null}
       {mutation.error ? <p className="mt-3 text-sm text-ops-error">{mutation.error.message}</p> : null}
       {applyAdCreditsMutation.error ? <p className="mt-3 text-sm text-ops-error">{applyAdCreditsMutation.error.message}</p> : null}
     </div>
@@ -352,6 +372,14 @@ function ReconcilePanel({
       void queryClient.invalidateQueries({ queryKey: ["admin-dues"] });
       void queryClient.invalidateQueries({ queryKey: ["driver-dues"] });
     }
+  });
+  const validation = getDueWorkflowValidation({
+    status: "paid",
+    paymentMethod: form.paymentMethod,
+    observedTitle: form.observedTitle,
+    observedNote: form.observedNote,
+    adminNote: form.adminNote,
+    referenceText: form.referenceText
   });
 
   return (
@@ -405,10 +433,20 @@ function ReconcilePanel({
         </div>
       </div>
       <div className="mt-5">
-        <Button disabled={!form.referenceText || mutation.isPending} onClick={() => mutation.mutate()}>
+        <Button disabled={!form.referenceText || mutation.isPending || !validation.ready} onClick={() => mutation.mutate()}>
           Reconcile batch
         </Button>
       </div>
+      <div className="mt-4 rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm text-ops-muted">
+        Detected dues code: <span className="font-semibold text-ops-text">{validation.referenceCode ?? "Not detected yet"}</span>
+      </div>
+      {validation.warnings.length ? (
+        <div className="mt-3 rounded-[1.2rem] border border-ops-warning/25 bg-ops-warning/10 p-4 text-sm text-ops-warning">
+          {validation.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </div>
+      ) : null}
       {mutation.error ? <p className="mt-3 text-sm text-ops-error">{mutation.error.message}</p> : null}
     </PanelSection>
   );
@@ -497,6 +535,7 @@ export function AdminDuesPage() {
       ) as Record<string, number>,
     [duesQuery.data?.needsBatching]
   );
+  const payoutPreview = getPayoutInstructionPreview(payoutForm);
 
   return (
     <div className="space-y-6">
@@ -555,6 +594,22 @@ export function AdminDuesPage() {
               <Button disabled={payoutMutation.isPending} onClick={() => payoutMutation.mutate()}>
                 Save dues instructions
               </Button>
+            </div>
+            <div className="mt-5 rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Driver-facing preview</p>
+              <p className="mt-2 text-sm text-ops-muted">Last updated {payoutPreview.updatedAtLabel}.</p>
+              {payoutPreview.hasInstructions ? (
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {payoutPreview.entries.map((entry) => (
+                    <div key={entry.label} className="rounded-[1.1rem] border border-ops-border-soft/90 bg-ops-surface/72 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">{entry.label}</p>
+                      <p className="mt-2 text-sm text-ops-text">{entry.value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-ops-muted">Drivers will see “Not set yet” until you save at least one collector instruction.</p>
+              )}
             </div>
             {payoutMutation.error ? <p className="mt-3 text-sm text-ops-error">{payoutMutation.error.message}</p> : null}
           </PanelSection>

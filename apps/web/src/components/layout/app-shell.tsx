@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { CarFront, LogOut, Route, Shield, UserRound } from "lucide-react";
+import { Bell, CarFront, LogOut, Route, Shield, UserRound } from "lucide-react";
 import type { Role } from "@shared/contracts";
 import { AmbientShellMap } from "@/components/layout/ambient-shell-map";
 import { Badge } from "@/components/ui/badge";
@@ -274,6 +274,16 @@ export function AppShell() {
                     <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
                       Guest
                     </Badge>
+                  ) : null}
+
+                  {user ? (
+                    <Link
+                      to="/notifications"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-ops-border-soft bg-ops-panel/82 text-ops-muted transition hover:text-ops-text"
+                      aria-label="Open notifications"
+                    >
+                      <Bell className="h-4 w-4" />
+                    </Link>
                   ) : null}
 
                   {user ? (

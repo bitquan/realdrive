@@ -57,12 +57,18 @@ Primary docs:
 
 Checklist:
 
-- [ ] Unified form patterns across rider, driver, and admin.
-- [ ] Standard empty states and skeleton states.
-- [ ] Consistent action hierarchy across all role surfaces.
-- [ ] Mobile-first nav consistency, including notifications access.
-- [ ] Global toasts and mutation confirmations.
-- [ ] Ride timeline component shared across roles.
+- [x] Unified form patterns across rider, driver, and admin.
+	- Added shared form primitives in [apps/web/src/components/ui/form-layout.tsx](../apps/web/src/components/ui/form-layout.tsx) and applied them in [apps/web/src/pages/admin-login-page.tsx](../apps/web/src/pages/admin-login-page.tsx), [apps/web/src/pages/driver-login-page.tsx](../apps/web/src/pages/driver-login-page.tsx), [apps/web/src/pages/request-feature-page.tsx](../apps/web/src/pages/request-feature-page.tsx), and [apps/web/src/pages/report-bug-page.tsx](../apps/web/src/pages/report-bug-page.tsx).
+- [x] Standard empty states and skeleton states.
+	- Added shared [apps/web/src/components/ui/empty-state.tsx](../apps/web/src/components/ui/empty-state.tsx) and [apps/web/src/components/ui/skeleton.tsx](../apps/web/src/components/ui/skeleton.tsx), then adopted them in [apps/web/src/pages/ride-details-page.tsx](../apps/web/src/pages/ride-details-page.tsx), [apps/web/src/pages/driver-ride-page.tsx](../apps/web/src/pages/driver-ride-page.tsx), and [apps/web/src/pages/admin-dispatch-page.tsx](../apps/web/src/pages/admin-dispatch-page.tsx).
+- [x] Consistent action hierarchy across all role surfaces.
+	- Standardized primary-submit and secondary-navigation action groups via shared form actions in [apps/web/src/components/ui/form-layout.tsx](../apps/web/src/components/ui/form-layout.tsx) and role pages under [apps/web/src/pages](../apps/web/src/pages).
+- [x] Mobile-first nav consistency, including notifications access.
+	- Added explicit mobile notifications access in [apps/web/src/components/layout/app-shell.tsx](../apps/web/src/components/layout/app-shell.tsx) while preserving role-based bottom nav in [apps/web/src/lib/shell.ts](../apps/web/src/lib/shell.ts).
+- [x] Global toasts and mutation confirmations.
+	- Added [apps/web/src/providers/toast-provider.tsx](../apps/web/src/providers/toast-provider.tsx), wired it in [apps/web/src/providers/app-providers.tsx](../apps/web/src/providers/app-providers.tsx), and connected mutation success/error confirmations across rider, driver, admin, and issue-intake pages.
+- [x] Ride timeline component shared across roles.
+	- Added [apps/web/src/components/ride/ride-timeline.tsx](../apps/web/src/components/ride/ride-timeline.tsx), covered it with [apps/web/src/components/ride/ride-timeline.test.tsx](../apps/web/src/components/ride/ride-timeline.test.tsx), and embedded it in [apps/web/src/pages/ride-details-page.tsx](../apps/web/src/pages/ride-details-page.tsx), [apps/web/src/pages/driver-ride-page.tsx](../apps/web/src/pages/driver-ride-page.tsx), and [apps/web/src/pages/admin-dispatch-page.tsx](../apps/web/src/pages/admin-dispatch-page.tsx).
 
 ## Layer 2 — Architecture And Data
 
@@ -92,11 +98,16 @@ Primary docs:
 
 Checklist:
 
-- [ ] Rider booking form UX refresh.
-- [ ] Public tracking page v2 layout.
-- [ ] Rider cancellation reason capture.
-- [ ] Improve rider-side trust and status clarity during live rides.
-- [ ] Keep guest rider flow as the primary acquisition path while improving conversion quality.
+- [x] Rider booking form UX refresh.
+	- Refined guest-booking guidance and booking CTA hierarchy in [apps/web/src/pages/home-page.tsx](../apps/web/src/pages/home-page.tsx) to keep the rider form clearer and faster to complete.
+- [x] Public tracking page v2 layout.
+	- Upgraded public tracking with shared timeline, trust/status copy, and loading skeletons in [apps/web/src/pages/public-track-page.tsx](../apps/web/src/pages/public-track-page.tsx).
+- [x] Rider cancellation reason capture.
+	- Added rider cancellation reason selection and optional notes in [apps/web/src/pages/ride-details-page.tsx](../apps/web/src/pages/ride-details-page.tsx), wired through the existing cancel input contract.
+- [x] Improve rider-side trust and status clarity during live rides.
+	- Added status-specific trust/support messaging and timeline context in [apps/web/src/pages/ride-details-page.tsx](../apps/web/src/pages/ride-details-page.tsx) and [apps/web/src/pages/public-track-page.tsx](../apps/web/src/pages/public-track-page.tsx).
+- [x] Keep guest rider flow as the primary acquisition path while improving conversion quality.
+	- Reinforced no-login booking path and conversion-support messaging in [apps/web/src/pages/home-page.tsx](../apps/web/src/pages/home-page.tsx) while preserving rider lead/share conversion flow.
 
 ## Layer 4 — Driver Layer
 
@@ -134,14 +145,22 @@ Primary docs:
 
 Checklist:
 
-- [ ] Admin dashboard KPI cards v2.
-- [ ] Driver review workflow upgrades.
-- [ ] Dispatch queue prioritization controls.
-- [ ] Scheduled rides operations panel.
-- [ ] Dues collection workflow hardening.
-- [ ] Payout instructions UX upgrade.
-- [ ] Community moderation queue improvements.
-- [ ] Feature request triage dashboard.
+- [x] Admin dashboard KPI cards v2.
+	- Expanded [apps/web/src/pages/admin-dashboard-page.tsx](../apps/web/src/pages/admin-dashboard-page.tsx) with driver-review, feature-triage, moderation, dues, and scheduled-release KPIs.
+- [x] Driver review workflow upgrades.
+	- Added review-priority sorting and filter chips in [apps/web/src/pages/admin-drivers-page.tsx](../apps/web/src/pages/admin-drivers-page.tsx).
+- [x] Dispatch queue prioritization controls.
+	- Added queue priority modes and priority messaging in [apps/web/src/pages/admin-dispatch-page.tsx](../apps/web/src/pages/admin-dispatch-page.tsx).
+- [x] Scheduled rides operations panel.
+	- Added scheduled-release buckets and quick-open scheduled ride controls in [apps/web/src/pages/admin-dispatch-page.tsx](../apps/web/src/pages/admin-dispatch-page.tsx).
+- [x] Dues collection workflow hardening.
+	- Added reconciliation and batch-save validation warnings in [apps/web/src/pages/admin-dues-page.tsx](../apps/web/src/pages/admin-dues-page.tsx).
+- [x] Payout instructions UX upgrade.
+	- Added a driver-facing payout preview in [apps/web/src/pages/admin-dues-page.tsx](../apps/web/src/pages/admin-dues-page.tsx).
+- [x] Community moderation queue improvements.
+	- Admin moderation now loads hidden proposals/comments and queue filters in [apps/web/src/pages/community-page.tsx](../apps/web/src/pages/community-page.tsx).
+- [x] Feature request triage dashboard.
+	- Added [apps/web/src/pages/admin-feature-requests-page.tsx](../apps/web/src/pages/admin-feature-requests-page.tsx) with API support in [apps/api/src/app.ts](../apps/api/src/app.ts).
 
 ## Layer 6 — Shared Product Layer
 

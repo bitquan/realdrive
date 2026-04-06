@@ -1399,6 +1399,37 @@ export function buildApp() {
     return reply.send(overview);
   });
 
+  app.get("/admin/issue-reports", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const parsed = z
+      .object({
+        kind: z.enum(["all", "feature_request", "bug_report"]).default("all"),
+        syncStatus: z.enum(["all", "pending", "synced", "failed"]).default("all"),
+        limit: z.coerce.number().int().min(1).max(200).default(120)
+      })
+      .safeParse(request.query);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error.flatten());
+    }
+
+    const reports = await store.listIssueReports(parsed.data.limit);
+    const filtered = reports.filter((report) => {
+      const kind = report.metadata && typeof report.metadata.kind === "string" ? report.metadata.kind : "other";
+
+      if (parsed.data.kind !== "all" && kind !== parsed.data.kind) {
+        return false;
+      }
+
+      if (parsed.data.syncStatus !== "all" && report.githubSyncStatus !== parsed.data.syncStatus) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return reply.send({ reports: filtered });
+  });
+
   app.post("/issues/report", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
     const parsed = createIssueReportSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -2617,6 +2648,31 @@ export function buildApp() {
     });
 
     return reply.status(201).send(comment);
+  });
+
+  app.get("/admin/community/proposals", { preHandler: requireRole("admin") }, async (request) => {
+    const [eligibility, proposals] = await Promise.all([
+      store.getCommunityEligibility(request.userContext),
+      store.listAdminCommunityProposals(request.userContext.id)
+    ]);
+
+    return {
+      proposals,
+      eligibility
+    };
+  });
+
+  app.get("/admin/community/proposals/:id/comments", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const proposal = await store.getAdminCommunityProposalById((request.params as { id: string }).id, request.userContext.id);
+    if (!proposal) {
+      return reply.notFound("Proposal not found");
+    }
+
+    return {
+      proposal,
+      comments: await store.listAdminCommunityComments((request.params as { id: string }).id),
+      eligibility: await store.getCommunityEligibility(request.userContext)
+    };
   });
 
   app.patch("/admin/community/proposals/:id", { preHandler: requireRole("admin") }, async (request, reply) => {

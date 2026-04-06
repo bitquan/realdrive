@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CreditCard, MessageSquare, QrCode, Route, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, ClipboardList, CreditCard, MessageSquare, QrCode, Route, ShieldCheck, UserPlus, Users } from "lucide-react";
 import type { RideStatus } from "@shared/contracts";
 import {
   DataField,
@@ -15,6 +15,12 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import {
+  getCommunityModerationMeta,
+  getDriverReviewQueueMeta,
+  getScheduledRideOpsMeta,
+  summarizeIssueReports
+} from "./admin-ops.utils";
 
 export function AdminDashboardPage() {
   const { token } = useAuth();
@@ -40,8 +46,13 @@ export function AdminDashboardPage() {
     enabled: Boolean(token)
   });
   const communityQuery = useQuery({
-    queryKey: ["community-board"],
-    queryFn: () => api.listCommunityProposals(token!),
+    queryKey: ["admin-community-board"],
+    queryFn: () => api.listAdminCommunityProposals(token!),
+    enabled: Boolean(token)
+  });
+  const issueReportsQuery = useQuery({
+    queryKey: ["admin-issue-reports"],
+    queryFn: () => api.listAdminIssueReports(token!),
     enabled: Boolean(token)
   });
 
@@ -73,10 +84,27 @@ export function AdminDashboardPage() {
     ["requested", "offered", "accepted", "en_route", "arrived", "in_progress"].includes(ride.status)
   ).length;
   const scheduledCount = rides.filter((ride) => ride.status === "scheduled").length;
+  const scheduledReleaseSoon = rides.filter((ride) => getScheduledRideOpsMeta(ride).bucket === "release_soon" || getScheduledRideOpsMeta(ride).bucket === "release_now").length;
   const pendingDueTotal =
     needsBatching.reduce((total, snapshot) => total + snapshot.collectibleUnbatchedTotal, 0) +
     openBatches.reduce((total, batch) => total + batch.amount, 0) +
     overdueBatches.reduce((total, batch) => total + batch.amount, 0);
+  const reviewReadyCount = pendingApplications.filter((driver) => getDriverReviewQueueMeta(driver).stage === "ready").length;
+  const issueSummary = summarizeIssueReports(issueReportsQuery.data?.reports ?? []);
+  const featureRequestPendingCount = (issueReportsQuery.data?.reports ?? []).filter(
+    (report) =>
+      report.metadata &&
+      typeof report.metadata.kind === "string" &&
+      report.metadata.kind === "feature_request" &&
+      report.githubSyncStatus !== "synced"
+  ).length;
+  const moderationAttentionCount = (communityQuery.data?.proposals ?? []).filter(
+    (proposal) => getCommunityModerationMeta(proposal).priority >= 70
+  ).length;
+  const moderationQueue = (communityQuery.data?.proposals ?? [])
+    .map((proposal) => ({ proposal, meta: getCommunityModerationMeta(proposal) }))
+    .sort((left, right) => right.meta.priority - left.meta.priority)
+    .slice(0, 4);
   const requestFeatureUrl = `/request-feature?source=admin_dashboard&contextPath=${encodeURIComponent("/admin")}`;
 
   return (
@@ -89,6 +117,7 @@ export function AdminDashboardPage() {
           { label: "Dispatch", to: "/admin/dispatch", icon: Route, variant: "primary" },
           { label: "Data", to: "/admin/data", icon: Users, variant: "secondary" },
           { label: "Review drivers", to: "/admin/drivers", icon: Users, variant: "secondary" },
+          { label: "Feature triage", to: "/admin/feature-requests", icon: ClipboardList, variant: "secondary" },
           { label: "Manage dues", to: "/admin/dues", icon: CreditCard, variant: "secondary" },
           { label: "Team", to: "/admin/team", icon: ShieldCheck, variant: "secondary" },
           { label: "Share kit", to: "/admin/share", icon: QrCode, variant: "secondary" },
@@ -98,9 +127,9 @@ export function AdminDashboardPage() {
           <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Control notes</p>
             <div className="mt-4 space-y-3 text-sm leading-6 text-ops-muted">
-              <p>{pendingApplications.length} pending driver applications are waiting on approval.</p>
-              <p>{openBatches.length + overdueBatches.length} open dues batches can affect driver availability and dispatch.</p>
-              <p>{communityQuery.data?.proposals.length ?? 0} community proposals are live right now.</p>
+              <p>{reviewReadyCount} driver packets are fully ready for final approval.</p>
+              <p>{scheduledReleaseSoon} scheduled rides land inside the immediate release window.</p>
+              <p>{featureRequestPendingCount} feature requests still need GitHub sync or triage follow-up.</p>
             </div>
             <Link
               to={requestFeatureUrl}
@@ -113,9 +142,12 @@ export function AdminDashboardPage() {
         }
       />
 
-      <MetricStrip className="xl:grid-cols-6">
+      <MetricStrip className="xl:grid-cols-8">
         <MetricCard label="Active rides" value={activeCount} meta="Requested through in-progress trips" icon={Route} />
-        <MetricCard label="Scheduled rides" value={scheduledCount} meta="Future dispatch holds" icon={Route} />
+        <MetricCard label="Scheduled rides" value={scheduledCount} meta={`${scheduledReleaseSoon} releasing soon`} icon={Route} />
+        <MetricCard label="Ready reviews" value={reviewReadyCount} meta="Packets cleared for final approval" icon={ShieldCheck} tone="primary" />
+        <MetricCard label="Feature triage" value={featureRequestPendingCount} meta={`${issueSummary.failedSync} sync failures`} icon={ClipboardList} tone="warning" />
+        <MetricCard label="Moderation" value={moderationAttentionCount} meta="Community items with active review pressure" icon={MessageSquare} tone="warning" />
         <MetricCard
           label="Pending dues"
           value={formatMoney(pendingDueTotal)}
@@ -157,14 +189,28 @@ export function AdminDashboardPage() {
               <DataField
                 label="Driver approvals"
                 value={`${pendingApplications.length} pending`}
-                subtle="Approve or reject real applications before they can enter the driver app."
+                subtle={`${reviewReadyCount} packets are ready to move from review into live approval.`}
               />
               <DataField
-                label="Community board"
-                value={`${communityQuery.data?.proposals.length ?? 0} proposals`}
-                subtle="Admins can pin, close, and hide content from the live shared board."
+                label="Feature triage"
+                value={`${issueSummary.featureRequests} requests`}
+                subtle={`${issueSummary.pendingSync} pending sync · ${issueSummary.failedSync} failed sync.`}
               />
             </div>
+          </PanelSection>
+
+          <PanelSection title="Priority board" description="Keep the next admin actions visible across review, dispatch, finance, and product intake.">
+            <EntityList>
+              <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+                <DataField label="Driver queue" value={`${reviewReadyCount} ready to approve`} subtle="Start in Driver settings to clear fully reviewed packets first." />
+              </div>
+              <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+                <DataField label="Scheduled release" value={`${scheduledReleaseSoon} rides soon`} subtle="Open Dispatch and sort by release priority to line up the next future rides." />
+              </div>
+              <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+                <DataField label="Feature intake" value={`${featureRequestPendingCount} triage items`} subtle="Review in-app requests before they fall behind the GitHub queue." />
+              </div>
+            </EntityList>
           </PanelSection>
 
           <PanelSection title="Overdue drivers" description="These accounts are blocked from new dispatch until overdue dues are cleared.">
@@ -194,25 +240,26 @@ export function AdminDashboardPage() {
             </EntityList>
           </PanelSection>
 
-          <PanelSection title="Community preview" description="Watch what drivers and riders are asking for next.">
+          <PanelSection title="Moderation queue" description="These proposals need the fastest admin attention inside the community board.">
             <EntityList>
-              {communityQuery.data?.proposals.length ? (
-                communityQuery.data.proposals.slice(0, 4).map((proposal) => (
+              {moderationQueue.length ? (
+                moderationQueue.map(({ proposal, meta }) => (
                   <div key={proposal.id} className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-ops-text">{proposal.title}</p>
                       {proposal.pinned ? <Badge>pinned</Badge> : null}
                       {proposal.closed ? <Badge className="bg-ops-surface">closed</Badge> : null}
+                      {proposal.hidden ? <Badge className="border-ops-destructive/25 bg-ops-destructive/10 text-ops-destructive">hidden</Badge> : null}
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-ops-muted">{proposal.body}</p>
+                    <p className="mt-2 text-sm leading-6 text-ops-muted">{meta.detail}</p>
                     <p className="mt-3 text-xs uppercase tracking-[0.18em] text-ops-muted">
-                      {proposal.yesVotes} yes · {proposal.noVotes} no · {proposal.commentCount} comments
+                      {meta.label} · {proposal.yesVotes} yes · {proposal.noVotes} no · {proposal.commentCount} comments
                     </p>
                   </div>
                 ))
               ) : (
                 <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
-                  No community proposals have been posted yet.
+                  No moderation pressure is showing on the community board right now.
                 </div>
               )}
             </EntityList>

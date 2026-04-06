@@ -4,9 +4,12 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowRight, Clock3, CreditCard, MapPinned, Navigation, Route, UserRound } from "lucide-react";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { DataField } from "@/components/layout/ops-layout";
+import { RideTimeline } from "@/components/ride/ride-timeline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
   formatDriverMilesCompact,
   formatDriverMinutesCompact,
@@ -16,6 +19,7 @@ import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 
 const nextStatusOrder = {
   accepted: "en_route",
@@ -85,6 +89,7 @@ function formatDriverCancellationReason(reason: string, notes: string) {
 export function DriverRidePage() {
   const { rideId = "" } = useParams();
   const { token, user } = useAuth();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState<(typeof driverCancelReasonOptions)[number]["value"]>("rider_no_show");
@@ -100,6 +105,10 @@ export function DriverRidePage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["driver-ride", rideId] });
       void queryClient.invalidateQueries({ queryKey: ["driver-active-rides"] });
+      toast.success("Trip status updated", "Driver workflow moved to the next stage.");
+    },
+    onError: (error) => {
+      toast.error("Status update failed", error instanceof Error ? error.message : "Please try again.");
     }
   });
 
@@ -114,6 +123,10 @@ export function DriverRidePage() {
       queryClient.setQueryData(["driver-ride", rideId], ride);
       void queryClient.invalidateQueries({ queryKey: ["driver-active-rides"] });
       void queryClient.invalidateQueries({ queryKey: ["driver-offers"] });
+      toast.success("Trip canceled", "Cancellation reason was recorded for dispatch.");
+    },
+    onError: (error) => {
+      toast.error("Unable to cancel trip", error instanceof Error ? error.message : "Please try again.");
     }
   });
 
@@ -169,7 +182,11 @@ export function DriverRidePage() {
   if (!rideQuery.data) {
     return (
       <Card className="overflow-hidden border-ops-border-soft/95 bg-[radial-gradient(circle_at_top_left,rgba(90,124,255,0.18),transparent_28%),linear-gradient(180deg,rgba(10,14,20,0.98),rgba(6,9,14,0.96))] shadow-panel">
-        <CardContent className="p-8 text-sm text-ops-muted">Loading live trip...</CardContent>
+        <CardContent className="space-y-3 p-6">
+          <Skeleton className="h-5 w-44" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </CardContent>
       </Card>
     );
   }
@@ -515,6 +532,8 @@ export function DriverRidePage() {
                 </div>
               </div>
 
+              <RideTimeline ride={ride} compact />
+
               {nextStatus ? (
                 <div className="space-y-3 rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
                   <div className="flex items-center gap-2 text-ops-muted">
@@ -565,13 +584,12 @@ export function DriverRidePage() {
 
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ops-muted">Notes for dispatch</p>
-                        <textarea
+                        <Textarea
                           value={cancelNotes}
                           onChange={(event) => setCancelNotes(event.target.value)}
-                          rows={3}
                           maxLength={180}
                           placeholder="Add anything dispatch should know before this trip is canceled."
-                          className="mt-2 w-full rounded-[1rem] border border-ops-border bg-ops-surface px-4 py-3 text-sm text-ops-text outline-none transition placeholder:text-ops-muted focus:border-rose-400/40"
+                          className="mt-2 min-h-24 border-ops-border bg-ops-surface"
                         />
                       </div>
 

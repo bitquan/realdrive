@@ -9,16 +9,19 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { formatDateTime, roleLabel, userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { getCommunityModerationMeta, sortModerationQueue } from "./admin-ops.utils";
 
 export function CommunityPage() {
   const { token, user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedProposalId, setSelectedProposalId] = useState("");
+  const [moderationFilter, setModerationFilter] = useState<"all" | "attention" | "hidden">("attention");
   const [proposalForm, setProposalForm] = useState({
     title: "",
     body: ""
   });
   const [commentBody, setCommentBody] = useState("");
+  const canModerate = userHasRole(user, "admin");
 
   const boardQuery = useQuery({
     queryKey: ["community-board"],
@@ -26,8 +29,16 @@ export function CommunityPage() {
     enabled: Boolean(token)
   });
 
+  const adminBoardQuery = useQuery({
+    queryKey: ["admin-community-board"],
+    queryFn: () => api.listAdminCommunityProposals(token!),
+    enabled: Boolean(token) && canModerate
+  });
+
+  const boardData = canModerate ? adminBoardQuery.data : boardQuery.data;
+
   useEffect(() => {
-    const proposals = boardQuery.data?.proposals ?? [];
+    const proposals = boardData?.proposals ?? [];
     if (!proposals.length) {
       setSelectedProposalId("");
       return;
@@ -37,7 +48,7 @@ export function CommunityPage() {
     if (!selectedProposalId || !stillExists) {
       setSelectedProposalId(proposals[0].id);
     }
-  }, [boardQuery.data?.proposals, selectedProposalId]);
+  }, [boardData?.proposals, selectedProposalId]);
 
   const commentsQuery = useQuery({
     queryKey: ["community-comments", selectedProposalId],
@@ -45,12 +56,21 @@ export function CommunityPage() {
     enabled: Boolean(token) && Boolean(selectedProposalId)
   });
 
+  const adminCommentsQuery = useQuery({
+    queryKey: ["admin-community-comments", selectedProposalId],
+    queryFn: () => api.getAdminCommunityComments(selectedProposalId, token!),
+    enabled: Boolean(token) && Boolean(selectedProposalId) && canModerate
+  });
+
+  const commentsData = canModerate ? adminCommentsQuery.data : commentsQuery.data;
+
   const createProposalMutation = useMutation({
     mutationFn: () => api.createCommunityProposal(proposalForm, token!),
     onSuccess: (proposal) => {
       setProposalForm({ title: "", body: "" });
       setSelectedProposalId(proposal.id);
       void queryClient.invalidateQueries({ queryKey: ["community-board"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-board"] });
     }
   });
 
@@ -58,7 +78,9 @@ export function CommunityPage() {
     mutationFn: (choice: "yes" | "no") => api.voteOnCommunityProposal(selectedProposalId, { choice }, token!),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["community-board"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-board"] });
       void queryClient.invalidateQueries({ queryKey: ["community-comments", selectedProposalId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-comments", selectedProposalId] });
     }
   });
 
@@ -67,7 +89,9 @@ export function CommunityPage() {
     onSuccess: () => {
       setCommentBody("");
       void queryClient.invalidateQueries({ queryKey: ["community-board"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-board"] });
       void queryClient.invalidateQueries({ queryKey: ["community-comments", selectedProposalId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-comments", selectedProposalId] });
     }
   });
 
@@ -76,21 +100,39 @@ export function CommunityPage() {
       api.updateCommunityProposal(selectedProposalId, input, token!),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["community-board"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-board"] });
       void queryClient.invalidateQueries({ queryKey: ["community-comments", selectedProposalId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-comments", selectedProposalId] });
     }
   });
 
   const updateCommentMutation = useMutation({
-    mutationFn: (commentId: string) => api.updateCommunityComment(commentId, { hidden: true }, token!),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["community-comments", selectedProposalId] })
+    mutationFn: ({ commentId, hidden }: { commentId: string; hidden: boolean }) =>
+      api.updateCommunityComment(commentId, { hidden }, token!),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["community-comments", selectedProposalId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-community-comments", selectedProposalId] });
+    }
   });
 
-  const proposals = boardQuery.data?.proposals ?? [];
-  const eligibility = boardQuery.data?.eligibility;
+  const proposals = boardData?.proposals ?? [];
+  const moderationProposals = canModerate
+    ? sortModerationQueue(
+        proposals.filter((proposal) => {
+          if (moderationFilter === "hidden") {
+            return proposal.hidden;
+          }
+          if (moderationFilter === "attention") {
+            return getCommunityModerationMeta(proposal).priority >= 70;
+          }
+          return true;
+        })
+      )
+    : proposals;
+  const eligibility = boardData?.eligibility;
   const selectedProposal =
-    commentsQuery.data?.proposal ?? proposals.find((proposal) => proposal.id === selectedProposalId) ?? null;
-  const comments = commentsQuery.data?.comments ?? [];
-  const canModerate = userHasRole(user, "admin");
+    commentsData?.proposal ?? proposals.find((proposal) => proposal.id === selectedProposalId) ?? null;
+  const comments = commentsData?.comments ?? [];
 
   const summary = useMemo(() => {
     if (!eligibility) {
@@ -165,11 +207,22 @@ export function CommunityPage() {
       <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Open proposals</CardTitle>
-            <CardDescription>Select a proposal to vote, comment, or moderate it.</CardDescription>
+            <CardTitle>{canModerate ? "Moderation queue" : "Open proposals"}</CardTitle>
+            <CardDescription>
+              {canModerate
+                ? "Review hidden threads, comment-heavy proposals, and open discussions from one admin queue."
+                : "Select a proposal to vote, comment, or moderate it."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {proposals.map((proposal) => (
+            {canModerate ? (
+              <div className="flex flex-wrap gap-2">
+                <Button variant={moderationFilter === "attention" ? "default" : "outline"} onClick={() => setModerationFilter("attention")}>Attention</Button>
+                <Button variant={moderationFilter === "hidden" ? "default" : "outline"} onClick={() => setModerationFilter("hidden")}>Hidden</Button>
+                <Button variant={moderationFilter === "all" ? "default" : "outline"} onClick={() => setModerationFilter("all")}>All</Button>
+              </div>
+            ) : null}
+            {moderationProposals.map((proposal) => (
               <button
                 key={proposal.id}
                 type="button"
@@ -184,16 +237,18 @@ export function CommunityPage() {
                   <p className="font-semibold">{proposal.title}</p>
                   {proposal.pinned ? <Badge>pinned</Badge> : null}
                   {proposal.closed ? <Badge>closed</Badge> : null}
+                  {proposal.hidden ? <Badge className="border-ops-destructive/25 bg-ops-destructive/10 text-ops-destructive">hidden</Badge> : null}
                 </div>
                 <p className="mt-2 line-clamp-3 text-sm text-ops-muted">{proposal.body}</p>
                 <p className="mt-3 text-xs uppercase tracking-[0.2em] text-ops-muted">
                   {proposal.author.name} · {proposal.yesVotes} yes · {proposal.noVotes} no · {proposal.commentCount} comments
                 </p>
+                {canModerate ? <p className="mt-2 text-xs text-ops-muted">{getCommunityModerationMeta(proposal).detail}</p> : null}
               </button>
             ))}
-            {!proposals.length ? (
+            {!moderationProposals.length ? (
               <div className="rounded-4xl border border-dashed border-ops-border p-6 text-sm text-ops-muted">
-                No proposals yet. The first approved driver or eligible rider can start the board.
+                {canModerate ? "No proposals match the current moderation filter." : "No proposals yet. The first approved driver or eligible rider can start the board."}
               </div>
             ) : null}
           </CardContent>
@@ -215,6 +270,7 @@ export function CommunityPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     {selectedProposal.pinned ? <Badge>pinned</Badge> : null}
                     {selectedProposal.closed ? <Badge>closed</Badge> : null}
+                    {selectedProposal.hidden ? <Badge className="border-ops-destructive/25 bg-ops-destructive/10 text-ops-destructive">hidden</Badge> : null}
                     {selectedProposal.viewerVote ? <Badge>you voted {selectedProposal.viewerVote}</Badge> : null}
                   </div>
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ops-muted">{selectedProposal.body}</p>
@@ -265,9 +321,9 @@ export function CommunityPage() {
                       </Button>
                       <Button
                         variant="ghost"
-                        onClick={() => updateProposalMutation.mutate({ hidden: true })}
+                        onClick={() => updateProposalMutation.mutate({ hidden: !selectedProposal.hidden })}
                       >
-                        Hide proposal
+                        {selectedProposal.hidden ? "Unhide proposal" : "Hide proposal"}
                       </Button>
                     </>
                   ) : null}
@@ -293,11 +349,12 @@ export function CommunityPage() {
                           </p>
                         </div>
                         {canModerate ? (
-                          <Button variant="ghost" onClick={() => updateCommentMutation.mutate(comment.id)}>
-                            Hide
+                          <Button variant="ghost" onClick={() => updateCommentMutation.mutate({ commentId: comment.id, hidden: !comment.hidden })}>
+                            {comment.hidden ? "Unhide" : "Hide"}
                           </Button>
                         ) : null}
                       </div>
+                      {comment.hidden ? <Badge className="mt-3 border-ops-destructive/25 bg-ops-destructive/10 text-ops-destructive">hidden from public board</Badge> : null}
                       <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ops-muted">{comment.body}</p>
                     </div>
                   ))}

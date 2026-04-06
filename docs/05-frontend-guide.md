@@ -64,13 +64,15 @@ Providers:
 - `/admin/setup`
   One-time first-admin setup with optional admin-plus-driver bootstrap
 - `/admin`
-  Admin dashboard
+  Admin dashboard with KPI v2 cards for driver review, dispatch release timing, moderation, dues, and feature intake
 - `/admin/dispatch`
-  Ride-first dispatch workspace with the live queue plus a test lab for creating labeled test jobs and watching rider/driver split-screen flow state
+  Ride-first dispatch workspace with queue prioritization controls, scheduled-rides ops monitoring, and a test lab for creating labeled test jobs and watching rider/driver split-screen flow state
 - `/admin/drivers`
-  Driver management
+  Driver management with review-priority filtering, readiness summaries, and collector-aware approval workflows
 - `/admin/dues`
-  Dues management and payout instruction settings
+  Dues management with reconciliation guardrails and a live preview of driver-facing payout instructions
+- `/admin/feature-requests`
+  Admin feature triage dashboard for in-app feature requests and bug reports routed through the existing intake workflow
 - `/admin/pricing`
   Pricing management
 - `/admin/share`

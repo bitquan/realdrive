@@ -7,6 +7,7 @@ const { mockStore, mockMaps } = vi.hoisted(() => ({
     listDriverOffers: vi.fn(),
     listPlatformPricingRules: vi.fn(),
     getRideById: vi.fn(),
+    listIssueReports: vi.fn(),
     updateRideAdmin: vi.fn(),
     addAuditLog: vi.fn(),
     getNotificationPreference: vi.fn(),
@@ -47,6 +48,19 @@ const pendingDriver = {
   approvalStatus: "pending" as const,
   approved: false
 };
+
+const adminUser = {
+  id: "admin-1",
+  role: "admin",
+  roles: ["admin"],
+  name: "Admin One",
+  phone: "+15555550102",
+  email: "admin@example.com",
+  approved: true,
+  approvalStatus: "approved",
+  available: false,
+  referralCode: "admin-code"
+} as const;
 
 describe("app route integration", () => {
   let app: ReturnType<typeof buildApp>;
@@ -89,6 +103,7 @@ describe("app route integration", () => {
       driver: { id: approvedDriver.id, name: approvedDriver.name, phone: approvedDriver.phone }
     });
     mockStore.addAuditLog.mockResolvedValue(undefined);
+    mockStore.listIssueReports.mockResolvedValue([]);
     mockStore.getNotificationPreference.mockResolvedValue({
       pushEnabled: false,
       smsCriticalOnly: false
@@ -212,5 +227,64 @@ describe("app route integration", () => {
         }
       })
     );
+  });
+
+  it("filters admin issue reports for feature request triage", async () => {
+    mockStore.findSessionUserById.mockResolvedValue(adminUser);
+    mockStore.listIssueReports.mockResolvedValue([
+      {
+        id: "issue-1",
+        reporterId: approvedDriver.id,
+        reporterRole: "driver",
+        source: "driver_app",
+        summary: "Add dispatch sort",
+        details: null,
+        page: "/driver",
+        rideId: null,
+        metadata: { kind: "feature_request" },
+        githubIssueNumber: null,
+        githubIssueUrl: null,
+        githubSyncStatus: "pending",
+        githubSyncError: null,
+        createdAt: new Date("2026-04-06T10:00:00.000Z").toISOString(),
+        updatedAt: new Date("2026-04-06T10:00:00.000Z").toISOString()
+      },
+      {
+        id: "issue-2",
+        reporterId: approvedDriver.id,
+        reporterRole: "driver",
+        source: "driver_app",
+        summary: "Driver map froze",
+        details: null,
+        page: "/driver",
+        rideId: null,
+        metadata: { kind: "bug_report" },
+        githubIssueNumber: 44,
+        githubIssueUrl: "https://github.com/example/repo/issues/44",
+        githubSyncStatus: "synced",
+        githubSyncError: null,
+        createdAt: new Date("2026-04-06T09:00:00.000Z").toISOString(),
+        updatedAt: new Date("2026-04-06T09:00:00.000Z").toISOString()
+      }
+    ]);
+    const token = app.jwt.sign({ sub: adminUser.id });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/admin/issue-reports?kind=feature_request",
+      headers: {
+        authorization: `Bearer ${token}`
+      }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      reports: [
+        expect.objectContaining({
+          id: "issue-1",
+          summary: "Add dispatch sort"
+        })
+      ]
+    });
   });
 });

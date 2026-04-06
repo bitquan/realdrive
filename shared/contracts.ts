@@ -1277,6 +1277,10 @@ export const communityCommentsResponseSchema = z.object({
   eligibility: communityEligibilitySchema
 });
 
+export const adminIssueReportsResponseSchema = z.object({
+  reports: z.array(issueReportSchema)
+});
+
 export const issueReportResponseSchema = z.object({
   report: issueReportSchema
 });
@@ -1549,6 +1553,7 @@ export type AdminInvitesResponse = z.infer<typeof adminInvitesResponseSchema>;
 export type AdminTeamResponse = z.infer<typeof adminTeamResponseSchema>;
 export type CommunityBoardResponse = z.infer<typeof communityBoardResponseSchema>;
 export type CommunityCommentsResponse = z.infer<typeof communityCommentsResponseSchema>;
+export type AdminIssueReportsResponse = z.infer<typeof adminIssueReportsResponseSchema>;
 export type IssueReportResponse = z.infer<typeof issueReportResponseSchema>;
 export type AdSubmissionResponse = z.infer<typeof adSubmissionResponseSchema>;
 export type NotificationPreferencesResponse = z.infer<typeof notificationPreferencesResponseSchema>;

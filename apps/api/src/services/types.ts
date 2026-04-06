@@ -337,6 +337,7 @@ export interface Store {
     rideId?: string | null;
     metadata?: Record<string, string | number | boolean | null> | null;
   }): Promise<IssueReport>;
+  listIssueReports(limit?: number): Promise<IssueReport[]>;
   updateIssueReportGitHubSync(
     reportId: string,
     patch: {
@@ -346,6 +347,9 @@ export interface Store {
       error?: string | null;
     }
   ): Promise<IssueReport>;
+  listAdminCommunityProposals(viewerId?: string | null): Promise<CommunityProposal[]>;
+  getAdminCommunityProposalById(proposalId: string, viewerId?: string | null): Promise<CommunityProposal | null>;
+  listAdminCommunityComments(proposalId: string): Promise<CommunityComment[]>;
   getNotificationPreference(userId: string): Promise<NotificationPreference>;
   updateNotificationPreference(userId: string, input: UpdateNotificationPreferenceInput): Promise<NotificationPreference>;
   upsertPushSubscription(userId: string, input: UpsertPushSubscriptionInput): Promise<void>;

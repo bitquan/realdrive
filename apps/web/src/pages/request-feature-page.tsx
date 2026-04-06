@@ -4,10 +4,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Lightbulb } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FormActions, FormField, FormLayout } from "@/components/ui/form-layout";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 
 type IssueSource = "rider_app" | "driver_app" | "admin_dashboard";
 
@@ -27,6 +29,7 @@ function sourceFromRole(role: string | undefined): IssueSource {
 
 export function RequestFeaturePage() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const [searchParams] = useSearchParams();
   const [summary, setSummary] = useState(searchParams.get("summary") ?? "");
   const [details, setDetails] = useState("");
@@ -63,9 +66,11 @@ export function RequestFeaturePage() {
     onSuccess: () => {
       setFeedback("Feature request submitted. Thank you.");
       setDetails("");
+      toast.success("Feature request submitted", "Your request is queued for review.");
     },
     onError: (error) => {
       setFeedback(error instanceof Error ? error.message : "Feature request failed");
+      toast.error("Feature request failed", error instanceof Error ? error.message : "Please try again.");
     }
   });
 
@@ -78,44 +83,44 @@ export function RequestFeaturePage() {
             Share the improvement you want. We route this into the engineering queue and GitHub workflow.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="featureSummary">Feature summary</Label>
-            <Input
-              id="featureSummary"
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
-              placeholder="Example: Add a rider receipt view after trip completion"
-            />
-          </div>
+        <CardContent>
+          <FormLayout>
+            <FormField label="Feature summary" htmlFor="featureSummary">
+              <Input
+                id="featureSummary"
+                value={summary}
+                onChange={(event) => setSummary(event.target.value)}
+                placeholder="Example: Add a rider receipt view after trip completion"
+              />
+            </FormField>
 
-          <div className="space-y-2">
-            <Label htmlFor="featureDetails">Why this matters</Label>
-            <textarea
-              id="featureDetails"
-              className="min-h-36 w-full rounded-2xl border border-ops-border bg-gradient-to-b from-ops-panel to-[#111a2a] px-4 py-3 text-sm text-ops-text outline-none transition focus:border-ops-primary/40"
-              value={details}
-              onChange={(event) => setDetails(event.target.value)}
-              placeholder="What should happen, who it helps, and what result you expect."
-            />
-          </div>
+            <FormField label="Why this matters" htmlFor="featureDetails">
+              <Textarea
+                id="featureDetails"
+                className="min-h-36"
+                value={details}
+                onChange={(event) => setDetails(event.target.value)}
+                placeholder="What should happen, who it helps, and what result you expect."
+              />
+            </FormField>
 
-          {feedback ? <p className="text-sm text-ops-muted">{feedback}</p> : null}
+            {feedback ? <p className="text-sm text-ops-muted">{feedback}</p> : null}
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              disabled={submitMutation.isPending || summary.trim().length < 4 || details.trim().length < 10}
-              onClick={() => submitMutation.mutate()}
-            >
-              Submit feature request
-            </Button>
-            <Link
-              to={source === "admin_dashboard" ? "/admin" : source === "driver_app" ? "/driver" : "/rider/rides"}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
-            >
-              Back
-            </Link>
-          </div>
+            <FormActions>
+              <Button
+                disabled={submitMutation.isPending || summary.trim().length < 4 || details.trim().length < 10}
+                onClick={() => submitMutation.mutate()}
+              >
+                Submit feature request
+              </Button>
+              <Link
+                to={source === "admin_dashboard" ? "/admin" : source === "driver_app" ? "/driver" : "/rider/rides"}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+              >
+                Back
+              </Link>
+            </FormActions>
+          </FormLayout>
         </CardContent>
       </Card>
 

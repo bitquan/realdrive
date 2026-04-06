@@ -10,6 +10,7 @@ import type {
   AdminInvite,
   AdminInvitesResponse,
   AdminAdsResponse,
+  AdminIssueReportsResponse,
   AdminTeamResponse,
   AdminDuesResponse,
   AdminActivityResponse,
@@ -474,6 +475,9 @@ export const api = {
   listAdminLeads(token: string) {
     return apiFetch<AdminLeadsResponse>("/admin/leads", undefined, token);
   },
+  listAdminIssueReports(token: string) {
+    return apiFetch<AdminIssueReportsResponse>("/admin/issue-reports", undefined, token);
+  },
   getAdminActivity(token: string, windowMinutes = 30) {
     const params = new URLSearchParams({ windowMinutes: String(windowMinutes) });
     return apiFetch<AdminActivityResponse>(`/admin/data/activity?${params.toString()}`, undefined, token);
@@ -672,6 +676,12 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(input)
     }, token);
+  },
+  listAdminCommunityProposals(token: string) {
+    return apiFetch<CommunityBoardResponse>("/admin/community/proposals", undefined, token);
+  },
+  getAdminCommunityComments(proposalId: string, token: string) {
+    return apiFetch<CommunityCommentsResponse>(`/admin/community/proposals/${proposalId}/comments`, undefined, token);
   },
   updateCommunityComment(commentId: string, input: AdminUpdateCommunityCommentInput, token: string) {
     return apiFetch<CommunityComment>(`/admin/community/comments/${commentId}`, {

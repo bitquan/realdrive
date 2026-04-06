@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { Clock3, CreditCard, Phone, User, Vote } from "lucide-react";
+import { CreditCard, Phone, User, Vote } from "lucide-react";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import {
   BottomActionBar,
@@ -9,19 +9,61 @@ import {
   MapPanel,
   PanelSection
 } from "@/components/layout/ops-layout";
+import { RideTimeline } from "@/components/ride/ride-timeline";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
+
+const riderCancelReasonOptions = [
+  { value: "plans_changed", label: "Plans changed" },
+  { value: "pickup_delay", label: "Pickup taking too long" },
+  { value: "wrong_address", label: "Wrong pickup or dropoff" },
+  { value: "other", label: "Other reason" }
+] as const;
+
+function statusSupportCopy(status: string) {
+  if (status === "requested" || status === "offered") {
+    return "Dispatch is matching the best nearby driver. Keep this screen open for live updates.";
+  }
+
+  if (status === "accepted" || status === "en_route") {
+    return "A driver is assigned and heading to pickup. Route and timing stay live on this page.";
+  }
+
+  if (status === "arrived") {
+    return "Your driver is at pickup. Contact details stay visible here while the trip starts.";
+  }
+
+  if (status === "in_progress") {
+    return "Trip is in progress. ETA, route, and payment status continue updating in real time.";
+  }
+
+  if (status === "completed") {
+    return "Trip completed. You can use this history item for support context and follow-up.";
+  }
+
+  if (status === "canceled") {
+    return "Trip canceled. Cancellation details are kept in your rider history for support review.";
+  }
+
+  return "Trip status is updating live from dispatch and driver workflow events.";
+}
 
 export function RideDetailsPage() {
   const { rideId = "" } = useParams();
   const { token } = useAuth();
+  const toast = useToast();
   const queryClient = useQueryClient();
+  const [cancelReason, setCancelReason] = useState<(typeof riderCancelReasonOptions)[number]["value"]>("plans_changed");
+  const [cancelNotes, setCancelNotes] = useState("");
   const rideQuery = useQuery({
     queryKey: ["ride", rideId],
     queryFn: () => api.getRide(rideId, token!)
@@ -38,10 +80,20 @@ export function RideDetailsPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: () => api.cancelRide(rideId, token!),
+    mutationFn: () => {
+      const selected = riderCancelReasonOptions.find((entry) => entry.value === cancelReason);
+      const trimmedNotes = cancelNotes.trim();
+      const reason = trimmedNotes ? `${selected?.label ?? cancelReason} — ${trimmedNotes}` : selected?.label ?? cancelReason;
+      return api.cancelRide(rideId, token!, { reason });
+    },
     onSuccess: (ride) => {
       queryClient.setQueryData(["ride", rideId], ride);
       void queryClient.invalidateQueries({ queryKey: ["rider-rides"] });
+      setCancelNotes("");
+      toast.success("Ride canceled", "Dispatch and trip state were updated.");
+    },
+    onError: (error) => {
+      toast.error("Unable to cancel ride", error instanceof Error ? error.message : "Please try again.");
     }
   });
 
@@ -70,7 +122,11 @@ export function RideDetailsPage() {
   if (!rideQuery.data) {
     return (
       <Card>
-        <CardContent className="p-8 text-sm text-ops-muted">Loading ride details...</CardContent>
+        <CardContent className="space-y-3 p-6">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </CardContent>
       </Card>
     );
   }
@@ -79,6 +135,7 @@ export function RideDetailsPage() {
   const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
   const isMutable = ride.status !== "completed" && ride.status !== "canceled";
   const requestFeatureUrl = `/request-feature?source=rider_app&rideId=${encodeURIComponent(rideId)}&contextPath=${encodeURIComponent(`/rider/rides/${rideId}`)}`;
+  const supportCopy = statusSupportCopy(ride.status);
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -144,13 +201,11 @@ export function RideDetailsPage() {
               ) : null}
             </div>
 
+            <RideTimeline ride={ride} compact />
+
             <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
-              <div className="mb-2 flex items-center gap-2 text-ops-muted">
-                <Clock3 className="h-4 w-4" />
-                Trip timing
-              </div>
-              <p className="font-semibold text-ops-text">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
-              <p className="mt-1 text-sm text-ops-muted">Updates refresh live as dispatch and driver status change.</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Trip trust note</p>
+              <p className="mt-2 text-sm leading-6 text-ops-muted">{supportCopy}</p>
             </div>
 
             <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
@@ -168,6 +223,36 @@ export function RideDetailsPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[0.72fr_0.28fr]">
+        {isMutable ? (
+          <PanelSection title="Need to cancel this ride?" description="Pick the closest reason so dispatch and support can follow up with accurate context.">
+            <div className="grid gap-2 md:grid-cols-2">
+              {riderCancelReasonOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setCancelReason(option.value)}
+                  className={`rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                    cancelReason === option.value
+                      ? "border-ops-primary/40 bg-ops-primary/15 text-ops-text"
+                      : "border-ops-border-soft bg-ops-panel/45 text-ops-muted hover:text-ops-text"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3">
+              <Textarea
+                value={cancelNotes}
+                onChange={(event) => setCancelNotes(event.target.value)}
+                maxLength={180}
+                className="min-h-24"
+                placeholder="Optional details for dispatch support"
+              />
+            </div>
+          </PanelSection>
+        ) : null}
+
         <PanelSection title="Community board" description="Riders can read proposals now and unlock posting, voting, and comments after 51 completed rides.">
           <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm leading-6 text-ops-muted">
             {communityQuery.data?.eligibility.reason ?? "You can open the community board from this rider account."}
@@ -210,10 +295,11 @@ export function RideDetailsPage() {
         {isMutable ? (
           <Button
             variant="ghost"
+            disabled={cancelMutation.isPending}
             className="h-11 border border-ops-destructive/28 text-ops-destructive hover:bg-ops-destructive/10 hover:text-ops-destructive"
             onClick={() => cancelMutation.mutate()}
           >
-            Cancel ride
+            {cancelMutation.isPending ? "Canceling..." : "Cancel ride"}
           </Button>
         ) : null}
       </BottomActionBar>

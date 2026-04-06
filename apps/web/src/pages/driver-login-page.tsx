@@ -3,22 +3,28 @@ import { useMutation } from "@tanstack/react-query";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { PageHero } from "@/components/layout/page-hero";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormActions, FormField, FormLayout } from "@/components/ui/form-layout";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 
 export function DriverLoginPage() {
   const navigate = useNavigate();
   const { user, loginDriver } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const loginMutation = useMutation({
     mutationFn: loginDriver,
     onSuccess: () => {
+      toast.success("Signed in", "Driver session is active.");
       void navigate("/driver");
+    },
+    onError: (error) => {
+      toast.error("Sign-in failed", error instanceof Error ? error.message : "Unable to sign in.");
     }
   });
 
@@ -60,39 +66,42 @@ export function DriverLoginPage() {
           <CardDescription>Sign in with your approved driver account.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={onSubmit}>
-          <div className="space-y-2">
-            <Label htmlFor="driverEmail">Email</Label>
-            <Input
-              id="driverEmail"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="driver@example.com"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="driverPassword">Password</Label>
-            <Input
-              id="driverPassword"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
-            />
-          </div>
-          {loginMutation.error ? <p className="text-sm text-ops-error">{loginMutation.error.message}</p> : null}
-          <Button className="w-full" type="submit" disabled={loginMutation.isPending || !email || !password}>
-            Sign in
-          </Button>
-          <p className="text-sm text-ops-muted">
-            Need an account?{" "}
-            <Link to="/driver/signup" className="font-semibold text-ops-primary hover:underline">
-              Apply to drive
-            </Link>
-          </p>
+          <form onSubmit={onSubmit}>
+            <FormLayout>
+              <FormField label="Email" htmlFor="driverEmail">
+                <Input
+                  id="driverEmail"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="driver@example.com"
+                />
+              </FormField>
+              <FormField label="Password" htmlFor="driverPassword">
+                <Input
+                  id="driverPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Password"
+                />
+              </FormField>
+              {loginMutation.error ? <p className="text-sm text-ops-error">{loginMutation.error.message}</p> : null}
+              <FormActions className="flex-col sm:flex-row">
+                <Button className="w-full sm:w-auto" type="submit" disabled={loginMutation.isPending || !email || !password}>
+                  Sign in
+                </Button>
+                <Link
+                  to="/driver/signup"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel sm:w-auto"
+                >
+                  Apply to drive
+                </Link>
+              </FormActions>
+              <p className="text-sm text-ops-muted">Need an account? Use Apply to drive.</p>
+            </FormLayout>
           </form>
         </CardContent>
       </Card>

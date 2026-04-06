@@ -149,7 +149,7 @@ export function HomePage() {
         eyebrow="Community-powered rideshare pilot"
         icon={Shield}
         title="Book your ride in under a minute and track everything from one live link."
-        description="RealDrive keeps the rider flow simple: instant quote, guest checkout, live trip tracking, and personal share links for referral growth."
+        description="RealDrive keeps the rider flow simple and guest-first: instant quote, no-login booking, live trip tracking, and personal share links for referral growth."
         aside={(
           <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:p-5">
             <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Rider operations snapshot</p>
@@ -233,10 +233,15 @@ export function HomePage() {
           <CardHeader>
             <CardTitle className="text-2xl md:text-[2rem]">Book your ride</CardTitle>
             <CardDescription>
-              Fast guest checkout for the pilot. You get a tracking link right away and your rider share link after booking.
+              Fast guest checkout for the pilot. No rider login required. You get a tracking link right away and your rider share link after booking.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3.5 md:space-y-5">
+            <div className="rounded-3xl border border-ops-primary/24 bg-ops-primary/10 p-4 text-sm text-ops-muted">
+              <p className="font-semibold text-ops-text">Guest booking stays primary</p>
+              <p className="mt-2">Enter rider contact, pickup, and dropoff. Dispatch and live status updates still work without creating an account.</p>
+            </div>
+
             <div className="grid gap-3 md:grid-cols-3 md:gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="riderName">Full name</Label>
@@ -407,7 +412,7 @@ export function HomePage() {
                 }
               >
                 <Route className="mr-2 h-4 w-4" />
-                Book this ride
+                Book as guest
               </Button>
               <Button
                 type="button"
@@ -460,6 +465,10 @@ export function HomePage() {
               <div className="rounded-3xl border border-ops-border-soft p-3.5">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Payment model</p>
                 <p className="mt-1 text-ops-muted">Cash App, Jim, or cash are collected outside the app.</p>
+              </div>
+              <div className="rounded-3xl border border-ops-border-soft p-3.5">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Live status trust</p>
+                <p className="mt-1 text-ops-muted">After booking, your public tracking link stays synced with dispatch and driver trip state.</p>
               </div>
             </CardContent>
           </Card>

@@ -23,6 +23,9 @@ import {
 } from "@/lib/driver-documents";
 import { formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { getDriverReviewQueueMeta } from "./admin-ops.utils";
+
+type ReviewFilter = "all" | "ready" | "missing_docs" | "pending_review" | "approved" | "rejected";
 
 function documentStatusBadgeClass(status: DriverDocumentStatus) {
   if (status === "approved") {
@@ -491,6 +494,7 @@ export function AdminDriversPage() {
   });
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<"owned" | "all">("owned");
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [selectedDriverId, setSelectedDriverId] = useState(() => searchParams.get("driverId") ?? "");
 
   const drivers = driversQuery.data ?? [];
@@ -529,28 +533,46 @@ export function AdminDriversPage() {
     });
   }, [drivers, scope, search, user?.id]);
 
+  const reviewFilteredDrivers = useMemo(() => {
+    const next = filteredDrivers.filter((driver) => {
+      const meta = getDriverReviewQueueMeta(driver);
+      return reviewFilter === "all" ? true : meta.stage === reviewFilter;
+    });
+
+    return next.sort((left, right) => {
+      const leftMeta = getDriverReviewQueueMeta(left);
+      const rightMeta = getDriverReviewQueueMeta(right);
+      if (leftMeta.priority !== rightMeta.priority) {
+        return leftMeta.priority - rightMeta.priority;
+      }
+
+      return new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime();
+    });
+  }, [filteredDrivers, reviewFilter]);
+
   useEffect(() => {
-    if (requestedDriverId && filteredDrivers.some((driver) => driver.id === requestedDriverId) && requestedDriverId !== selectedDriverId) {
+    if (requestedDriverId && reviewFilteredDrivers.some((driver) => driver.id === requestedDriverId) && requestedDriverId !== selectedDriverId) {
       setSelectedDriverId(requestedDriverId);
       return;
     }
 
-    if (!filteredDrivers.length) {
+    if (!reviewFilteredDrivers.length) {
       setSelectedDriverId("");
       return;
     }
 
-    const stillExists = filteredDrivers.some((driver) => driver.id === selectedDriverId);
+    const stillExists = reviewFilteredDrivers.some((driver) => driver.id === selectedDriverId);
     if (!selectedDriverId || !stillExists) {
-      setSelectedDriverId(filteredDrivers[0].id);
+      setSelectedDriverId(reviewFilteredDrivers[0].id);
     }
-  }, [filteredDrivers, selectedDriverId]);
+  }, [reviewFilteredDrivers, selectedDriverId, requestedDriverId]);
 
-  const selectedDriver = filteredDrivers.find((driver) => driver.id === selectedDriverId) ?? filteredDrivers[0] ?? null;
+  const selectedDriver = reviewFilteredDrivers.find((driver) => driver.id === selectedDriverId) ?? reviewFilteredDrivers[0] ?? null;
   const pendingCount = drivers.filter((driver) => driver.approvalStatus === "pending").length;
   const approvedCount = drivers.filter((driver) => driver.approvalStatus === "approved").length;
   const availableCount = drivers.filter((driver) => driver.available).length;
   const documentReadyCount = drivers.filter((driver) => driver.documentReview.readyForApproval).length;
+  const missingDocsCount = drivers.filter((driver) => getDriverReviewQueueMeta(driver).stage === "missing_docs").length;
 
   return (
     <div className="space-y-6">
@@ -580,6 +602,7 @@ export function AdminDriversPage() {
       <MetricStrip>
         <MetricCard label="Pending approval" value={pendingCount} meta="Applicants waiting for final admin approval" icon={ShieldAlert} tone="warning" />
         <MetricCard label="Docs ready" value={documentReadyCount} meta="Packets cleared for approval" icon={ShieldCheck} tone="primary" />
+        <MetricCard label="Missing docs" value={missingDocsCount} meta="Packets blocked by missing uploads" icon={Download} tone="warning" />
         <MetricCard label="Approved drivers" value={approvedCount} meta="Drivers currently allowed into the app" icon={Users} tone="success" />
         <MetricCard label="Available now" value={availableCount} meta="Live network capacity" icon={ToggleLeft} tone="success" />
       </MetricStrip>
@@ -600,9 +623,27 @@ export function AdminDriversPage() {
             />
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["all", `All (${filteredDrivers.length})`],
+              ["ready", `Ready (${documentReadyCount})`],
+              ["missing_docs", `Missing docs (${missingDocsCount})`],
+              ["pending_review", "In review"],
+              ["approved", `Approved (${approvedCount})`],
+              ["rejected", "Rejected"]
+            ].map(([value, label]) => (
+              <Button key={value} variant={reviewFilter === value ? "default" : "outline"} onClick={() => setReviewFilter(value as ReviewFilter)}>
+                {label}
+              </Button>
+            ))}
+          </div>
+
           <EntityList className="max-h-[74vh] overflow-y-auto pr-1">
-            {filteredDrivers.length ? (
-              filteredDrivers.map((driver) => (
+            {reviewFilteredDrivers.length ? (
+              reviewFilteredDrivers.map((driver) => {
+                const reviewMeta = getDriverReviewQueueMeta(driver);
+
+                return (
                 <EntityListItem
                   key={driver.id}
                   active={driver.id === selectedDriver?.id}
@@ -624,16 +665,19 @@ export function AdminDriversPage() {
                       <p className="mt-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
                         Owner: {driver.collectorAdmin?.name ?? "Unassigned"}
                       </p>
-                      <p className="mt-2 text-sm text-ops-muted">
-                        {driver.documentReview.approvedTypes.length}/{driver.documentReview.requiredTypes.length} docs approved
+                      <p className="mt-2 text-sm font-medium text-ops-text">{reviewMeta.label}</p>
+                      <p className="mt-1 text-sm text-ops-muted">{reviewMeta.summary}</p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
+                        {driver.documentReview.approvedTypes.length}/{driver.documentReview.requiredTypes.length} docs approved · {reviewMeta.detail}
                       </p>
                     </div>
                   </div>
                 </EntityListItem>
-              ))
+                );
+              })
             ) : (
               <div className="rounded-[1.4rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
-                No drivers match this search.
+                No drivers match this review filter.
               </div>
             )}
           </EntityList>
