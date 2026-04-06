@@ -5,7 +5,7 @@
  * Maps to: docs/13-roadmap-baseline-25-features.md
  */
 
-export type RoadmapPhase = "now" | "next" | "later" | "deferred";
+export type RoadmapPhase = "now" | "next" | "completed" | "later" | "deferred";
 
 export interface RoadmapFeature {
   id: string;
@@ -25,7 +25,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Faster booking with clearer input states and validation",
     category: "rider",
     area: "UI / Rider",
-    phase: "now",
+    phase: "completed",
     impact: "high",
     order: 1
   },
@@ -55,7 +55,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Clearer push status, test actions, and log readability",
     category: "shared",
     area: "UI / Shared",
-    phase: "now",
+    phase: "completed",
     impact: "medium",
     order: 4
   },
@@ -65,7 +65,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Reduce user confusion after mutations",
     category: "shared",
     area: "UI / Shared",
-    phase: "now",
+    phase: "completed",
     impact: "medium",
     order: 5
   },
@@ -115,7 +115,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Improve offer response quality and reduce misses",
     category: "driver",
     area: "Dispatch / Driver",
-    phase: "now",
+    phase: "completed",
     impact: "high",
     order: 10
   },
@@ -155,7 +155,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Cleaner reconciliation and reduced overdue risk",
     category: "admin",
     area: "Admin / Finance",
-    phase: "now",
+    phase: "completed",
     impact: "high",
     order: 14
   },
@@ -165,7 +165,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Fewer payment support issues",
     category: "driver",
     area: "Admin / Driver",
-    phase: "now",
+    phase: "completed",
     impact: "medium",
     order: 15
   },
@@ -195,7 +195,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Clearer status + trust signals during active rides",
     category: "rider",
     area: "Rider / Public",
-    phase: "now",
+    phase: "completed",
     impact: "high",
     order: 18
   },
@@ -275,7 +275,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Build community trust, manage expectations, gather feature demand",
     category: "product",
     area: "Product / Growth",
-    phase: "next",
+    phase: "completed",
     impact: "medium",
     order: 26
   }
@@ -290,7 +290,7 @@ export function getRoadmapFeatures(publicOnly: boolean = true): RoadmapFeature[]
   
   if (publicOnly) {
     // Hide deferred and later items from public view
-    features = features.filter(f => f.phase === "now" || f.phase === "next");
+    features = features.filter(f => f.phase === "now" || f.phase === "next" || f.phase === "completed");
   }
   
   return features.sort((a, b) => a.order - b.order);

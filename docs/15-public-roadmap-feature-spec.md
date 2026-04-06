@@ -3,7 +3,7 @@
 ## Overview
 
 Add a public-facing "Roadmap" or "What's Coming" page accessible to all users (riders, drivers, admins) that displays:
-- Planned features organized by phase (Now / Next / Later)
+- Planned and shipped features organized by phase (Now / Next / Completed)
 - What users are asking for
 - Feature voting/upvoting mechanism
 - Status transparency
@@ -15,13 +15,15 @@ Add a public-facing "Roadmap" or "What's Coming" page accessible to all users (r
 - **Admins**: Communicate product direction internally and externally
 - **Product**: Gather demand signals through upvoting, reduce duplicate feature requests
 
+
 ## Feature Requirements
 
 ### Phase B: MVP (Next Wave)
 
 1. **Read-only Roadmap View**
-   - Display Phase A (Now) features - current work
+  - Display Phase A (Now) features - current work
    - Display Phase B (Next) features - upcoming priorities
+  - Display Completed features - recently shipped work
    - Do NOT show Phase C (Later) or Deferred items publicly
    - Include feature title, description, target phase, and estimated impact
 
@@ -104,7 +106,7 @@ GET /me/feature-requests (optional)
 
 **Components**:
 - `RoadmapPage` - main container
-  - `RoadmapPhaseSection` - one section per phase (Now/Next/Later)
+  - `RoadmapPhaseSection` - one section per phase (Now/Next/Completed)
     - `RoadmapFeatureCard` - individual feature with upvote button
     - `RoadmapVoteButton` - toggle upvote (shows count and filled/outline state)
   - `FeatureRequestForm` (optional) - submit new ideas
@@ -132,9 +134,16 @@ export const ROADMAP_FEATURES = [
 
 Eventually: Move this to database/CMS for easier updates without code changes.
 
+### Ongoing Maintenance Rule
+
+- When a roadmap item ships, move its phase to `completed` in [apps/api/src/data/roadmap-features.ts](../apps/api/src/data/roadmap-features.ts) in the same PR/branch.
+- Keep public visibility limited to `now`, `next`, and `completed`.
+- Keep `later` and `deferred` hidden from the public roadmap endpoint.
+
 ## Acceptance Criteria
 
 - [ ] Users can view Phase A and Phase B features
+- [ ] Users can view Completed (shipped) features
 - [ ] Users can upvote/unvote features (persists to database)
 - [ ] Vote counts are accurate and real-time
 - [ ] Page is accessible at `/roadmap` and linked in nav
@@ -142,13 +151,14 @@ Eventually: Move this to database/CMS for easier updates without code changes.
 - [ ] Only authenticated users can vote
 - [ ] Feature card shows: title, description, phase, vote count, user's vote status
 - [ ] No deferred or later features are publicly visible
+- [ ] Public roadmap only exposes now, next, and completed phases
 - [ ] Admin users see vote analytics (optional for MVP)
 
 ## Design Notes
 
 - Use same card style as notification/ride cards for consistency
 - Upvote button: outline → filled on click, show count
-- Phase headers: "Now (Active Work)", "Next (Planned)", "Later (Under Consideration)"
+- Phase headers: "Now (Active Work)", "Next (Planned)", "Completed (Shipped)"
 - Empty state: "Check back soon for more planned features"
 - Sort within phase by: vote count desc, then by feature ID (insertion order)
 

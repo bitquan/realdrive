@@ -185,7 +185,7 @@ Checklist:
 - [x] Expand push flows beyond baseline ride events where product value is clear.
 	- Added issue-intake confirmation push delivery on report submission in [apps/api/src/app.ts](../apps/api/src/app.ts), so users get non-ride workflow confirmation in notification history.
 - [x] Build the public roadmap page in app.
-	- Exposed public roadmap data in [apps/api/src/app.ts](../apps/api/src/app.ts) and wired public access routing/consumption in [apps/web/src/main.tsx](../apps/web/src/main.tsx), [apps/web/src/lib/api.ts](../apps/web/src/lib/api.ts), and [apps/web/src/pages/roadmap-page.tsx](../apps/web/src/pages/roadmap-page.tsx).
+	- Exposed public roadmap data in [apps/api/src/app.ts](../apps/api/src/app.ts) and wired public access routing/consumption in [apps/web/src/main.tsx](../apps/web/src/main.tsx), [apps/web/src/lib/api.ts](../apps/web/src/lib/api.ts), and [apps/web/src/pages/roadmap-page.tsx](../apps/web/src/pages/roadmap-page.tsx), including a dedicated completed/shipped section.
 - [x] Keep feature request and bug intake tied to existing real workflows.
 	- Added direct workflow-safe links to `/request-feature` and `/report-bug` from [apps/web/src/pages/roadmap-page.tsx](../apps/web/src/pages/roadmap-page.tsx) and [apps/web/src/pages/notification-preferences-page.tsx](../apps/web/src/pages/notification-preferences-page.tsx), preserving existing issue intake endpoints.
 

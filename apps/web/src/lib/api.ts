@@ -118,7 +118,7 @@ export interface RoadmapFeature {
   description: string;
   category: "rider" | "driver" | "admin" | "shared" | "product";
   area: string;
-  phase: "now" | "next" | "later" | "deferred";
+  phase: "now" | "next" | "completed" | "later" | "deferred";
   impact: "high" | "medium" | "low";
   order: number;
   voteCount: number;

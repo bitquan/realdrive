@@ -69,6 +69,7 @@ export function RoadmapPage() {
   const features = data?.features || [];
   const nowFeatures = features.filter((feature) => feature.phase === "now");
   const nextFeatures = features.filter((feature) => feature.phase === "next");
+  const completedFeatures = features.filter((feature) => feature.phase === "completed");
   const requestFeaturePath = user ? `/request-feature?source=${sourceFromRole(user.role)}&contextPath=%2Froadmap` : "/";
   const reportBugPath = user ? `/report-bug?source=${sourceFromRole(user.role)}&contextPath=%2Froadmap` : "/";
 
@@ -127,6 +128,28 @@ export function RoadmapPage() {
               ))
             ) : (
               <Card><CardContent className="p-4 text-sm text-ops-muted">No planned items currently listed.</CardContent></Card>
+            )}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <h2 className="text-lg font-semibold text-ops-text">Completed (shipped)</h2>
+          </div>
+          <div className="grid gap-3">
+            {completedFeatures.length > 0 ? (
+              completedFeatures.map((feature) => (
+                <RoadmapFeatureCard
+                  key={feature.id}
+                  feature={feature}
+                  onVote={handleVote}
+                  votingInProgress={voteMutation.isPending}
+                  canVote={Boolean(token)}
+                />
+              ))
+            ) : (
+              <Card><CardContent className="p-4 text-sm text-ops-muted">No completed items currently listed.</CardContent></Card>
             )}
           </div>
         </section>
