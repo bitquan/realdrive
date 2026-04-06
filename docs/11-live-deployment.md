@@ -96,8 +96,8 @@ Add these to the live Render API service.
 |----------|---------|-------|
 | `DATABASE_URL` | `postgresql://...` | From Render PostgreSQL |
 | `JWT_SECRET` | Random 32+ chars | Use `openssl rand -hex 32` |
-| `PUBLIC_BASE_URL` | `https://realdrive.app` | Your production domain |
-| `CLIENT_ORIGIN` | `https://realdrive.app` | Same as Vercel web URL |
+| `PUBLIC_BASE_URL` | `https://realdrive-web.vercel.app` | Current live web URL unless you intentionally switch to a custom domain |
+| `CLIENT_ORIGIN` | `https://realdrive-web.vercel.app` | Must match the live Vercel web URL |
 
 ### Pricing & Auto-Apply Variables
 
@@ -194,6 +194,7 @@ Important:
 
 - Do not commit `VITE_MAPBOX_TOKEN` into `apps/web/.env.production`
 - Store it in the Vercel project env settings instead
+- If `VITE_MAPBOX_TOKEN` is missing, production falls back to non-map placeholder behavior and route quality will not match the intended driver shell experience
 
 ## Smoke Tests
 
@@ -221,6 +222,14 @@ curl -X POST https://realdrive.onrender.com/quotes/ride \
 # 5. Public drivers list
 curl https://realdrive.onrender.com/public/drivers
 ```
+
+Driver production checks after deploy:
+
+- Open `https://realdrive-web.vercel.app/driver`
+- Confirm stand-by renders the real mobile map when Mapbox is configured
+- Confirm `/driver/inbox` loads and keeps the map shell behind the inbox sheet
+- Confirm `/driver/rides/:rideId` keeps pickup, dropoff, and route line in view above the sheet
+- Confirm driver maps can pan freely and the recenter control restores the intended framing
 
 ## Current Production Truth
 

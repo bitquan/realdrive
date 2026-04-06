@@ -52,11 +52,26 @@ pnpm --filter @realdrive/web test
 When behavior changes, update docs in the same branch:
 
 - `README.md` for root quick-start or route changes
+- `docs/README.md` when source-of-truth process or document ownership changes
 - `docs/02-local-setup.md` for startup or env changes
 - `docs/03-environment-and-services.md` for provider/env changes
+- `docs/05-frontend-guide.md` for route and shell behavior changes
 - `docs/08-operations-and-runbooks.md` for runbooks and smoke tests
+- `docs/09-testing-and-quality.md` for QA expectations
 - `docs/11-live-deployment.md` for Render/Vercel changes
-- `docs/README.md` if you add or remove docs
+- workstream tracker docs such as `docs/driver-redesign-status.md` when checkpointed product direction changes
+
+## Docs-First Discipline
+
+- Do not treat docs as an afterthought.
+- For RealDrive, docs should be updated before or alongside the push that changes behavior.
+- If a route, shell behavior, deployment target, or operator workflow changes, the branch is not done until the matching docs are current.
+- Prefer one canonical doc per truth area:
+	- route and UI truth → `docs/05-frontend-guide.md`
+	- runbook truth → `docs/08-operations-and-runbooks.md`
+	- QA truth → `docs/09-testing-and-quality.md`
+	- deployment truth → `docs/11-live-deployment.md`
+	- checkpoint truth → tracker docs like `docs/driver-redesign-status.md`
 
 ## GitHub Workflow Guidance
 

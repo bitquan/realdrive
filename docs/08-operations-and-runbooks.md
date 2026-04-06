@@ -118,6 +118,35 @@ Run Playwright screenshot coverage:
 pnpm screenshots
 ```
 
+## Documentation Audit Runbook
+
+Run this audit before pushing product behavior changes:
+
+1. Check changed files:
+
+```bash
+git status --short
+```
+
+2. If route, environment, deployment, or workflow behavior changed, review and update:
+
+- `README.md`
+- `docs/README.md`
+- `docs/05-frontend-guide.md`
+- `docs/08-operations-and-runbooks.md`
+- `docs/11-live-deployment.md`
+- `docs/17-contributor-and-copilot-guide.md`
+- active workstream tracker docs such as `docs/driver-redesign-status.md`
+
+3. Re-run the affected package build:
+
+```bash
+pnpm --filter @realdrive/web build
+pnpm --filter @realdrive/api test
+```
+
+4. Push only after docs and code agree.
+
 ## CI Pipeline
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
@@ -183,6 +212,7 @@ After a fresh reset:
 3. Approve the driver
 4. The driver signs in at `/driver/login`
 5. The driver sets availability and dispatch settings in `/driver`
+6. For mobile verification, check the real driver routes in sequence: `/driver`, `/driver/inbox`, `/driver/rides/:rideId`
 
 ## Platform Dues Runbook
 

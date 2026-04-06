@@ -57,11 +57,17 @@ Current status:
 - Approve driver from admin
 - Verify approved driver can log in
 - Toggle availability
+- Verify `/driver` uses the map-first shell on mobile
+- Verify stand-by state uses the real map when Mapbox is configured
 - View pending offers
+- Verify `/driver/inbox` opens as a dedicated inbox shell route
+- Verify inbox rows stay visible and only expand/collapse details
 - Accept an offer
+- Verify route map can pan freely and `Recenter` returns to the active route
 - Update dispatch settings
 - Switch between platform and custom pricing
 - Move ride from `accepted` to `completed`
+- Verify `/driver/rides/:rideId` keeps route, markers, and trip controls visible above the mobile sheet
 - Verify active ride list updates
 - Verify dues appear after a completed ride
 - Verify overdue dues block going available and block new work cleanly

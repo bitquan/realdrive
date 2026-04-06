@@ -92,6 +92,9 @@ Important current behaviors:
 - Signs up with email/password and waits for approval
 - Signs in with email/password after approval
 - Sets availability
+- Works from a mobile-first map shell on `/driver`
+- Uses `/driver/inbox` for dedicated inbox triage when needed
+- Uses `/driver/rides/:rideId` as the dedicated active-trip route
 - Sees outstanding and overdue platform dues plus manual payment instructions
 - Receives ride offers
 - Accepts or declines offers

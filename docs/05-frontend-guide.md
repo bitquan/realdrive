@@ -51,9 +51,11 @@ Providers:
 - `/driver/login`
   Driver email/password login
 - `/driver`
-  Driver dashboard
+  Driver mobile-first map-shell home and desktop driver dashboard
+- `/driver/inbox`
+  Dedicated mobile inbox shell route with the same driver map surface and compact offer triage over the live map
 - `/driver/rides/:rideId`
-  Driver active ride screen
+  Driver active ride screen / trip cockpit
 
 ## Admin
 
@@ -140,6 +142,25 @@ Map component:
 
 - `apps/web/src/components/maps/live-map.tsx`
 
+Driver shell components:
+
+- `apps/web/src/components/driver-home/DriverMapSurface.tsx`
+- `apps/web/src/components/driver-home/DriverLiveOfferCard.tsx`
+- `apps/web/src/components/driver-home/DriverOfferInbox.tsx`
+- `apps/web/src/components/driver-home/DriverActiveRideCard.tsx`
+
+## Current Driver Shell Truth
+
+- Mobile driver experience is map-first, not card-first.
+- `/driver` is the main driver work surface.
+- `/driver` keeps the map as the base shell and swaps mobile states between stand by, live offer, inbox-on-home, and active ride continuity.
+- `/driver/inbox` is a dedicated inbox route for the same driver product, not a separate admin-style page.
+- `/driver/rides/:rideId` is the dedicated active-trip route.
+- The driver shell keeps real offer queries, active-ride queries, accept/decline mutations, socket invalidation, and ride continuity on the real route tree.
+- Mobile maps now support free pan plus an explicit recenter control.
+- Mobile route maps request road-following geometry from Mapbox Directions and fit the visible route above the bottom sheet.
+- Mobile stand-by state uses a real Mapbox map when a token is configured instead of relying only on the fallback grid.
+
 Current public UX direction:
 
 - Hybrid rideshare-first funnel (fast booking first, community/referral second)
@@ -152,6 +173,7 @@ Current public UX direction:
 - The live map requires Mapbox to be configured
 - The community board is intentionally simple: one board, yes/no voting, and flat comments only
 - The driver status progression screen works, but the current UI does not yet expose every operational action from the API
+- Mobile driver shell verification is still mostly manual and route-specific; interactive end-to-end coverage for map pan/recenter and trip continuity should expand
 - Frontend automated coverage is still light, but Playwright screenshot coverage now exists for major stable screens and dashboards
 
 ## Recommended Frontend Conventions

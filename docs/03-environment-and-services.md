@@ -176,7 +176,11 @@ The current public URLs are:
 The main private URLs are:
 
 - `/driver`
-  Approved driver app.
+  Approved driver app and primary map-first driver home.
+- `/driver/inbox`
+  Dedicated driver inbox shell route.
+- `/driver/rides/:rideId`
+  Dedicated driver trip cockpit route.
 - `/admin`
   Admin dashboard.
 - `/admin/share`

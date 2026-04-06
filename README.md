@@ -7,6 +7,11 @@ RealDrive is a web-first ride dispatch MVP with separate rider, driver, and admi
 
 Project docs live in [`docs/README.md`](./docs/README.md).
 
+Documentation rule:
+
+- treat `docs/` as the source of truth for repo behavior, deployment truth, and active product direction
+- when behavior changes, update the relevant docs in the same branch before or alongside the push to `main`
+
 Current hosted defaults:
 
 - Web: `https://realdrive-web.vercel.app`

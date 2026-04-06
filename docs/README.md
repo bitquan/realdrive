@@ -2,6 +2,34 @@
 
 This folder is the project handbook for RealDrive.
 
+## Source Of Truth Rules
+
+- Treat this docs folder as the operating source of truth for product direction, environment truth, deployment truth, and workflow truth.
+- If code and docs disagree, do not leave them split across branches or checkpoints; update the relevant docs in the same branch as the code change.
+- Update docs before or alongside pushes to `main`, not as a later cleanup task.
+- Use the focused status trackers when a workstream is being checkpointed:
+  - [Driver Redesign Status](./driver-redesign-status.md)
+  - [Admin Redesign Status](./admin-redesign-status.md)
+- Keep route truth in [05 Frontend Guide](./05-frontend-guide.md), deployment truth in [11 Live Deployment](./11-live-deployment.md), and contributor process truth in [17 Contributor And Copilot Guide](./17-contributor-and-copilot-guide.md).
+
+## Documentation Update Order
+
+When behavior changes, review docs in this order:
+
+1. Product/route docs
+  - [01 Project Overview](./01-project-overview.md)
+  - [05 Frontend Guide](./05-frontend-guide.md)
+2. Environment/deployment docs
+  - [03 Environment And Services](./03-environment-and-services.md)
+  - [11 Live Deployment](./11-live-deployment.md)
+3. Workflow/runbook docs
+  - [08 Operations And Runbooks](./08-operations-and-runbooks.md)
+  - [09 Testing And Quality](./09-testing-and-quality.md)
+  - [17 Contributor And Copilot Guide](./17-contributor-and-copilot-guide.md)
+4. Active workstream tracker docs
+  - [Driver Redesign Status](./driver-redesign-status.md)
+  - [Admin Redesign Status](./admin-redesign-status.md)
+
 ## Start Here
 
 1. Read [Project Overview](./01-project-overview.md)
@@ -43,3 +71,5 @@ This folder is the project handbook for RealDrive.
   Feature #26 specification: public-facing roadmap page with upvoting, requirements, API design, and rollout plan.
 - [17 Contributor And Copilot Guide](./17-contributor-and-copilot-guide.md)
   Clear repo instructions for contributors, GitHub workflows, secrets handling, deployment truth, and GitHub Copilot usage.
+- [Driver Redesign Status](./driver-redesign-status.md)
+  Checkpoint tracker for the current shipped driver map-shell work on Home, Rides, and Inbox.

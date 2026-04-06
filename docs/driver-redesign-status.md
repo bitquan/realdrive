@@ -2,19 +2,129 @@
 
 ## Scope
 - The driver redesign was aimed at turning the driver experience into a focused driver-first workflow instead of an adapted admin/ops surface.
-- The work stayed on the existing `/driver` and `/driver/rides/:rideId` routes and focused on map-first dispatch, active-trip continuity, and production-safe fixes needed to ship that direction.
+- The work stayed on the existing `/driver`, `/driver/inbox`, and `/driver/rides/:rideId` routes and focused on map-first dispatch, active-trip continuity, and production-safe fixes needed to ship that direction.
 - Work stops at driver scope for now.
 
 ## Final product direction
 - Map First Dispatch
 - existing /driver route
 - map-first driver home
+- dedicated /driver/inbox route
 - Live / Inbox toggle
 - active ride near the top
 - lower-priority tools collapsed/lower
 - ride screen aligned with driver home
+- mobile maps can pan freely and recenter on demand
 
 ## Completed phases
+
+### Phase 3 checkpoint 1 — Dedicated mobile inbox route
+- goal
+  - Establish a real inbox destination inside the driver route tree without breaking the map-shell product language.
+- files touched
+  - [apps/web/src/main.tsx](apps/web/src/main.tsx)
+  - [apps/web/src/lib/shell.ts](apps/web/src/lib/shell.ts)
+  - [apps/web/src/components/layout/app-shell.tsx](apps/web/src/components/layout/app-shell.tsx)
+  - [apps/web/src/components/driver-home/DriverOfferInbox.tsx](apps/web/src/components/driver-home/DriverOfferInbox.tsx)
+  - [apps/web/src/pages/driver-inbox-page.tsx](apps/web/src/pages/driver-inbox-page.tsx)
+- what changed
+  - Added dedicated `/driver/inbox` route.
+  - Kept Inbox inside the same driver shell system with real queries, mutations, and sockets.
+  - Preserved legacy inbox-on-home behavior while introducing the dedicated route.
+- verification summary
+  - Verified locally that Inbox nav opened `/driver/inbox`.
+  - Verified no console or page errors during the route check.
+- commit message
+  - `feat(driver): establish mobile inbox shell route`
+- short hash
+  - `2f8eacf`
+- pushed to main or not
+  - pushed to `main`
+- production status
+  - pushed, later superseded by follow-up mobile shell fixes
+
+### Phase 3 checkpoint 2 — Compact inbox shell rows
+- goal
+  - Make Inbox read like a lighter control layer over the map instead of a stack of mini-pages.
+- files touched
+  - [apps/web/src/components/driver-home/DriverOfferInbox.tsx](apps/web/src/components/driver-home/DriverOfferInbox.tsx)
+  - [apps/web/src/pages/driver-inbox-page.tsx](apps/web/src/pages/driver-inbox-page.tsx)
+- what changed
+  - Tightened inbox sheet layout.
+  - Made rows denser and expandable for detail instead of heavy by default.
+- verification summary
+  - Verified `/driver/inbox` on mobile with seeded offers.
+  - Confirmed compact default state and expandable detail reveal.
+- commit message
+  - `fix(driver): compact mobile inbox shell rows`
+- short hash
+  - `4988b7a`
+- pushed to main or not
+  - pushed to `main`
+- production status
+  - pushed, later refined by additional shell/map fixes
+
+### Phase 3 checkpoint 3 — Mobile shell map visibility
+- goal
+  - Keep route lines and trip geometry visible above the mobile sheets instead of fitting behind them.
+- files touched
+  - [apps/web/src/components/maps/live-map.tsx](apps/web/src/components/maps/live-map.tsx)
+  - [apps/web/src/components/maps/deferred-live-map.tsx](apps/web/src/components/maps/deferred-live-map.tsx)
+  - [apps/web/src/components/driver-home/DriverMapSurface.tsx](apps/web/src/components/driver-home/DriverMapSurface.tsx)
+  - [apps/web/src/pages/driver-dashboard-page.tsx](apps/web/src/pages/driver-dashboard-page.tsx)
+  - [apps/web/src/pages/driver-inbox-page.tsx](apps/web/src/pages/driver-inbox-page.tsx)
+- what changed
+  - Switched route drawing to Mapbox Directions road-following geometry.
+  - Added mobile fit padding so sheets are treated as blocked space.
+  - Fixed Inbox-specific hide behavior regressions.
+- verification summary
+  - Verified local builds and focused mobile checks after each fix.
+- commit message
+  - `fix(driver): refine mobile shell map visibility`
+- short hash
+  - `59cb003`
+- pushed to main or not
+  - pushed to `main`
+- production status
+  - pushed to `main`
+
+### Phase 3 checkpoint 4 — Real standby map on mobile home
+- goal
+  - Stop production stand-by state from showing only the fake grid when there are no live jobs.
+- files touched
+  - [apps/web/src/components/driver-home/DriverMapSurface.tsx](apps/web/src/components/driver-home/DriverMapSurface.tsx)
+- what changed
+  - Replaced the mobile stand-by placeholder with a real Mapbox map plus geolocation-based idle center and fallback center.
+- verification summary
+  - Verified with successful web build and production mismatch investigation.
+- commit message
+  - `fix(driver): use real standby map on mobile home`
+- short hash
+  - `e3fbc69`
+- pushed to main or not
+  - pushed to `main`
+- production status
+  - pushed to `main`
+
+### Phase 3 checkpoint 5 — Free pan and recenter controls
+- goal
+  - Let drivers move the map freely without it snapping back and provide a reliable recenter action.
+- files touched
+  - [apps/web/src/components/maps/live-map.tsx](apps/web/src/components/maps/live-map.tsx)
+  - [apps/web/src/components/driver-home/DriverMapSurface.tsx](apps/web/src/components/driver-home/DriverMapSurface.tsx)
+- what changed
+  - Route maps only auto-fit on ride/state changes instead of constantly.
+  - Added explicit `Recenter` control to active and stand-by mobile maps.
+- verification summary
+  - Verified with successful web build before push.
+- commit message
+  - `fix(driver): add mobile map recenter controls`
+- short hash
+  - `c20b320`
+- pushed to main or not
+  - pushed to `main`
+- production status
+  - pushed to `main`
 
 ### Phase 1.1 — Map-first home cleanup
 - goal
@@ -172,30 +282,6 @@
 - production status
   - pushed, not production-confirmed
 
-### Docs/status tracking
-- goal
-  - Capture the driver redesign state in a reusable handoff and connect it to the rider/admin tracker docs.
-- files touched
-  - [docs/driver-redesign-status.md](docs/driver-redesign-status.md)
-  - [docs/rider-redesign-status.md](docs/rider-redesign-status.md)
-  - [docs/admin-redesign-status.md](docs/admin-redesign-status.md)
-- what changed
-  - Added the initial driver redesign tracker.
-  - Added companion rider/admin tracker docs so driver status sits in a wider redesign context.
-- verification summary
-  - Verified locally by inspecting git history, pushed state, and current documentation contents.
-  - This documentation checkpoint has not been pushed yet.
-- commit message
-  - `docs(driver): add redesign status tracker`
-  - `docs(status): add rider and admin redesign trackers`
-- short hash
-  - `6f23302`
-  - `8cf8bc5`
-- pushed to main or not
-  - local only
-- production status
-  - not pushed, not production-confirmed
-
 ## Commit timeline
 
 | order | short hash | commit message | purpose | verified? | pushed to main? | production candidate? | production confirmed? |
@@ -207,12 +293,17 @@
 | 5 | `fa991ab` | `style(driver): align ride screen with driver home` | align ride page with driver home direction | yes | yes | yes | no |
 | 6 | `15e34b8` | `fix(web): clear unused driver build symbols` | clear deployment-blocking build issues | yes | yes | yes | no |
 | 7 | `554d065` | `fix(web): stop empty-json offer actions` | fix `400` errors on offer actions | yes | yes | yes | no |
-| 8 | `6f23302` | `docs(driver): add redesign status tracker` | add driver redesign tracker doc | yes | no | no | no |
-| 9 | `8cf8bc5` | `docs(status): add rider and admin redesign trackers` | add cross-scope redesign tracker docs | yes | no | no | no |
+| 8 | `2f8eacf` | `feat(driver): establish mobile inbox shell route` | add dedicated mobile inbox route | yes | yes | yes | no |
+| 9 | `4988b7a` | `fix(driver): compact mobile inbox shell rows` | tighten inbox control-sheet presentation | yes | yes | yes | no |
+| 10 | `59cb003` | `fix(driver): refine mobile shell map visibility` | fit route geometry above mobile sheets | yes | yes | yes | no |
+| 11 | `e3fbc69` | `fix(driver): use real standby map on mobile home` | replace stand-by placeholder with real map | yes | yes | yes | no |
+| 12 | `c20b320` | `fix(driver): add mobile map recenter controls` | allow free pan and explicit recenter on mobile maps | yes | yes | yes | no |
 
 ## Important files and what they do
 - [apps/web/src/pages/driver-dashboard-page.tsx](apps/web/src/pages/driver-dashboard-page.tsx)
   - Main driver home page and primary map-first dispatch surface.
+- [apps/web/src/pages/driver-inbox-page.tsx](apps/web/src/pages/driver-inbox-page.tsx)
+  - Dedicated mobile inbox shell route for compact offer triage over the live map.
 - [apps/web/src/pages/driver-ride-page.tsx](apps/web/src/pages/driver-ride-page.tsx)
   - Active-trip ride screen and trip action flow.
 - [apps/web/src/components/layout/app-shell.tsx](apps/web/src/components/layout/app-shell.tsx)
@@ -236,7 +327,9 @@
 - [apps/web/src/components/driver-home/DriverToolsSection.tsx](apps/web/src/components/driver-home/DriverToolsSection.tsx)
   - Lower-priority/collapsible tools area.
 - [apps/web/src/components/driver-home/DriverMapSurface.tsx](apps/web/src/components/driver-home/DriverMapSurface.tsx)
-  - Map-first driver home surface tied to offer or active-ride context.
+  - Map-first driver home surface tied to offer or active-ride context, including mobile stand-by map and recenter behavior.
+- [apps/web/src/components/maps/live-map.tsx](apps/web/src/components/maps/live-map.tsx)
+  - Road-following route rendering, fit-to-visible-shell behavior, and recenter control.
 - [apps/web/src/components/driver-home/driver-home.utils.ts](apps/web/src/components/driver-home/driver-home.utils.ts)
   - Driver-home helper logic for ride pricing, countdowns, and dispatch summaries.
 
@@ -250,9 +343,11 @@
 - `fa991ab` — align ride screen with driver home
 - `15e34b8` — clear unused driver build symbols
 - `554d065` — stop empty-json offer actions
-- `6f23302` — driver redesign tracker docs
-- `8cf8bc5` — rider/admin tracker docs
-
+- `2f8eacf` — establish mobile inbox shell route
+- `4988b7a` — compact mobile inbox shell rows
+- `59cb003` — refine mobile shell map visibility
+- `e3fbc69` — use real standby map on mobile home
+- `c20b320` — add mobile map recenter controls
 ### Pushed to main
 - `e587192`
 - `e3cd5b7`
@@ -261,31 +356,32 @@
 - `fa991ab`
 - `15e34b8`
 - `554d065`
+- `2f8eacf`
+- `4988b7a`
+- `59cb003`
+- `e3fbc69`
+- `c20b320`
 
 ### Production confirmed
 - none
 
 ### Unknown / still needs confirmation
 - Whether production is fully serving `554d065`
-- Production smoke-test status for `/driver`
-- Production smoke-test status for `/driver/rides/:rideId`
+- Focused production smoke-test status for `/driver/inbox`
 - Production smoke-test status for driver `Accept`
 - Production smoke-test status for driver `Decline`
-- Local-only docs checkpoints `6f23302` and `8cf8bc5` are not pushed yet
 
 ## What remains
 
 ### production verification / smoke tests
-- Confirm the deployed app is actually serving commit `554d065`.
-- Run a focused production smoke pass on `/driver`.
-- Run a focused production smoke pass on `/driver/rides/:rideId`.
+- Run a focused production smoke pass on `/driver`, `/driver/inbox`, and `/driver/rides/:rideId` after each driver-shell change.
 - Confirm production `Accept` and `Decline` both succeed end to end.
+- Confirm production `Recenter` works on stand-by and active route maps.
 
 ### driver follow-up polish
 - Only address driver polish items if production smoke testing exposes real issues.
 
 ### QA / cleanup
-- Push or intentionally hold the local-only documentation commits.
 - Keep future driver work split into small checkpoints if driver scope reopens.
 
 ### later non-driver work
@@ -303,7 +399,6 @@
 - Production confirmation is still manual and currently unknown.
 - The most recent live driver fixes were verified locally, not production-confirmed.
 - Offer-action verification used controlled test rides; production should still be checked carefully.
-- Local-only handoff docs are ahead of `origin/main` and not yet shareable through production branch history.
 
 ## Recommended next step after driver scope
 - Confirm production is serving `554d065`, then run one focused production smoke test for `/driver`, `Accept`, `Decline`, and `/driver/rides/:rideId` before starting rider or admin redesign work.
