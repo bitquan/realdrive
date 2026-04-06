@@ -25,6 +25,7 @@ Current coverage includes:
 - Ride transition rules
 - Scheduled ride release behavior
 - First-accept-wins dispatch protection
+- Route-level integration coverage for protected driver endpoints and quote pricing
 
 ## Current Frontend Test State
 
@@ -32,7 +33,7 @@ Current status:
 
 - Frontend test runner is configured
 - Baseline React Testing Library + jsdom setup is in place
-- Current web test file: `apps/web/src/components/ui/button.test.tsx`
+- Frontend component coverage now includes `Button`, `DriverLiveOfferCard`, and `DriverOfferInbox`
 - Playwright now covers both screenshot baselines and one interactive mobile driver continuity flow from live offer acceptance into the trip cockpit
 
 ## Manual QA Checklist

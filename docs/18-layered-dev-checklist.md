@@ -164,10 +164,14 @@ Checklist:
 
 - [x] Expand Playwright from screenshots into interactive core journeys.
 	- First checkpoint completed with the mobile driver continuity flow in [apps/web/tests/playwright/driver-mobile-flow.spec.ts](../apps/web/tests/playwright/driver-mobile-flow.spec.ts).
-- [ ] Expand frontend component coverage beyond baseline tests.
-- [ ] Add backend integration coverage for protected routes and pricing logic.
-- [ ] Harden CI/CD with required checks, release gates, and promotion rules.
-- [ ] Add preview or safer pre-release verification paths.
+- [x] Expand frontend component coverage beyond baseline tests.
+	- Added driver offer component tests in [apps/web/src/components/driver-home/driver-offer-components.test.tsx](../apps/web/src/components/driver-home/driver-offer-components.test.tsx).
+- [x] Add backend integration coverage for protected routes and pricing logic.
+	- Added route integration tests in [apps/api/src/tests/app-routes.test.ts](../apps/api/src/tests/app-routes.test.ts).
+- [x] Harden CI/CD with required checks, release gates, and promotion rules.
+	- CI now ends on a single `Quality Gate` job after API tests, web tests, and typecheck/build checks pass.
+- [x] Add preview or safer pre-release verification paths.
+	- Pull requests now upload a `web-dist-*` build artifact for safer pre-merge review.
 - [ ] Add monitoring and performance tooling.
 - [ ] Add backup/restore and disaster-recovery runbooks.
 - [ ] Add secret rotation and stronger operational hygiene.

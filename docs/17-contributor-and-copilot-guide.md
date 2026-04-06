@@ -39,6 +39,11 @@ pnpm --filter @realdrive/api test
 pnpm --filter @realdrive/web test
 ```
 
+Current CI gate:
+
+- GitHub Actions now ends on a single `Quality Gate` job after API tests, web tests, and typecheck/build checks pass.
+- Pull requests also upload a short-lived `web-dist-*` artifact so changes can be reviewed before merge when a live preview is not available.
+
 ## Secrets And Environment Rules
 
 - Never commit secrets, private keys, or provider tokens

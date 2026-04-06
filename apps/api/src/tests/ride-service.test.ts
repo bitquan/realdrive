@@ -116,6 +116,12 @@ function makeRide(overrides: Partial<Ride> = {}): Ride {
     driver: null,
     offers: [],
     latestLocation: null,
+    test: {
+      isTest: false,
+      label: null,
+      createdByAdminId: null,
+      targetDriverId: null
+    },
     ...overrides
   };
 }

@@ -156,10 +156,11 @@ Screenshot artifact workflow: `.github/workflows/playwright-screenshots.yml`
 Runs on `push` and `pull_request` to `main`:
 
 - Install dependencies
-- Generate Prisma client
-- Run lint/type checks
-- Run tests
-- Build all packages
+- Run API tests
+- Run web tests
+- Run typecheck/build validation
+- Publish a pull-request web build artifact for safer manual review
+- Finish on one `Quality Gate` job that can be used as the required merge check
 
 ## Demo Data Runbook
 
