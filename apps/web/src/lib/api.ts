@@ -46,6 +46,7 @@ import type {
   CommunityCommentsResponse,
   CommunityProposal,
   CommunityVoteInput,
+  CancelRideInput,
   CreateIssueReportInput,
   CreateAdSubmissionInput,
   CreateMarketConfigInput,
@@ -377,8 +378,11 @@ export const api = {
   getRide(id: string, token: string) {
     return apiFetch<Ride>(`/rides/${id}`, undefined, token);
   },
-  cancelRide(id: string, token: string) {
-    return apiFetch<Ride>(`/rides/${id}/cancel`, { method: "POST" }, token);
+  cancelRide(id: string, token: string, input?: CancelRideInput) {
+    return apiFetch<Ride>(`/rides/${id}/cancel`, {
+      method: "POST",
+      body: JSON.stringify(input ?? {})
+    }, token);
   },
   listRiderRides(token: string) {
     return apiFetch<Ride[]>("/rider/rides", undefined, token);

@@ -5,7 +5,13 @@ const { mockStore, mockMaps } = vi.hoisted(() => ({
     findSessionUserById: vi.fn(),
     ensureUserReferralCode: vi.fn(),
     listDriverOffers: vi.fn(),
-    listPlatformPricingRules: vi.fn()
+    listPlatformPricingRules: vi.fn(),
+    getRideById: vi.fn(),
+    updateRideAdmin: vi.fn(),
+    addAuditLog: vi.fn(),
+    getNotificationPreference: vi.fn(),
+    listPushSubscriptions: vi.fn(),
+    logNotificationDelivery: vi.fn()
   },
   mockMaps: {
     estimateRoute: vi.fn(),
@@ -62,6 +68,33 @@ describe("app route integration", () => {
         updatedAt: new Date("2026-04-05T12:00:00.000Z").toISOString()
       }
     ]);
+    mockStore.getRideById.mockResolvedValue({
+      id: "ride-1",
+      riderId: "rider-1",
+      driverId: approvedDriver.id,
+      status: "accepted",
+      pickup: { address: "801 E Main St, Richmond, VA" },
+      dropoff: { address: "1001 Haxall Point, Richmond, VA" },
+      rider: { id: "rider-1", name: "Jordan Smith", phone: "+15555550155" },
+      driver: { id: approvedDriver.id, name: approvedDriver.name, phone: approvedDriver.phone }
+    });
+    mockStore.updateRideAdmin.mockResolvedValue({
+      id: "ride-1",
+      riderId: "rider-1",
+      driverId: approvedDriver.id,
+      status: "canceled",
+      pickup: { address: "801 E Main St, Richmond, VA" },
+      dropoff: { address: "1001 Haxall Point, Richmond, VA" },
+      rider: { id: "rider-1", name: "Jordan Smith", phone: "+15555550155" },
+      driver: { id: approvedDriver.id, name: approvedDriver.name, phone: approvedDriver.phone }
+    });
+    mockStore.addAuditLog.mockResolvedValue(undefined);
+    mockStore.getNotificationPreference.mockResolvedValue({
+      pushEnabled: false,
+      smsCriticalOnly: false
+    });
+    mockStore.listPushSubscriptions.mockResolvedValue([]);
+    mockStore.logNotificationDelivery.mockResolvedValue(undefined);
     mockMaps.autocompleteAddress.mockResolvedValue([]);
     mockMaps.estimateRoute.mockResolvedValue({
       distanceMiles: 7,
@@ -152,5 +185,32 @@ describe("app route integration", () => {
       estimatedPlatformDue: 1.43,
       estimatedCustomerTotal: 30.08
     });
+  });
+
+  it("accepts driver cancellation reasons through the route layer", async () => {
+    mockStore.findSessionUserById.mockResolvedValue(approvedDriver);
+    const token = app.jwt.sign({ sub: approvedDriver.id });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/rides/ride-1/cancel",
+      headers: {
+        authorization: `Bearer ${token}`
+      },
+      payload: {
+        reason: "Unsafe pickup — blocked entrance"
+      }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ status: "canceled", id: "ride-1" });
+    expect(mockStore.addAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: {
+          canceledByRole: "driver",
+          reason: "Unsafe pickup — blocked entrance"
+        }
+      })
+    );
   });
 });

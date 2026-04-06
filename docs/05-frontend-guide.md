@@ -148,6 +148,7 @@ Driver shell components:
 - `apps/web/src/components/driver-home/DriverLiveOfferCard.tsx`
 - `apps/web/src/components/driver-home/DriverOfferInbox.tsx`
 - `apps/web/src/components/driver-home/DriverActiveRideCard.tsx`
+- `apps/web/src/components/driver-home/DriverOnboardingChecklist.tsx`
 
 ## Current Driver Shell Truth
 
@@ -157,6 +158,9 @@ Driver shell components:
 - `/driver/inbox` is a dedicated inbox route for the same driver product, not a separate admin-style page.
 - `/driver/rides/:rideId` is the dedicated active-trip route.
 - The driver shell keeps real offer queries, active-ride queries, accept/decline mutations, socket invalidation, and ride continuity on the real route tree.
+- Live offers and inbox rows now expose clearer expiration timing, stale-offer states, and disabled expired accept actions.
+- Driver account tools now include a launch checklist for documents, vehicle/profile data, payment methods, dispatch settings, and approval readiness.
+- `/driver/rides/:rideId` now includes driver-side cancellation reason capture before ending a trip.
 - Mobile maps now support free pan plus an explicit recenter control.
 - Mobile route maps request road-following geometry from Mapbox Directions and fit the visible route above the bottom sheet.
 - Mobile stand-by state uses a real Mapbox map when a token is configured instead of relying only on the fallback grid.

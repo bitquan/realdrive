@@ -111,9 +111,12 @@ Checklist:
 - [ ] Run focused production smoke tests for `/driver`, `/driver/inbox`, and `/driver/rides/:rideId`.
 - [ ] Confirm production `Accept` and `Decline` succeed end to end.
 - [ ] Confirm production `Recenter` works on stand-by and active maps.
-- [ ] Improve offer expiration UX and countdown clarity.
-- [ ] Build driver onboarding checklist UI.
-- [ ] Add driver cancellation reason capture.
+- [x] Improve offer expiration UX and countdown clarity.
+	- Added urgency states, expired-action handling, and clearer timer copy in [apps/web/src/components/driver-home/DriverLiveOfferCard.tsx](../apps/web/src/components/driver-home/DriverLiveOfferCard.tsx) and [apps/web/src/components/driver-home/DriverOfferInbox.tsx](../apps/web/src/components/driver-home/DriverOfferInbox.tsx).
+- [x] Build driver onboarding checklist UI.
+	- Added [apps/web/src/components/driver-home/DriverOnboardingChecklist.tsx](../apps/web/src/components/driver-home/DriverOnboardingChecklist.tsx) and surfaced it in [apps/web/src/pages/driver-dashboard-page.tsx](../apps/web/src/pages/driver-dashboard-page.tsx).
+- [x] Add driver cancellation reason capture.
+	- Added driver-side cancellation reasons in [apps/web/src/pages/driver-ride-page.tsx](../apps/web/src/pages/driver-ride-page.tsx) with API support in [apps/api/src/app.ts](../apps/api/src/app.ts) and [apps/api/src/services/ride-service.ts](../apps/api/src/services/ride-service.ts).
 - [ ] Reopen driver polish only if smoke tests expose real issues.
 
 ## Layer 5 — Admin And Ops Layer

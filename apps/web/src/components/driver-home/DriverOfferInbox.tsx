@@ -10,6 +10,7 @@ import {
   formatDriverMinutesCompact,
   formatDriverMoneyCompact,
   getDriverOfferCountdown,
+  getDriverOfferCountdownMeta,
   getDriverRidePricing
 } from "@/components/driver-home/driver-home.utils";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
@@ -48,10 +49,17 @@ export function DriverOfferInbox({
         {offers.map((ride) => {
           const pricing = getDriverRidePricing(ride);
           const countdown = getDriverOfferCountdown(ride, now);
+          const countdownMeta = getDriverOfferCountdownMeta(ride, now);
           const displayPayout = formatDriverMoneyCompact(pricing.subtotal);
           const displayMiles = formatDriverMilesCompact(ride.estimatedMiles);
           const displayMinutes = formatDriverMinutesCompact(ride.estimatedMinutes);
           const expanded = shellMode === "route" && expandedRideId === ride.id;
+          const countdownClassName =
+            countdownMeta.tone === "expired"
+              ? "border-rose-500/25 bg-rose-500/12 text-rose-200"
+              : countdownMeta.tone === "warning"
+                ? "border-amber-500/25 bg-amber-500/12 text-amber-100"
+                : "border-white/8 bg-white/[0.04] text-slate-300";
 
           if (shellMode === "route") {
             return (
@@ -69,7 +77,7 @@ export function DriverOfferInbox({
                       <span className="rounded-full border border-teal-400/18 bg-teal-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-200">
                         {displayPayout}
                       </span>
-                      <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-slate-300">
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${countdownClassName}`}>
                         {countdown ?? "Queued"}
                       </span>
                     </div>
@@ -88,10 +96,10 @@ export function DriverOfferInbox({
                   <div className="flex shrink-0 items-center gap-1.5">
                     <Button
                       className="h-8 rounded-full px-3 text-[11px] font-semibold"
-                      disabled={suspended || acceptMutation.isPending}
+                      disabled={suspended || acceptMutation.isPending || countdownMeta.expired}
                       onClick={() => acceptMutation.mutate(ride.id)}
                     >
-                      {acceptMutation.isPending ? "..." : "Accept"}
+                      {countdownMeta.expired ? "Expired" : acceptMutation.isPending ? "..." : "Accept"}
                     </Button>
                     <Button
                       variant="outline"
@@ -115,6 +123,10 @@ export function DriverOfferInbox({
                 {expanded ? (
                   <div className="border-t border-white/8 bg-black/10 px-3 pb-3 pt-2.5">
                     <div className="grid gap-2 text-[11px] text-slate-300">
+                      <div className="rounded-[0.95rem] border border-white/8 bg-white/[0.02] px-2.5 py-2">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Offer timing</p>
+                        <p className="mt-1 leading-4 text-slate-100">{countdownMeta.detail}</p>
+                      </div>
                       <div>
                         <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Pickup</p>
                         <p className="mt-1 leading-4 text-slate-100">{ride.pickup.address}</p>
@@ -141,8 +153,9 @@ export function DriverOfferInbox({
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{ride.pickup.address}</p>
                   <p className="mt-0.5 truncate text-[11px] text-slate-400">{ride.dropoff.address}</p>
+                  <p className="mt-1 text-[10px] leading-4 text-slate-500">{countdownMeta.detail}</p>
                 </div>
-                <Badge className="border-white/10 bg-slate-950/70 px-2 py-1 text-[11px] text-slate-200">{countdown ?? "Queued"}</Badge>
+                <Badge className={`px-2 py-1 text-[11px] ${countdownClassName}`}>{countdown ?? "Queued"}</Badge>
               </div>
 
               <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-slate-400">
@@ -151,8 +164,8 @@ export function DriverOfferInbox({
               </div>
 
               <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
-                <Button className="h-9 text-sm" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
-                  {acceptMutation.isPending ? "Accepting..." : "Accept"}
+                <Button className="h-9 text-sm" disabled={suspended || acceptMutation.isPending || countdownMeta.expired} onClick={() => acceptMutation.mutate(ride.id)}>
+                  {countdownMeta.expired ? "Expired" : acceptMutation.isPending ? "Accepting..." : "Accept"}
                 </Button>
                 <Button variant="outline" className="h-9 min-w-[88px] border-slate-700/50 bg-slate-800/60 px-3.5 text-sm text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
                   Decline
@@ -181,6 +194,13 @@ export function DriverOfferInbox({
             {offers.map((ride) => {
               const pricing = getDriverRidePricing(ride);
               const countdown = getDriverOfferCountdown(ride, now);
+              const countdownMeta = getDriverOfferCountdownMeta(ride, now);
+              const countdownClassName =
+                countdownMeta.tone === "expired"
+                  ? "border-rose-500/25 bg-rose-500/12 text-rose-200"
+                  : countdownMeta.tone === "warning"
+                    ? "border-amber-500/25 bg-amber-500/12 text-amber-100"
+                    : "border-ops-border-soft bg-ops-panel/80 text-ops-text";
 
               return (
                 <div key={ride.id} className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/40 p-4">
@@ -188,8 +208,9 @@ export function DriverOfferInbox({
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-ops-text">{ride.pickup.address}</p>
                       <p className="mt-1 truncate text-sm text-ops-muted">{ride.dropoff.address}</p>
+                      <p className="mt-2 text-xs leading-5 text-ops-muted">{countdownMeta.detail}</p>
                     </div>
-                    <Badge className="border-ops-border-soft bg-ops-panel/80 text-ops-text">{countdown ?? "Queued"}</Badge>
+                    <Badge className={countdownClassName}>{countdown ?? "Queued"}</Badge>
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -198,8 +219,8 @@ export function DriverOfferInbox({
                   </div>
 
                   <div className="mt-4 flex gap-3">
-                    <Button className="flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
-                      {acceptMutation.isPending ? "Accepting..." : "Accept"}
+                    <Button className="flex-1" disabled={suspended || acceptMutation.isPending || countdownMeta.expired} onClick={() => acceptMutation.mutate(ride.id)}>
+                      {countdownMeta.expired ? "Offer expired" : acceptMutation.isPending ? "Accepting..." : "Accept"}
                     </Button>
                     <Button variant="outline" className="flex-1" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
                       Decline

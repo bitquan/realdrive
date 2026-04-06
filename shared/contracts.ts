@@ -747,6 +747,10 @@ export const createRideSchema = z.object({
   scheduledFor: z.string().datetime().nullable().optional()
 });
 
+export const cancelRideInputSchema = z.object({
+  reason: z.string().trim().min(2).max(240).optional()
+});
+
 export const publicRideRequestSchema = createRideSchema.extend({
   riderName: z.string().min(2),
   phone: z.string().min(8),
@@ -1465,6 +1469,7 @@ export type AdminSetupInput = z.infer<typeof adminSetupInputSchema>;
 export type DriverSignupInput = z.infer<typeof driverSignupInputSchema>;
 export type DriverLoginInput = z.infer<typeof driverLoginSchema>;
 export type CreateRideInput = z.infer<typeof createRideSchema>;
+export type CancelRideInput = z.infer<typeof cancelRideInputSchema>;
 export type PublicRideRequest = z.infer<typeof publicRideRequestSchema>;
 export type AdminCreateTestRideInput = z.infer<typeof adminCreateTestRideSchema>;
 export type AdminCreateTestRideResponse = z.infer<typeof adminCreateTestRideResponseSchema>;

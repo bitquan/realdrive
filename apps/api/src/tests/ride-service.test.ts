@@ -635,4 +635,63 @@ describe("ride service", () => {
     });
     await expect(service.acceptRideOffer("ride-1", driver.id)).rejects.toThrow("Offer is no longer available");
   });
+
+  it("lets the assigned driver cancel a live ride and logs the reason", async () => {
+    const addAuditLog = vi.fn();
+    const service = createRideService({
+      store: createStore({
+        getRideById: async () => makeRide({ status: "accepted", driverId: driver.id, driver }),
+        updateRideAdmin: async () => makeRide({ status: "canceled", driverId: driver.id, driver }),
+        addAuditLog
+      }),
+      maps: {
+        estimateRoute: vi.fn(),
+        autocompleteAddress: vi.fn()
+      },
+      events: {
+        rideOffered: vi.fn(),
+        rideUpdated: vi.fn(),
+        rideLocationUpdated: vi.fn(),
+        driverAvailabilityChanged: vi.fn()
+      }
+    });
+
+    const canceled = await service.cancelRide("ride-1", driver, {
+      reason: "Vehicle issue — flat tire"
+    });
+
+    expect(canceled.status).toBe("canceled");
+    expect(addAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: driver.id,
+        action: "ride.canceled",
+        metadata: {
+          canceledByRole: "driver",
+          reason: "Vehicle issue — flat tire"
+        }
+      })
+    );
+  });
+
+  it("blocks drivers from canceling rides they do not own", async () => {
+    const service = createRideService({
+      store: createStore({
+        getRideById: async () => makeRide({ status: "accepted", driverId: "driver-2", driver: { ...driver, id: "driver-2" } })
+      }),
+      maps: {
+        estimateRoute: vi.fn(),
+        autocompleteAddress: vi.fn()
+      },
+      events: {
+        rideOffered: vi.fn(),
+        rideUpdated: vi.fn(),
+        rideLocationUpdated: vi.fn(),
+        driverAvailabilityChanged: vi.fn()
+      }
+    });
+
+    await expect(service.cancelRide("ride-1", driver, { reason: "Unsafe pickup" })).rejects.toThrow(
+      "Not allowed to cancel this ride"
+    );
+  });
 });

@@ -32,21 +32,50 @@ export function formatDriverDispatchSummary(settings: DriverDispatchSettings | u
 }
 
 export function getDriverOfferCountdown(ride: Ride, now: number) {
+  return getDriverOfferCountdownMeta(ride, now).label;
+}
+
+export function getDriverOfferCountdownMeta(ride: Ride, now: number) {
   const pendingOffer = ride.offers.find((offer) => offer.status === "pending");
   if (!pendingOffer) {
-    return null;
+    return {
+      label: null,
+      tone: "queued" as const,
+      detail: "Dispatch is still preparing this job.",
+      progressPercent: null,
+      expired: false
+    };
   }
 
+  const expiresAtMs = new Date(pendingOffer.expiresAt).getTime();
+  const offeredAtMs = new Date(pendingOffer.offeredAt).getTime();
   const remainingMs = new Date(pendingOffer.expiresAt).getTime() - now;
   if (remainingMs <= 0) {
-    return "Expired";
+    return {
+      label: "Expired",
+      tone: "expired" as const,
+      detail: "This request timed out. Wait for the next live offer or refresh the inbox.",
+      progressPercent: 0,
+      expired: true
+    };
   }
 
   const totalSeconds = Math.ceil(remainingMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
+  const totalMs = Math.max(expiresAtMs - offeredAtMs, 1);
+  const tone = remainingMs <= 30_000 ? "warning" : "active";
 
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  return {
+    label: `${minutes}:${String(seconds).padStart(2, "0")}`,
+    tone,
+    detail:
+      remainingMs <= 30_000
+        ? "Expiring soon — respond now before dispatch moves on."
+        : "Offer is live and ready to accept from this work surface.",
+    progressPercent: Math.max(0, Math.min(100, Math.round((remainingMs / totalMs) * 100))),
+    expired: false
+  };
 }
 
 export function formatDriverMoneyCompact(amount: number) {

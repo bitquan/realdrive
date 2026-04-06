@@ -26,6 +26,7 @@ import {
   adminUpdateRideSchema,
   authOtpRequestSchema,
   authOtpVerifySchema,
+  cancelRideInputSchema,
   communityAccessExchangeSchema,
   communityVoteInputSchema,
   createRideSchema,
@@ -1527,9 +1528,14 @@ export function buildApp() {
     return ride;
   });
 
-  app.post("/rides/:id/cancel", { preHandler: requireRole("rider", "admin") }, async (request, reply) => {
+  app.post("/rides/:id/cancel", { preHandler: requireRole("rider", "driver", "admin") }, async (request, reply) => {
     const rideId = (request.params as { id: string }).id;
-    const ride = await rideService.cancelRide(rideId, request.userContext);
+    const parsed = cancelRideInputSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.badRequest(parsed.error.flatten());
+    }
+
+    const ride = await rideService.cancelRide(rideId, request.userContext, parsed.data);
     return reply.send(ride);
   });
 

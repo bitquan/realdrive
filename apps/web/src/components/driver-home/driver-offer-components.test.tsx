@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { Ride } from "@shared/contracts";
+import type { DriverAccount, DriverDispatchSettings, Ride } from "@shared/contracts";
 import { DriverLiveOfferCard } from "./DriverLiveOfferCard";
+import { DriverOnboardingChecklist } from "./DriverOnboardingChecklist";
 import { DriverOfferInbox } from "./DriverOfferInbox";
 
 function makeRide(overrides: Partial<Ride> = {}): Ride {
@@ -78,6 +79,64 @@ function makeRide(overrides: Partial<Ride> = {}): Ride {
   };
 }
 
+function makeDriverProfile(overrides: Partial<DriverAccount> = {}): DriverAccount {
+  return {
+    id: "driver-1",
+    role: "driver",
+    roles: ["driver"],
+    name: "Taylor Driver",
+    phone: "+15555550101",
+    email: "driver@example.com",
+    referralCode: "driver-code",
+    approvalStatus: "pending",
+    approved: false,
+    available: false,
+    pricingMode: "platform",
+    homeState: "VA",
+    homeCity: "Richmond",
+    acceptedPaymentMethods: ["cashapp"],
+    dispatchSettings: {
+      localEnabled: true,
+      localRadiusMiles: 25,
+      serviceAreaEnabled: true,
+      serviceAreaStates: ["VA"],
+      nationwideEnabled: false
+    },
+    documents: [],
+    documentReview: {
+      requiredTypes: ["insurance", "registration", "background_check", "mvr"],
+      submittedTypes: ["insurance", "registration"],
+      approvedTypes: ["insurance"],
+      missingTypes: ["background_check", "mvr"],
+      rejectedTypes: [],
+      pendingCount: 0,
+      readyForApproval: false
+    },
+    collectorAdminId: null,
+    collectorAdmin: null,
+    createdAt: new Date("2026-04-05T12:00:00.000Z").toISOString(),
+    bgCheckExternalId: null,
+    bgCheckOrderedAt: null,
+    vehicle: {
+      id: "vehicle-1",
+      makeModel: "Toyota Camry",
+      plate: "RIDE123",
+      color: "Black",
+      rideType: "standard",
+      seats: 4
+    },
+    ...overrides
+  };
+}
+
+const readyDispatchSettings: DriverDispatchSettings = {
+  localEnabled: true,
+  localRadiusMiles: 25,
+  serviceAreaEnabled: true,
+  serviceAreaStates: ["VA"],
+  nationwideEnabled: false
+};
+
 describe("driver offer components", () => {
   it("hides and shows the mobile live offer card", async () => {
     const user = userEvent.setup();
@@ -133,5 +192,45 @@ describe("driver offer components", () => {
 
     await user.click(screen.getByRole("button", { name: "Decline" }));
     expect(declineMutation.mutate).toHaveBeenCalledWith(ride.id);
+  });
+
+  it("disables accept actions when an offer has expired", () => {
+    const acceptMutation = { isPending: false, mutate: vi.fn() };
+    const declineMutation = { isPending: false, mutate: vi.fn() };
+    const expiredRide = makeRide({
+      offers: [
+        {
+          id: "offer-1",
+          rideId: "ride-1",
+          driverId: "driver-1",
+          status: "pending",
+          offeredAt: new Date(Date.now() - 60_000).toISOString(),
+          respondedAt: null,
+          expiresAt: new Date(Date.now() - 1_000).toISOString()
+        }
+      ]
+    });
+
+    render(
+      <DriverLiveOfferCard
+        offer={expiredRide}
+        suspended={false}
+        countdown="Expired"
+        acceptMutation={acceptMutation}
+        declineMutation={declineMutation}
+        mobile
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Offer expired" })).toBeDisabled();
+    expect(screen.getByText(/request timed out/i)).toBeInTheDocument();
+  });
+
+  it("shows remaining onboarding work for drivers", () => {
+    render(<DriverOnboardingChecklist profile={makeDriverProfile()} dispatchSettings={readyDispatchSettings} />);
+
+    expect(screen.getByText("Finish driver onboarding")).toBeInTheDocument();
+    expect(screen.getByText(/2 required uploads still missing/i)).toBeInTheDocument();
+    expect(screen.getByText(/pending admin approval/i)).toBeInTheDocument();
   });
 });

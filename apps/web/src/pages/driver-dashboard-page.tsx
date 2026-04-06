@@ -7,6 +7,7 @@ import { DriverActiveRideCard } from "@/components/driver-home/DriverActiveRideC
 import { DriverEarningsMini } from "@/components/driver-home/DriverEarningsMini";
 import { DriverLiveOfferCard } from "@/components/driver-home/DriverLiveOfferCard";
 import { DriverMapSurface } from "@/components/driver-home/DriverMapSurface";
+import { DriverOnboardingChecklist } from "@/components/driver-home/DriverOnboardingChecklist";
 import { DriverOfferInbox } from "@/components/driver-home/DriverOfferInbox";
 import { DriverStatusBar } from "@/components/driver-home/DriverStatusBar";
 import { DriverToolsSection } from "@/components/driver-home/DriverToolsSection";
@@ -588,6 +589,8 @@ export function DriverDashboardPage() {
               </Link>
             </div>
           </div>
+
+          <DriverOnboardingChecklist profile={profileQuery.data} dispatchSettings={dispatchQuery.data} />
 
           <div className="grid gap-6 xl:grid-cols-2">
         <Card>

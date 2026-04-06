@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { ArrowRight, Clock3, CreditCard, MapPinned, Navigation, Route, UserRound } from "lucide-react";
@@ -68,10 +68,27 @@ function getStageSupportCopy(status: string) {
   return "Keep the route visible and move through the trip with one tap at a time.";
 }
 
+const driverCancelReasonOptions = [
+  { value: "rider_no_show", label: "Rider no-show", detail: "You arrived but could not connect with the rider." },
+  { value: "vehicle_issue", label: "Vehicle issue", detail: "A car, tire, fuel, or safety issue prevents the trip." },
+  { value: "unsafe_pickup", label: "Unsafe pickup", detail: "The pickup location or conditions are not safe to continue." },
+  { value: "schedule_conflict", label: "Schedule conflict", detail: "You cannot finish this trip without risking the next job." },
+  { value: "other", label: "Other driver issue", detail: "Use notes to explain a different reason." }
+] as const;
+
+function formatDriverCancellationReason(reason: string, notes: string) {
+  const option = driverCancelReasonOptions.find((entry) => entry.value === reason);
+  const note = notes.trim();
+  return note ? `${option?.label ?? reason} — ${note}` : option?.label ?? reason;
+}
+
 export function DriverRidePage() {
   const { rideId = "" } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const queryClient = useQueryClient();
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState<(typeof driverCancelReasonOptions)[number]["value"]>("rider_no_show");
+  const [cancelNotes, setCancelNotes] = useState("");
   const rideQuery = useQuery({
     queryKey: ["driver-ride", rideId],
     queryFn: () => api.getRide(rideId, token!)
@@ -83,6 +100,20 @@ export function DriverRidePage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["driver-ride", rideId] });
       void queryClient.invalidateQueries({ queryKey: ["driver-active-rides"] });
+    }
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: () =>
+      api.cancelRide(rideId, token!, {
+        reason: formatDriverCancellationReason(cancelReason, cancelNotes)
+      }),
+    onSuccess: (ride) => {
+      setShowCancelForm(false);
+      setCancelNotes("");
+      queryClient.setQueryData(["driver-ride", rideId], ride);
+      void queryClient.invalidateQueries({ queryKey: ["driver-active-rides"] });
+      void queryClient.invalidateQueries({ queryKey: ["driver-offers"] });
     }
   });
 
@@ -333,6 +364,54 @@ export function DriverRidePage() {
                     </div>
                   )}
 
+                  {user?.role === "driver" && ride.status !== "completed" && ride.status !== "canceled" ? (
+                    <div className="mt-2.5 rounded-[1rem] border border-rose-500/18 bg-[linear-gradient(180deg,rgba(244,63,94,0.08),rgba(15,23,42,0.72))] p-3.5 shadow-[0_18px_40px_rgba(190,24,93,0.08)]">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Driver cancellation</p>
+                          <p className="mt-1 text-base font-semibold text-white">Can&apos;t continue this trip?</p>
+                          <p className="mt-1 text-[11px] leading-4 text-slate-300">Capture the reason before canceling so dispatch has real follow-up context.</p>
+                        </div>
+                        <Button variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-100 hover:bg-rose-500/18 hover:text-white" onClick={() => setShowCancelForm((current) => !current)}>
+                          {showCancelForm ? "Hide" : "Cancel trip"}
+                        </Button>
+                      </div>
+
+                      {showCancelForm ? (
+                        <div className="mt-3 space-y-3">
+                          <div className="grid gap-2">
+                            {driverCancelReasonOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setCancelReason(option.value)}
+                                className={`rounded-[0.95rem] border px-3 py-2.5 text-left transition ${cancelReason === option.value ? "border-rose-400/35 bg-rose-500/14 text-white" : "border-white/8 bg-white/[0.03] text-slate-300 hover:bg-white/[0.05]"}`}
+                              >
+                                <p className="text-sm font-semibold">{option.label}</p>
+                                <p className="mt-1 text-[11px] leading-4 text-slate-400">{option.detail}</p>
+                              </button>
+                            ))}
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Notes for dispatch</label>
+                            <textarea
+                              value={cancelNotes}
+                              onChange={(event) => setCancelNotes(event.target.value)}
+                              rows={3}
+                              maxLength={180}
+                              placeholder="Add anything dispatch should know before this trip is canceled."
+                              className="mt-2 w-full rounded-[0.95rem] border border-white/10 bg-slate-950/55 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-rose-400/40"
+                            />
+                          </div>
+                          {cancelMutation.error ? <p className="text-sm text-rose-200">{cancelMutation.error.message}</p> : null}
+                          <Button className="h-11 w-full bg-rose-500 text-white hover:bg-rose-400" disabled={cancelMutation.isPending} onClick={() => cancelMutation.mutate()}>
+                            {cancelMutation.isPending ? "Canceling trip..." : "Cancel trip and log reason"}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   <div className="mt-2.5 flex items-center justify-between gap-3 px-1">
                     <p className="text-[11px] text-slate-400">Trip route stays live while this screen is open.</p>
                     <Link to="/driver" className="text-[11px] font-medium text-slate-300 underline-offset-4 transition hover:text-white hover:underline">
@@ -454,6 +533,56 @@ export function DriverRidePage() {
                   This ride has reached the end of the workflow.
                 </div>
               )}
+
+              {user?.role === "driver" && ride.status !== "completed" && ride.status !== "canceled" ? (
+                <div className="space-y-3 rounded-[1.45rem] border border-rose-500/18 bg-rose-500/8 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Driver cancellation</p>
+                      <p className="mt-2 text-lg font-semibold text-white">Capture why this trip has to stop</p>
+                      <p className="mt-2 text-sm leading-6 text-ops-muted">If the trip cannot continue, log the reason first so the dispatch and support trail stays complete.</p>
+                    </div>
+                    <Button variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-100 hover:bg-rose-500/18 hover:text-white" onClick={() => setShowCancelForm((current) => !current)}>
+                      {showCancelForm ? "Hide form" : "Cancel trip"}
+                    </Button>
+                  </div>
+
+                  {showCancelForm ? (
+                    <>
+                      <div className="grid gap-2">
+                        {driverCancelReasonOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setCancelReason(option.value)}
+                            className={`rounded-[1rem] border px-3 py-3 text-left transition ${cancelReason === option.value ? "border-rose-400/35 bg-rose-500/14 text-white" : "border-ops-border-soft/90 bg-ops-panel/45 text-ops-text hover:bg-ops-panel/60"}`}
+                          >
+                            <p className="font-semibold">{option.label}</p>
+                            <p className="mt-1 text-sm leading-6 text-ops-muted">{option.detail}</p>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ops-muted">Notes for dispatch</p>
+                        <textarea
+                          value={cancelNotes}
+                          onChange={(event) => setCancelNotes(event.target.value)}
+                          rows={3}
+                          maxLength={180}
+                          placeholder="Add anything dispatch should know before this trip is canceled."
+                          className="mt-2 w-full rounded-[1rem] border border-ops-border bg-ops-surface px-4 py-3 text-sm text-ops-text outline-none transition placeholder:text-ops-muted focus:border-rose-400/40"
+                        />
+                      </div>
+
+                      {cancelMutation.error ? <p className="text-sm text-ops-error">{cancelMutation.error.message}</p> : null}
+                      <Button className="h-11 w-full bg-rose-500 text-white hover:bg-rose-400" disabled={cancelMutation.isPending} onClick={() => cancelMutation.mutate()}>
+                        {cancelMutation.isPending ? "Canceling trip..." : "Cancel trip and log reason"}
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
                 <div className="rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">

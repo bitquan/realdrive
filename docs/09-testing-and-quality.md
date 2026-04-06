@@ -25,6 +25,7 @@ Current coverage includes:
 - Ride transition rules
 - Scheduled ride release behavior
 - First-accept-wins dispatch protection
+- Driver-owned ride cancellation with reason logging
 - Route-level integration coverage for protected driver endpoints and quote pricing
 
 ## Current Frontend Test State
@@ -33,7 +34,7 @@ Current status:
 
 - Frontend test runner is configured
 - Baseline React Testing Library + jsdom setup is in place
-- Frontend component coverage now includes `Button`, `DriverLiveOfferCard`, and `DriverOfferInbox`
+- Frontend component coverage now includes `Button`, `DriverLiveOfferCard`, `DriverOfferInbox`, and `DriverOnboardingChecklist`
 - Playwright now covers both screenshot baselines and one interactive mobile driver continuity flow from live offer acceptance into the trip cockpit
 
 ## Manual QA Checklist
@@ -65,6 +66,7 @@ Current status:
 - Verify inbox rows stay visible and only expand/collapse details
 - Accept an offer
 - Verify route map can pan freely and `Recenter` returns to the active route
+- Cancel an active ride and confirm the cancellation reason is captured before the trip closes
 - Update dispatch settings
 - Switch between platform and custom pricing
 - Move ride from `accepted` to `completed`

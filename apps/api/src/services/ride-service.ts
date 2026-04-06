@@ -294,13 +294,15 @@ export function createRideService(deps: {
       return declined;
     },
 
-    async cancelRide(rideId: string, actor: SessionUser) {
+    async cancelRide(rideId: string, actor: SessionUser, input?: { reason?: string }) {
       const ride = await store.getRideById(rideId);
       if (!ride) {
         throw new Error("Ride not found");
       }
 
-      if (!hasRole(actor, "admin") && ride.riderId !== actor.id) {
+      const driverOwnsRide = hasRole(actor, "driver") && ride.driverId === actor.id;
+
+      if (!hasRole(actor, "admin") && ride.riderId !== actor.id && !driverOwnsRide) {
         throw new Error("Not allowed to cancel this ride");
       }
 
@@ -320,7 +322,11 @@ export function createRideService(deps: {
         actorId: actor.id,
         action: "ride.canceled",
         entityType: "ride",
-        entityId: rideId
+        entityId: rideId,
+        metadata: {
+          canceledByRole: actor.role,
+          reason: input?.reason?.trim() || null
+        }
       });
 
       events.rideUpdated(canceled);

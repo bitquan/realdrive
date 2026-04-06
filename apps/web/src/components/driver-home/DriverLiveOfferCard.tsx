@@ -9,6 +9,7 @@ import {
   formatDriverMilesCompact,
   formatDriverMinutesCompact,
   formatDriverMoneyCompact,
+  getDriverOfferCountdownMeta,
   getDriverRidePricing
 } from "@/components/driver-home/driver-home.utils";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
@@ -73,6 +74,15 @@ export function DriverLiveOfferCard({
   const displayPayout = formatDriverMoneyCompact(pricing.subtotal);
   const displayEta = formatDriverMinutesCompact(offer.estimatedMinutes);
   const displayMiles = formatDriverMilesCompact(offer.estimatedMiles);
+  const countdownMeta = getDriverOfferCountdownMeta(offer, Date.now());
+  const countdownLabel = countdownMeta.label ?? countdown ?? "Queued";
+  const countdownClassName =
+    countdownMeta.tone === "expired"
+      ? "border-rose-500/25 bg-rose-500/12 text-rose-200"
+      : countdownMeta.tone === "warning"
+        ? "border-amber-500/25 bg-amber-500/12 text-amber-100"
+        : "border-cyan-500/25 bg-cyan-500/14 text-cyan-300";
+  const acceptDisabled = suspended || acceptMutation.isPending || countdownMeta.expired;
 
   if (mobile) {
     if (hidden) {
@@ -83,12 +93,12 @@ export function DriverLiveOfferCard({
               <span className="rounded-full border border-teal-400/18 bg-teal-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-200">
                 {displayPayout}
               </span>
-              <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-slate-300">
-                {countdown ?? "Queued"}
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${countdownClassName}`}>
+                {countdownLabel}
               </span>
             </div>
             <p className="mt-1 truncate text-[12px] font-medium text-slate-200">{offer.pickup.address}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-slate-500">Live request hidden</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-slate-500">{countdownMeta.expired ? "Offer expired while hidden" : "Live request hidden"}</p>
           </div>
 
           <button
@@ -107,10 +117,10 @@ export function DriverLiveOfferCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-[15px] font-semibold text-white">New Request</h3>
-            <p className="mt-0.5 text-[11px] leading-4 text-slate-400">Accepting moves straight into the active trip flow.</p>
+            <p className="mt-0.5 text-[11px] leading-4 text-slate-400">{countdownMeta.detail}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className="border-cyan-500/25 bg-cyan-500/14 px-2.5 py-1 text-[11px] text-cyan-300">{countdown ?? "Queued"}</Badge>
+            <Badge className={`px-2.5 py-1 text-[11px] ${countdownClassName}`}>{countdownLabel}</Badge>
             <button
               type="button"
               className="inline-flex h-8 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
@@ -122,6 +132,21 @@ export function DriverLiveOfferCard({
         </div>
 
         <div className="rounded-[1.05rem] border border-white/10 bg-slate-950/28 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          {countdownMeta.progressPercent !== null ? (
+            <div className="mb-2.5">
+              <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-slate-500">
+                <span>Offer timer</span>
+                <span>{countdownMeta.expired ? "Timed out" : "Live"}</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
+                <div
+                  className={`h-full rounded-full transition-[width] duration-500 ${countdownMeta.tone === "expired" ? "bg-rose-400" : countdownMeta.tone === "warning" ? "bg-amber-400" : "bg-cyan-400"}`}
+                  style={{ width: `${countdownMeta.progressPercent}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+
           <div className="mb-2.5 grid grid-cols-2 gap-2">
             <div className="rounded-[0.95rem] border border-white/8 bg-white/[0.03] px-3 py-2.5">
               <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Est. Earnings</div>
@@ -159,8 +184,8 @@ export function DriverLiveOfferCard({
         </div>
 
         <div className="grid grid-cols-[1fr_auto] gap-2">
-          <Button className="h-11 w-full rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 px-4 text-sm font-bold text-white shadow-xl shadow-teal-500/30 hover:from-teal-400 hover:to-cyan-400" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(offer.id)}>
-            {acceptMutation.isPending ? "Accepting..." : "Accept Ride"}
+          <Button className="h-11 w-full rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 px-4 text-sm font-bold text-white shadow-xl shadow-teal-500/30 hover:from-teal-400 hover:to-cyan-400" disabled={acceptDisabled} onClick={() => acceptMutation.mutate(offer.id)}>
+            {countdownMeta.expired ? "Offer expired" : acceptMutation.isPending ? "Accepting..." : "Accept Ride"}
           </Button>
           <Button variant="outline" className="h-11 min-w-[92px] rounded-xl border-slate-700/50 bg-slate-800/60 px-4 text-sm font-medium text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(offer.id)}>
             Decline
@@ -176,12 +201,27 @@ export function DriverLiveOfferCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle>Live offer</CardTitle>
-            <CardDescription className="mt-2">Accepting moves straight into the active trip flow.</CardDescription>
+            <CardDescription className="mt-2">{countdownMeta.detail}</CardDescription>
           </div>
-          <Badge className="border-ops-warning/30 bg-ops-warning/10 text-ops-warning">{countdown ?? "Queued"}</Badge>
+          <Badge className={countdownClassName}>{countdownLabel}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {countdownMeta.progressPercent !== null ? (
+          <div>
+            <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em] text-ops-muted">
+              <span>Offer timer</span>
+              <span>{countdownMeta.expired ? "Timed out" : "Respond in time"}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-ops-panel/80">
+              <div
+                className={`${countdownMeta.tone === "expired" ? "bg-rose-400" : countdownMeta.tone === "warning" ? "bg-amber-400" : "bg-cyan-400"} h-full rounded-full transition-[width] duration-500`}
+                style={{ width: `${countdownMeta.progressPercent}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
+
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Pickup</p>
           <p className="mt-2 text-lg font-semibold text-ops-text">{offer.pickup.address}</p>
@@ -206,8 +246,8 @@ export function DriverLiveOfferCard({
         </div>
 
         <div className={`gap-3 ${mobile ? "hidden xl:flex" : "flex"}`}>
-          <Button className="flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(offer.id)}>
-            {acceptMutation.isPending ? "Accepting..." : "Accept and open trip"}
+          <Button className="flex-1" disabled={acceptDisabled} onClick={() => acceptMutation.mutate(offer.id)}>
+            {countdownMeta.expired ? "Offer expired" : acceptMutation.isPending ? "Accepting..." : "Accept and open trip"}
           </Button>
           <Button variant="outline" className="flex-1" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(offer.id)}>
             Decline
