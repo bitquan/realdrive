@@ -1,5 +1,7 @@
 # Known Gaps And Next Steps
 
+Use [18 Layered Dev Checklist](./18-layered-dev-checklist.md) as the working execution checklist for these gaps and roadmap items.
+
 ## Recently Completed (April 2026)
 
 ✅ **Admin Data Dashboard** - Real-time visitor analytics and activity tracking

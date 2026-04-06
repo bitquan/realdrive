@@ -71,5 +71,7 @@ When behavior changes, review docs in this order:
   Feature #26 specification: public-facing roadmap page with upvoting, requirements, API design, and rollout plan.
 - [17 Contributor And Copilot Guide](./17-contributor-and-copilot-guide.md)
   Clear repo instructions for contributors, GitHub workflows, secrets handling, deployment truth, and GitHub Copilot usage.
+- [18 Layered Dev Checklist](./18-layered-dev-checklist.md)
+  Layered execution checklist for daily development across design, architecture, rider, driver, admin, shared, and release work.
 - [Driver Redesign Status](./driver-redesign-status.md)
   Checkpoint tracker for the current shipped driver map-shell work on Home, Rides, and Inbox.
