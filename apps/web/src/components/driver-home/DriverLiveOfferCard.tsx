@@ -1,4 +1,5 @@
 import type { Ride } from "@shared/contracts";
+import { Navigation } from "lucide-react";
 import { DataField } from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,18 @@ export function DriverLiveOfferCard({
   mobile
 }: DriverLiveOfferCardProps) {
   if (!offer) {
+    if (mobile) {
+      return (
+        <div className="py-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800/60">
+            <Navigation className="h-6 w-6 text-slate-500" />
+          </div>
+          <p className="text-sm text-slate-300">Ready to drive</p>
+          <p className="mt-1 text-xs text-slate-500">New requests will appear here without leaving the live work surface.</p>
+        </div>
+      );
+    }
+
     return (
       <Card>
         <CardHeader>
@@ -45,6 +58,66 @@ export function DriverLiveOfferCard({
   }
 
   const pricing = getDriverRidePricing(offer);
+
+  if (mobile) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-white">New Request</h3>
+            <p className="mt-1 text-xs text-slate-500">Accepting moves straight into the active trip flow.</p>
+          </div>
+          <Badge className="border-cyan-500/30 bg-cyan-500/20 text-cyan-300">{countdown ?? "Queued"}</Badge>
+        </div>
+
+        <div className="rounded-[1.45rem] border border-slate-700/50 bg-slate-800/60 p-4">
+          <div className="mb-4 flex items-center justify-between border-b border-slate-700/50 pb-4">
+            <div>
+              <div className="mb-1 text-xs text-slate-400">Est. Earnings</div>
+              <div className="text-3xl font-bold text-teal-400">{formatMoney(pricing.subtotal)}</div>
+            </div>
+            <div className="text-right">
+              <div className="mb-1 text-xs text-slate-400">Pickup ETA</div>
+              <div className="text-2xl font-bold text-white">{offer.estimatedMinutes} min</div>
+              <div className="text-xs text-slate-500">{offer.estimatedMiles} mi away</div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 flex flex-col items-center gap-1">
+                <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
+                <div className="h-6 w-0.5 bg-slate-700" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="mb-0.5 text-xs font-medium text-cyan-400">Pickup</div>
+                <div className="text-sm font-medium text-white">{offer.pickup.address}</div>
+                <div className="text-xs text-slate-500">{offer.estimatedMiles} mi away</div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="mt-1 h-2.5 w-2.5 rounded-full bg-slate-600" />
+              <div className="min-w-0 flex-1">
+                <div className="mb-0.5 text-xs text-slate-400">Dropoff</div>
+                <div className="text-sm font-medium text-white">{offer.dropoff.address}</div>
+                <div className="text-xs text-slate-500">{offer.estimatedMiles} mi • ~{offer.estimatedMinutes} min trip</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Button className="h-14 w-full rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-base font-bold text-white shadow-xl shadow-teal-500/40 hover:from-teal-400 hover:to-cyan-400" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(offer.id)}>
+            {acceptMutation.isPending ? "Accepting..." : "Accept Ride"}
+          </Button>
+          <Button variant="outline" className="h-12 w-full rounded-xl border-slate-700/50 bg-slate-800/60 text-sm font-medium text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(offer.id)}>
+            Decline
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card className="overflow-hidden border-ops-primary/24 shadow-glow">

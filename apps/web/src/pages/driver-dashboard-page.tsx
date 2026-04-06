@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DriverDispatchSettings, PaymentMethod, RideType } from "@shared/contracts";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AlertTriangle, Route } from "lucide-react";
-import { BottomActionBar } from "@/components/layout/ops-layout";
 import { DriverActiveRideCard } from "@/components/driver-home/DriverActiveRideCard";
 import { DriverEarningsMini } from "@/components/driver-home/DriverEarningsMini";
 import { DriverLiveOfferCard } from "@/components/driver-home/DriverLiveOfferCard";
@@ -332,89 +331,147 @@ export function DriverDashboardPage() {
 
   return (
     <div className="space-y-5 md:space-y-6">
-      <DriverStatusBar
-        available={Boolean(profileQuery.data?.available)}
-        suspended={suspended}
-        blockedReason={duesQuery.data?.blockedReason ?? null}
-        dispatchSummary={dispatchSummary}
-        availabilityPending={availabilityMutation.isPending}
-        onToggleAvailability={() => availabilityMutation.mutate(!profileQuery.data?.available)}
-      />
+      <div className="hidden xl:block">
+        <DriverStatusBar
+          available={Boolean(profileQuery.data?.available)}
+          suspended={suspended}
+          blockedReason={duesQuery.data?.blockedReason ?? null}
+          dispatchSummary={dispatchSummary}
+          availabilityPending={availabilityMutation.isPending}
+          onToggleAvailability={() => availabilityMutation.mutate(!profileQuery.data?.available)}
+        />
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(360px,0.95fr)] xl:items-start">
         <div className="min-w-0 space-y-4">
-          <DriverMapSurface
-            ride={mapRide}
-            statusLabel={statusLabel}
-            dispatchSummary={dispatchSummary}
-            vehicleLabel={profileQuery.data?.vehicle?.makeModel ?? "Vehicle pending"}
-          />
+          <div className="xl:hidden">
+            <div className="relative">
+              <DriverMapSurface
+                ride={mapRide}
+                statusLabel={statusLabel}
+                dispatchSummary={dispatchSummary}
+                vehicleLabel={profileQuery.data?.vehicle?.makeModel ?? "Vehicle pending"}
+                mobileOverlayMode
+              />
+
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-20 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-teal-500/30 bg-slate-900/90 px-4 py-2.5 shadow-xl backdrop-blur-xl">
+                    <span className={`h-2 w-2 rounded-full ${suspended ? "bg-red-400" : profileQuery.data?.available ? "bg-teal-400 shadow-lg shadow-teal-400/50" : "bg-slate-500"}`} />
+                    <span className="text-sm font-medium text-white">{statusLabel}</span>
+                    <span className="text-xs text-slate-400">• {dispatchSummary}</span>
+                  </div>
+
+                  <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-slate-700/50 bg-slate-900/80 px-3 py-2 shadow-lg backdrop-blur-xl">
+                    <Route className="h-3.5 w-3.5 text-teal-400" />
+                    <span className="text-sm font-semibold text-white">{formatMoney(projectedLiveEarnings)}</span>
+                  </div>
+                </div>
+
+                {liveOffer ? (
+                  <div className="mt-3 flex justify-center">
+                    <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-slate-900/90 px-4 py-2 shadow-xl backdrop-blur-xl">
+                      <span className="text-xs text-slate-400">Offer</span>
+                      <span className="text-sm font-bold text-white">{getDriverOfferCountdown(liveOffer, now) ?? "Queued"}</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 z-20 p-4">
+                <div className="overflow-hidden rounded-[1.9rem] border border-slate-700/50 bg-slate-900/95 shadow-2xl backdrop-blur-xl">
+                  <div className="flex justify-center pb-2 pt-3">
+                    <div className="h-1 w-10 rounded-full bg-slate-700" />
+                  </div>
+
+                  <div className="px-5 pb-4">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">Driver work surface</p>
+                        <h2 className="mt-1 text-base font-semibold text-white">{offerView === "live" ? "Live" : "Inbox"}</h2>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="h-9 rounded-full border-slate-700/50 bg-slate-800/65 px-3 text-slate-200 hover:bg-slate-800"
+                        disabled={availabilityMutation.isPending || (!profileQuery.data?.available && suspended)}
+                        onClick={() => availabilityMutation.mutate(!profileQuery.data?.available)}
+                      >
+                        {profileQuery.data?.available ? "Go offline" : suspended ? "Blocked" : "Go online"}
+                      </Button>
+                    </div>
+
+                    <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-slate-800/60 p-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOfferView("live");
+                          updateDriverHomeTab("home");
+                        }}
+                        className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "live" ? "border border-teal-500/30 bg-teal-500/20 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
+                      >
+                        Live
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOfferView("inbox");
+                          updateDriverHomeTab("inbox");
+                        }}
+                        className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "inbox" ? "border border-teal-500/30 bg-teal-500/20 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
+                      >
+                        Inbox
+                      </button>
+                    </div>
+
+                    {offerView === "live" ? (
+                      <DriverLiveOfferCard
+                        offer={liveOffer}
+                        suspended={suspended}
+                        countdown={liveOffer ? getDriverOfferCountdown(liveOffer, now) : null}
+                        acceptMutation={acceptMutation}
+                        declineMutation={declineMutation}
+                        mobile
+                      />
+                    ) : (
+                      <DriverOfferInbox
+                        offers={offers}
+                        suspended={suspended}
+                        available={Boolean(profileQuery.data?.available)}
+                        now={now}
+                        acceptMutation={acceptMutation}
+                        declineMutation={declineMutation}
+                        mobile
+                      />
+                    )}
+
+                    <div className="mt-4 border-t border-slate-800/50 pt-4">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <span className="h-2 w-2 rounded-full bg-teal-400" />
+                          <span>{jobsInFlow} jobs in flow</span>
+                        </div>
+                        <div className="text-slate-500">{profileQuery.data?.vehicle?.makeModel ?? "Vehicle pending"}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {hasActiveTrip ? <DriverActiveRideCard ride={activeRide} emphasize={requestedTab === "ride" || (!liveOffer && hasActiveTrip)} /> : null}
+          </div>
+
+          <div className="hidden xl:block">
+            <DriverMapSurface
+              ride={mapRide}
+              statusLabel={statusLabel}
+              dispatchSummary={dispatchSummary}
+              vehicleLabel={profileQuery.data?.vehicle?.makeModel ?? "Vehicle pending"}
+            />
+          </div>
         </div>
 
         <div className="min-w-0 xl:sticky xl:top-24">
-          <div className="xl:hidden -mt-7 rounded-t-[2rem] border border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(10,14,20,0.98),rgba(8,11,16,0.96))] p-4 shadow-elevated backdrop-blur">
-            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/12" />
-
-            <div className="grid grid-cols-2 gap-2 rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/40 p-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setOfferView("live");
-                  updateDriverHomeTab("home");
-                }}
-                className={`rounded-[1rem] px-3 py-2 text-sm font-semibold transition ${offerView === "live" ? "bg-ops-primary text-white" : "text-ops-muted hover:bg-ops-panel/80 hover:text-ops-text"}`}
-              >
-                Live
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setOfferView("inbox");
-                  updateDriverHomeTab("inbox");
-                }}
-                className={`rounded-[1rem] px-3 py-2 text-sm font-semibold transition ${offerView === "inbox" ? "bg-ops-primary text-white" : "text-ops-muted hover:bg-ops-panel/80 hover:text-ops-text"}`}
-              >
-                Inbox
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-4">
-              {offerView === "live" ? (
-                <DriverLiveOfferCard
-                  offer={liveOffer}
-                  suspended={suspended}
-                  countdown={liveOffer ? getDriverOfferCountdown(liveOffer, now) : null}
-                  acceptMutation={acceptMutation}
-                  declineMutation={declineMutation}
-                  mobile
-                />
-              ) : (
-                <DriverOfferInbox
-                  offers={offers}
-                  suspended={suspended}
-                  available={Boolean(profileQuery.data?.available)}
-                  now={now}
-                  acceptMutation={acceptMutation}
-                  declineMutation={declineMutation}
-                />
-              )}
-
-              <DriverActiveRideCard ride={activeRide} emphasize={requestedTab === "ride" || (!liveOffer && hasActiveTrip)} />
-              <DriverEarningsMini projectedTotal={projectedLiveEarnings} jobsInFlow={jobsInFlow} />
-
-              {offerView === "live" && liveOffer ? (
-                <BottomActionBar className="xl:hidden">
-                  <Button className="flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(liveOffer.id)}>
-                    {acceptMutation.isPending ? "Accepting..." : "Accept"}
-                  </Button>
-                  <Button variant="outline" className="flex-1" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(liveOffer.id)}>
-                    Decline
-                  </Button>
-                </BottomActionBar>
-              ) : null}
-            </div>
-          </div>
-
           <div className="hidden space-y-4 xl:block">
             <div className="rounded-[1.7rem] border border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(12,16,23,0.98),rgba(8,11,16,0.96))] p-5 shadow-panel">
               <div className="flex items-center justify-between gap-3">

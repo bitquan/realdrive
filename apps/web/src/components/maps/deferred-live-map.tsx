@@ -4,7 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const LazyLiveMap = lazy(() => import("@/components/maps/live-map").then((module) => ({ default: module.LiveMap })));
 
-function MapPlaceholder({ title, height = 360, meta }: { title: string; height?: number; meta?: ReactNode }) {
+function MapPlaceholder({
+  title,
+  height = 360,
+  meta,
+  surfaceChrome = "card"
+}: {
+  title: string;
+  height?: number;
+  meta?: ReactNode;
+  surfaceChrome?: "card" | "bare";
+}) {
+  if (surfaceChrome === "bare") {
+    return <div className="animate-pulse rounded-[1.9rem] border border-ops-border-soft bg-ops-panel/80" style={{ height }} />;
+  }
+
   return (
     <Card className="overflow-hidden">
       <CardHeader>
@@ -22,12 +36,14 @@ export function DeferredLiveMap({
   ride,
   title,
   height,
-  meta
+  meta,
+  surfaceChrome = "card"
 }: {
   ride: Ride;
   title?: string;
   height?: number;
   meta?: ReactNode;
+  surfaceChrome?: "card" | "bare";
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -58,11 +74,11 @@ export function DeferredLiveMap({
   return (
     <div ref={containerRef}>
       {visible ? (
-        <Suspense fallback={<MapPlaceholder title={title ?? "Live trip map"} height={height} meta={meta} />}>
-          <LazyLiveMap ride={ride} title={title} height={height} meta={meta} />
+        <Suspense fallback={<MapPlaceholder title={title ?? "Live trip map"} height={height} meta={meta} surfaceChrome={surfaceChrome} />}>
+          <LazyLiveMap ride={ride} title={title} height={height} meta={meta} surfaceChrome={surfaceChrome} />
         </Suspense>
       ) : (
-        <MapPlaceholder title={title ?? "Live trip map"} height={height} meta={meta} />
+        <MapPlaceholder title={title ?? "Live trip map"} height={height} meta={meta} surfaceChrome={surfaceChrome} />
       )}
     </div>
   );
