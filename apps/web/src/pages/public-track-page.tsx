@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { CreditCard, Phone, Share2, User, Vote } from "lucide-react";
+import { RiderTripMapShell } from "@/components/rider-home/rider-trip-map-shell";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import {
   BottomActionBar,
@@ -69,10 +70,65 @@ export function PublicTrackPage() {
   const { ride, share, communityAccess } = trackQuery.data;
   const supportCopy = statusSupportCopy(ride.status);
   const marketCondition = deriveMarketCondition(ride);
+  const mobileActions = [
+    communityAccess
+      ? {
+          label: "Community",
+          to: `/community/join/${communityAccess.token}`,
+          icon: Vote,
+          tone: "primary" as const
+        }
+      : null,
+    share
+      ? {
+          label: "Open rider link",
+          href: share.shareUrl,
+          icon: Share2,
+          tone: "secondary" as const
+        }
+      : null
+  ].filter(Boolean) as Array<{ label: string; to?: string; href?: string; icon: typeof Vote; tone?: "primary" | "secondary" | "muted" }>;
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="grid gap-4 xl:grid-cols-[1.16fr_0.84fr]">
+      <RiderTripMapShell
+        ride={ride}
+        title="Public trip shell"
+        subtitle="Guest-safe trip tracking keeps route, timing, and trust copy above the fold"
+        supportCopy={supportCopy}
+        queueLabel="Tracking live"
+        statusToneClassName={marketCondition.toneClassName}
+        statusToneLabel={marketCondition.label}
+        statusToneDetail={marketCondition.detail}
+        actions={mobileActions}
+        extra={(
+          <>
+            {communityAccess ? (
+              <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.04] p-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Community board</p>
+                <p className="mt-2 text-[12px] leading-5 text-slate-300">
+                  Use your rider community link to read proposals now and unlock voting later as the rider account grows.
+                </p>
+              </div>
+            ) : null}
+            {share ? (
+              <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.04] p-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Share</p>
+                <p className="mt-2 text-[12px] leading-5 text-slate-300">Invite another rider with your personal RealDrive link.</p>
+                <a
+                  href={share.shareUrl}
+                  className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-3.5 text-[11px] font-semibold text-white transition hover:bg-white/[0.1]"
+                >
+                  <Share2 className="mr-1.5 h-3.5 w-3.5" />
+                  Open rider link
+                </a>
+              </div>
+            ) : null}
+          </>
+        )}
+      />
+
+      <div className="hidden gap-4 md:grid xl:grid-cols-[1.16fr_0.84fr]">
         <DeferredLiveMap
           ride={ride}
           title="Live route"
@@ -153,7 +209,7 @@ export function PublicTrackPage() {
         </MapPanel>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.72fr_0.28fr]">
+      <div className="hidden gap-4 md:grid xl:grid-cols-[0.72fr_0.28fr]">
         {communityAccess ? (
           <PanelSection title="Community board" description="Use your rider community link to read proposals now and unlock voting later as the rider account grows.">
             <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm leading-6 text-ops-muted">
@@ -182,7 +238,8 @@ export function PublicTrackPage() {
         ) : null}
       </div>
 
-      <BottomActionBar>
+      <div className="hidden md:block">
+        <BottomActionBar>
         {communityAccess ? (
           <Link
             to={`/community/join/${communityAccess.token}`}
@@ -201,7 +258,8 @@ export function PublicTrackPage() {
             Open rider link
           </a>
         ) : null}
-      </BottomActionBar>
+        </BottomActionBar>
+      </div>
     </div>
   );
 }

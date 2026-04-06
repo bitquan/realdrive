@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  ArrowRight,
   Banknote,
   Car,
   CheckCircle2,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import type { PublicRideRequest } from "@shared/contracts";
 import { PageHero } from "@/components/layout/page-hero";
+import { RiderFeatureGrid } from "@/components/rider-home/rider-feature-grid";
 import { ShareQrCard } from "@/components/share/share-qr-card";
 import { AddressAutocompleteInput } from "@/components/ui/address-autocomplete-input";
 import { Button } from "@/components/ui/button";
@@ -144,6 +146,7 @@ export function HomePage() {
     !bookingMutation.isPending;
   const riderEntryLabel = userHasRole(user, "rider") ? "My rides" : "Rider sign in";
   const riderEntryTo = userHasRole(user, "rider") ? "/rider/rides" : "/rider/login";
+  const riderFeatureContext = userHasRole(user, "rider") ? "rider" : "public";
 
   return (
     <div className="space-y-2.5 md:space-y-5">
@@ -221,6 +224,35 @@ export function HomePage() {
             </Link>
           </div>
         </div>
+      </div>
+
+      <div className="space-y-3 md:space-y-4">
+        <div className="rounded-[1.7rem] border border-[#2f9a5d]/28 bg-[linear-gradient(135deg,rgba(25,145,84,0.95),rgba(18,112,72,0.92))] p-4 text-white shadow-[0_20px_50px_rgba(15,118,78,0.28)]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/72">Rider design phase</p>
+              <p className="mt-1 text-[1.15rem] font-semibold tracking-[-0.03em]">Track every ride from one compact shell</p>
+              <p className="mt-1.5 text-sm leading-5 text-white/80">
+                Real booking, trip history, alerts, and community tools stay live while future rider features are staged as roadmap-linked cards.
+              </p>
+            </div>
+            <Link
+              to={riderEntryTo}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/18 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/16"
+            >
+              Open rider shell
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        <RiderFeatureGrid
+          context={riderFeatureContext}
+          contextPath="/"
+          canRequest={Boolean(user)}
+          title="Rider mobile grid"
+          description="This mock-inspired grid anchors the rider roadmap. Live tools open real routes now, while future tools stay marked and flow into feature intake."
+        />
       </div>
 
       {referredByQuery.data?.ownerName ? (

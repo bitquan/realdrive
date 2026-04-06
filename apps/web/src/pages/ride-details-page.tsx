@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { CreditCard, Phone, User, Vote } from "lucide-react";
+import { CreditCard, MessageSquarePlus, Phone, Route, User, Vote } from "lucide-react";
+import { RiderTripMapShell } from "@/components/rider-home/rider-trip-map-shell";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import {
   BottomActionBar,
@@ -138,10 +139,90 @@ export function RideDetailsPage() {
   const requestFeatureUrl = `/request-feature?source=rider_app&rideId=${encodeURIComponent(rideId)}&contextPath=${encodeURIComponent(`/rider/rides/${rideId}`)}`;
   const supportCopy = statusSupportCopy(ride.status);
   const marketCondition = deriveMarketCondition(ride);
+  const mobileActions = [
+    {
+      label: "My rides",
+      to: "/rider/rides",
+      icon: Route,
+      tone: "secondary" as const
+    },
+    {
+      label: "Request feature",
+      to: requestFeatureUrl,
+      icon: MessageSquarePlus,
+      tone: "muted" as const
+    }
+  ];
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="grid gap-4 xl:grid-cols-[1.16fr_0.84fr]">
+      <RiderTripMapShell
+        ride={ride}
+        title="Rider trip shell"
+        subtitle="Live route, trust copy, and rider actions stay compressed over the map"
+        supportCopy={supportCopy}
+        queueLabel="Trip live"
+        statusToneClassName={marketCondition.toneClassName}
+        statusToneLabel={marketCondition.label}
+        statusToneDetail={marketCondition.detail}
+        actions={mobileActions}
+        extra={(
+          <>
+            {isMutable ? (
+              <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.04] p-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Cancel ride</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {riderCancelReasonOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setCancelReason(option.value)}
+                      className={`rounded-[0.95rem] border px-3 py-2 text-left text-[11px] font-semibold transition ${
+                        cancelReason === option.value
+                          ? "border-teal-400/28 bg-teal-400/12 text-white"
+                          : "border-white/8 bg-slate-950/56 text-slate-300 hover:bg-white/[0.07]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <Textarea
+                  value={cancelNotes}
+                  onChange={(event) => setCancelNotes(event.target.value)}
+                  maxLength={180}
+                  className="mt-2.5 min-h-20 border-white/8 bg-slate-950/56 text-white"
+                  placeholder="Optional details for dispatch support"
+                />
+                <Button
+                  variant="ghost"
+                  disabled={cancelMutation.isPending}
+                  className="mt-2.5 h-10 w-full border border-rose-400/28 text-rose-200 hover:bg-rose-400/10 hover:text-rose-100"
+                  onClick={() => cancelMutation.mutate()}
+                >
+                  {cancelMutation.isPending ? "Canceling..." : "Confirm cancel"}
+                </Button>
+              </div>
+            ) : null}
+
+            <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.04] p-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Community access</p>
+              <p className="mt-2 text-[12px] leading-5 text-slate-300">
+                {communityQuery.data?.eligibility.reason ?? "You can open the community board from this rider account."}
+              </p>
+              <Link
+                to="/community"
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-3.5 text-[11px] font-semibold text-white transition hover:bg-white/[0.1]"
+              >
+                <Vote className="mr-1.5 h-3.5 w-3.5" />
+                Open community board
+              </Link>
+            </div>
+          </>
+        )}
+      />
+
+      <div className="hidden gap-4 md:grid xl:grid-cols-[1.16fr_0.84fr]">
         <DeferredLiveMap
           ride={ride}
           title="Ride route"
@@ -228,7 +309,7 @@ export function RideDetailsPage() {
         </MapPanel>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.72fr_0.28fr]">
+      <div className="hidden gap-4 md:grid xl:grid-cols-[0.72fr_0.28fr]">
         {isMutable ? (
           <PanelSection title="Need to cancel this ride?" description="Pick the closest reason so dispatch and support can follow up with accurate context.">
             <div className="grid gap-2 md:grid-cols-2">
@@ -285,7 +366,8 @@ export function RideDetailsPage() {
         ) : null}
       </div>
 
-      <BottomActionBar>
+      <div className="hidden md:block">
+        <BottomActionBar>
         <Link
           to="/rider/rides"
           className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
@@ -308,7 +390,8 @@ export function RideDetailsPage() {
             {cancelMutation.isPending ? "Canceling..." : "Cancel ride"}
           </Button>
         ) : null}
-      </BottomActionBar>
+        </BottomActionBar>
+      </div>
     </div>
   );
 }

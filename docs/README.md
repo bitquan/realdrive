@@ -73,5 +73,9 @@ When behavior changes, review docs in this order:
   Clear repo instructions for contributors, GitHub workflows, secrets handling, deployment truth, and GitHub Copilot usage.
 - [18 Layered Dev Checklist](./18-layered-dev-checklist.md)
   Layered execution checklist for daily development across design, architecture, rider, driver, admin, shared, and release work.
+- [19 Rider Mobile Design Spec](./19-rider-mobile-design-spec.md)
+  Source-of-truth design spec for the mock-inspired rider mobile redesign phase.
+- [20 Rider Feature Phase Plan](./20-rider-feature-phase-plan.md)
+  Per-feature rider planning catalog for live tiles and coming-soon roadmap tiles.
 - [Driver Redesign Status](./driver-redesign-status.md)
   Checkpoint tracker for the current shipped driver map-shell work on Home, Rides, and Inbox.

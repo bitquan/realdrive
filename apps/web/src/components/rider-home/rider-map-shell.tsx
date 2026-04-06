@@ -1,6 +1,7 @@
 import type { Ride } from "@shared/contracts";
 import { Clock3, CreditCard, Route } from "lucide-react";
 import { Link } from "react-router-dom";
+import { RiderFeatureGrid } from "@/components/rider-home/rider-feature-grid";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
@@ -172,6 +173,15 @@ export function RiderMapShell({
                       ))}
                     </div>
                   ) : null}
+
+                  <RiderFeatureGrid
+                    context="rider"
+                    contextPath="/rider/rides"
+                    canRequest
+                    compact
+                    title="Rider roadmap grid"
+                    description="Use live rider tools now. Future rider modules stay marked and route into feature intake instead of behaving like fake screens."
+                  />
                 </div>
               ) : (
                 <div className="space-y-2.5 pt-2.5">
@@ -189,6 +199,15 @@ export function RiderMapShell({
                       </Link>
                     </div>
                   </div>
+
+                  <RiderFeatureGrid
+                    context="rider"
+                    contextPath="/rider/rides"
+                    canRequest
+                    compact
+                    title="Rider roadmap grid"
+                    description="The rider shell can expose future modules safely during design phase while routing demand into the live roadmap workflow."
+                  />
                 </div>
               )}
             </div>

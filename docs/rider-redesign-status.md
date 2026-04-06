@@ -14,10 +14,10 @@ Working rule:
 - Sync changes with [docs/18-layered-dev-checklist.md](./18-layered-dev-checklist.md) in the same branch.
 
 ## Scope
-- The rider redesign has not started as a dedicated checkpointed workstream yet.
+- The rider redesign is now active as a dedicated checkpointed workstream.
 - This document records the current rider baseline so the next rider phase can start from a concrete, accurate state.
 - The rider scope is still centered on the existing booking and trip routes rather than a new parallel rider app.
-- This work stops at rider scope planning/status for now.
+- This work now includes the mock-inspired rider mobile design phase and its feature-planning documents.
 
 ## Final direction
 - existing `/` route for booking
@@ -208,10 +208,31 @@ Working rule:
 - verification summary
   - In progress in the current workstream.
 
+### rider mock-shell design phase
+- summary
+  - Started the mock-inspired rider mobile design phase with a compact map-first rider shell, roadmap-backed feature tiles, and dedicated rider design documents.
+- files
+  - [apps/web/src/components/rider-home/rider-map-shell.tsx](apps/web/src/components/rider-home/rider-map-shell.tsx)
+  - [apps/web/src/components/rider-home/rider-trip-map-shell.tsx](apps/web/src/components/rider-home/rider-trip-map-shell.tsx)
+  - [apps/web/src/components/rider-home/rider-feature-catalog.ts](apps/web/src/components/rider-home/rider-feature-catalog.ts)
+  - [apps/web/src/components/rider-home/rider-feature-grid.tsx](apps/web/src/components/rider-home/rider-feature-grid.tsx)
+  - [apps/web/src/pages/home-page.tsx](apps/web/src/pages/home-page.tsx)
+  - [apps/web/src/pages/ride-details-page.tsx](apps/web/src/pages/ride-details-page.tsx)
+  - [apps/web/src/pages/public-track-page.tsx](apps/web/src/pages/public-track-page.tsx)
+  - [docs/19-rider-mobile-design-spec.md](docs/19-rider-mobile-design-spec.md)
+  - [docs/20-rider-feature-phase-plan.md](docs/20-rider-feature-phase-plan.md)
+- what changed
+  - Added a mock-style rider feature grid that mixes real routes with clearly marked coming-soon roadmap tiles.
+  - Routed future rider tiles into the existing feature-intake flow instead of fake product behavior.
+  - Documented the rider mobile design direction and created a per-feature plan for each visible rider tile.
+  - Extended the compact trip-shell language into signed-in ride detail and public tracking on mobile.
+- verification summary
+  - Design phase implementation is active and should keep using the existing rider/public routes.
+
 ## Deferred / intentionally not included
-- no rider visual redesign has been started yet
+- full rider visual parity across ride detail and public tracking has not shipped yet
 - no rider route restructuring has been started yet
-- no rider-only shell architecture has been introduced
+- no separate rider app or duplicate rider route tree has been introduced
 - no backend rewrite beyond existing baseline rider features has been done for this redesign effort
 - no admin or driver redesign work is counted here unless it directly affects rider behavior
 
@@ -221,4 +242,4 @@ Working rule:
 - Shared API client changes can affect rider flows even when the checkpoint is not rider-specific.
 
 ## Recommended next step after rider scope
-- Decide the first rider redesign checkpoint explicitly: booking surface, ride history, or ride detail.
+- Continue the rider mock-shell rollout into ride detail and public tracking using the same compact map-shell language.
