@@ -1628,7 +1628,7 @@ export function buildApp() {
     const rideId = (request.params as { id: string }).id;
     const parsed = cancelRideInputSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
-      return reply.badRequest(parsed.error.flatten());
+      return sendValidationError(reply, parsed.error.flatten());
     }
 
     const ride = await rideService.cancelRide(rideId, request.userContext, parsed.data);

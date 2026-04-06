@@ -131,8 +131,10 @@ function createStore(stubs: Partial<Store>): Store {
     throw new Error("Not implemented");
   };
 
-  return {
+  const defaults: Store = {
     findSessionUserById: notImplemented,
+    getUserAuthStamp: async () => null,
+    invalidateUserAuthStamp: async () => undefined,
     findUserForOtp: notImplemented,
     createRiderIdentity: notImplemented,
     getAdminSetupStatus: async () => ({ needsSetup: false }),
@@ -326,6 +328,7 @@ function createStore(stubs: Partial<Store>): Store {
     hasUserVotedForFeature: async () => false,
     getFeatureVoteCount: async () => 0,
     createIssueReport: notImplemented,
+    listIssueReports: async () => [],
     updateIssueReportGitHubSync: notImplemented,
     driverHasOverdueDues: async () => false,
     markOverduePlatformDues: async () => [],
@@ -448,10 +451,13 @@ function createStore(stubs: Partial<Store>): Store {
       reason: null
     }),
     listCommunityProposals: async () => [],
+    listAdminCommunityProposals: async () => [],
     createCommunityProposal: notImplemented,
     getCommunityProposalById: async () => null,
+    getAdminCommunityProposalById: async () => null,
     voteOnCommunityProposal: notImplemented,
     listCommunityComments: async () => [],
+    listAdminCommunityComments: async () => [],
     createCommunityComment: notImplemented,
     updateCommunityProposal: notImplemented,
     updateCommunityComment: notImplemented,
@@ -520,8 +526,12 @@ function createStore(stubs: Partial<Store>): Store {
     orderDriverBgCheck: async (driverId) => ({ ...driverAccount, id: driverId }),
     resolveStripeDue: async () => undefined,
     listUserIdsForBroadcast: async () => [],
-    ...stubs
   };
+
+  return {
+    ...defaults,
+    ...stubs
+  } as Store;
 }
 
 describe("ride service", () => {
