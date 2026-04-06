@@ -98,18 +98,18 @@ export function DriverInboxPage() {
             />
 
             <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3">
-              <div className="pointer-events-auto overflow-hidden rounded-[1.25rem] border border-white/10 bg-[linear-gradient(135deg,rgba(8,14,24,0.82),rgba(15,23,42,0.72))] shadow-[0_20px_54px_rgba(2,6,23,0.38)] backdrop-blur-2xl">
-                <div className="flex items-start justify-between gap-3 px-3.5 py-3">
+              <div className="pointer-events-auto overflow-hidden rounded-[1.15rem] border border-white/10 bg-[linear-gradient(135deg,rgba(8,14,24,0.7),rgba(15,23,42,0.58))] shadow-[0_18px_44px_rgba(2,6,23,0.34)] backdrop-blur-2xl">
+                <div className="flex items-start justify-between gap-3 px-3.5 py-2.5">
                   <div className="min-w-0">
                     <div className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                       <span className="h-2 w-2 rounded-full bg-teal-400 shadow-lg shadow-teal-400/50" />
                       Offer inbox live
                     </div>
-                    <p className="mt-1 truncate text-[1.05rem] font-semibold tracking-[-0.02em] text-white">Driver inbox</p>
-                    <p className="mt-1 truncate text-[11px] text-slate-300">{offers.length} pending offers · map stays attached</p>
+                    <p className="mt-1 truncate text-[1rem] font-semibold tracking-[-0.02em] text-white">Driver inbox</p>
+                    <p className="mt-1 truncate text-[10px] uppercase tracking-[0.16em] text-slate-300">{offers.length} pending · map shell active</p>
                   </div>
 
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/64 px-2.5 py-1.5 text-[11px] font-semibold text-white">
                       <ClipboardList className="h-3.5 w-3.5 text-teal-400" />
                       {offers.length}
@@ -123,50 +123,48 @@ export function DriverInboxPage() {
             </div>
 
             <div className="absolute inset-x-0 bottom-[calc(4.8rem+env(safe-area-inset-bottom))] z-20 px-3">
-              <div className="overflow-hidden rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.78),rgba(6,10,18,0.94))] shadow-[0_24px_64px_rgba(2,6,23,0.54)] backdrop-blur-2xl">
-                <div className="flex justify-center pb-1.5 pt-2.5">
+              <div className="overflow-hidden rounded-[1.55rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.62),rgba(6,10,18,0.9))] shadow-[0_24px_64px_rgba(2,6,23,0.48)] backdrop-blur-2xl">
+                <div className="flex justify-center pb-1 pt-2">
                   <div className="h-1 w-10 rounded-full bg-slate-700" />
                 </div>
 
-                <div className="max-h-[calc(100dvh-18rem)] overflow-y-auto overscroll-contain px-4 pb-3.5">
-                  <div className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(8,14,24,0.9))] shadow-[0_18px_44px_rgba(2,6,23,0.28)]">
-                    <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.16),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.9),rgba(8,14,24,0.86))] px-3.5 py-3.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Inbox cockpit</p>
-                          <h1 className="mt-1 text-[1.32rem] font-semibold tracking-[-0.03em] text-white">Pending jobs</h1>
-                          <p className="mt-1 text-[11px] font-medium text-teal-300">Compact offer triage over the live map</p>
-                        </div>
-                        <Badge className="border-white/10 bg-slate-950/72 text-slate-100">{offers.length ? `${offers.length} queued` : "Clear"}</Badge>
+                <div className="max-h-[calc(100dvh-24rem)] overflow-y-auto overscroll-contain px-3.5 pb-3.5">
+                  <div className="border-b border-white/8 px-0.5 pb-2.5 pt-1.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Inbox cockpit</p>
+                        <h1 className="mt-1 text-[1.08rem] font-semibold tracking-[-0.03em] text-white">Pending jobs</h1>
+                        <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-teal-300">Collapsed by default so the map stays visible</p>
                       </div>
-
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-teal-400/18 bg-teal-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-200">
-                          Accept or decline fast
-                        </span>
-                        <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-slate-300">
-                          {dispatchSummary}
-                        </span>
-                      </div>
+                      <Badge className="border-white/10 bg-slate-950/72 text-slate-100">{offers.length ? `${offers.length} queued` : "Clear"}</Badge>
                     </div>
 
-                    <div className="space-y-2.5 px-3.5 py-3.5">
-                      {activeRide ? <DriverActiveRideCard ride={activeRide} mobileDocked /> : null}
-                      <DriverOfferInbox
-                        offers={offers}
-                        suspended={suspended}
-                        available={available}
-                        now={now}
-                        acceptMutation={acceptMutation}
-                        declineMutation={declineMutation}
-                        mobile
-                        shellMode="route"
-                      />
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-teal-400/18 bg-teal-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-200">
+                        Tap a row for details
+                      </span>
+                      <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-slate-300">
+                        {dispatchSummary}
+                      </span>
                     </div>
                   </div>
 
+                  <div className="space-y-2.5 pt-2.5">
+                    {activeRide ? <DriverActiveRideCard ride={activeRide} mobileDocked /> : null}
+                    <DriverOfferInbox
+                      offers={offers}
+                      suspended={suspended}
+                      available={available}
+                      now={now}
+                      acceptMutation={acceptMutation}
+                      declineMutation={declineMutation}
+                      mobile
+                      shellMode="route"
+                    />
+                  </div>
+
                   <div className="mt-2.5 flex items-center justify-between gap-3 px-1">
-                    <p className="text-[11px] text-slate-400">Inbox stays attached to the map so offers can be triaged without leaving driver mode.</p>
+                    <p className="text-[11px] text-slate-400">Inbox remains a control layer over the live map instead of a stacked page.</p>
                     <Link to="/driver" className="text-[11px] font-medium text-slate-300 underline-offset-4 transition hover:text-white hover:underline">
                       Driver home
                     </Link>
