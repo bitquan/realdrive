@@ -62,7 +62,7 @@ const driverScreens: ScreenConfig[] = [
   {
     name: "driver-dashboard",
     route: "/driver",
-    readySelector: "text=Dispatch settings"
+    readySelector: "text=Driver cockpit"
   }
 ];
 
