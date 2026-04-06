@@ -167,8 +167,8 @@ export function LiveMap({
               id={`driver-route-secondary-layer-${ride.id}`}
               type="line"
               paint={{
-                "line-color": "rgba(148,163,184,0.52)",
-                "line-width": 3,
+                "line-color": "rgba(148,163,184,0.58)",
+                "line-width": 4,
                 "line-dasharray": [2, 2]
               }}
             />
@@ -186,12 +186,31 @@ export function LiveMap({
             }}
           >
             <Layer
+              id={`driver-route-primary-casing-layer-${ride.id}`}
+              type="line"
+              paint={{
+                "line-color": "rgba(15,23,42,0.95)",
+                "line-width": 10,
+                "line-opacity": 0.88
+              }}
+            />
+            <Layer
+              id={`driver-route-primary-glow-layer-${ride.id}`}
+              type="line"
+              paint={{
+                "line-color": "rgba(34,211,238,0.48)",
+                "line-width": 8,
+                "line-blur": 1.4,
+                "line-opacity": 0.92
+              }}
+            />
+            <Layer
               id={`driver-route-primary-layer-${ride.id}`}
               type="line"
               paint={{
                 "line-color": "rgba(45,212,191,0.94)",
-                "line-width": 4,
-                "line-blur": 0.2
+                "line-width": 5,
+                "line-blur": 0.35
               }}
             />
           </Source>

@@ -186,24 +186,25 @@ export function DriverRidePage() {
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-slate-950 via-slate-950/82 to-transparent" />
 
             <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="pointer-events-auto flex max-w-[68%] flex-col gap-1.5">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/72 px-3.5 py-2 shadow-[0_18px_44px_rgba(2,6,23,0.35)] backdrop-blur-2xl">
-                    <span className="h-2 w-2 rounded-full bg-teal-400 shadow-lg shadow-teal-400/45" />
-                    <span className="truncate text-sm font-medium text-white">{stageLabel}</span>
+              <div className="pointer-events-auto overflow-hidden rounded-[1.25rem] border border-white/10 bg-[linear-gradient(135deg,rgba(8,14,24,0.82),rgba(15,23,42,0.72))] shadow-[0_20px_54px_rgba(2,6,23,0.38)] backdrop-blur-2xl">
+                <div className="flex items-start justify-between gap-3 px-3.5 py-3">
+                  <div className="min-w-0">
+                    <div className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      <span className="h-2 w-2 rounded-full bg-teal-400 shadow-lg shadow-teal-400/50" />
+                      Trip route live
+                    </div>
+                    <p className="mt-1 truncate text-[1.05rem] font-semibold tracking-[-0.02em] text-white">{mobileStageLabel}</p>
+                    <p className="mt-1 truncate text-[11px] text-slate-300">{mobileRoutePriority} · {compactTripSize}</p>
                   </div>
-                  <div className="rounded-full border border-white/8 bg-slate-950/56 px-3.5 py-1.5 text-[11px] text-slate-300 shadow-[0_14px_32px_rgba(2,6,23,0.24)] backdrop-blur-xl">
-                    <span className="block truncate">{compactTripSize}</span>
-                  </div>
-                </div>
 
-                <div className="pointer-events-auto flex flex-col items-end gap-1.5">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/68 px-3 py-2 shadow-[0_18px_44px_rgba(2,6,23,0.32)] backdrop-blur-2xl">
-                    <CreditCard className="h-3.5 w-3.5 text-teal-400" />
-                    <span className="text-sm font-semibold text-white">{compactSubtotal}</span>
-                  </div>
-                  <div className="rounded-full border border-white/8 bg-slate-950/56 px-3 py-1.5 text-[11px] text-slate-300 shadow-[0_14px_32px_rgba(2,6,23,0.24)] backdrop-blur-xl">
-                    {formatPaymentMethod(ride.payment.method)}
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/64 px-2.5 py-1.5 text-[11px] font-semibold text-white">
+                      <CreditCard className="h-3.5 w-3.5 text-teal-400" />
+                      {compactSubtotal}
+                    </div>
+                    <div className="rounded-full border border-white/8 bg-white/[0.05] px-2.5 py-1 text-[10px] text-slate-300">
+                      {formatPaymentMethod(ride.payment.method)}
+                    </div>
                   </div>
                 </div>
               </div>
