@@ -69,57 +69,57 @@ export function DriverLiveOfferCard({
 
   if (mobile) {
     return (
-      <div className="space-y-3.5">
+      <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-white">New Request</h3>
-            <p className="mt-1 text-xs leading-5 text-slate-400">Accepting moves straight into the active trip flow.</p>
+            <h3 className="text-[15px] font-semibold text-white">New Request</h3>
+            <p className="mt-1 text-[11px] leading-4 text-slate-400">Accepting moves straight into the active trip flow.</p>
           </div>
-          <Badge className="border-cyan-500/25 bg-cyan-500/14 text-cyan-300">{countdown ?? "Queued"}</Badge>
+          <Badge className="border-cyan-500/25 bg-cyan-500/14 px-2.5 py-1 text-[11px] text-cyan-300">{countdown ?? "Queued"}</Badge>
         </div>
 
-        <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/34 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/8 pb-4">
+        <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/32 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <div className="mb-3 flex items-end justify-between gap-4 border-b border-white/8 pb-3">
             <div>
               <div className="mb-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">Est. Earnings</div>
-              <div className="text-[2rem] font-bold tracking-[-0.03em] text-teal-400">{displayPayout}</div>
+              <div className="text-[1.7rem] font-bold tracking-[-0.03em] text-teal-400">{displayPayout}</div>
             </div>
             <div className="text-right">
               <div className="mb-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">Pickup ETA</div>
-              <div className="text-lg font-semibold text-white">{displayEta}</div>
+              <div className="text-base font-semibold text-white">{displayEta}</div>
               <div className="text-xs text-slate-400">{displayMiles} away</div>
             </div>
           </div>
 
-          <div className="space-y-3.5">
-            <div className="flex items-start gap-3">
+          <div className="space-y-3">
+            <div className="flex items-start gap-2.5">
               <div className="mt-1 flex flex-col items-center gap-1">
                 <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
-                <div className="h-7 w-0.5 bg-white/10" />
+                <div className="h-5 w-0.5 bg-white/10" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="mb-0.5 text-xs font-medium text-cyan-400">Pickup</div>
-                <div className="text-sm font-medium leading-5 text-white">{offer.pickup.address}</div>
+                <div className="text-sm font-medium leading-4.5 text-white">{offer.pickup.address}</div>
                 <div className="text-xs text-slate-400">{displayMiles} away</div>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2.5">
               <div className="mt-1 h-2.5 w-2.5 rounded-full bg-slate-600" />
               <div className="min-w-0 flex-1">
                 <div className="mb-0.5 text-xs text-slate-400">Dropoff</div>
-                <div className="text-sm font-medium leading-5 text-white">{offer.dropoff.address}</div>
+                <div className="text-sm font-medium leading-4.5 text-white">{offer.dropoff.address}</div>
                 <div className="text-xs text-slate-400">{displayMiles} • ~{displayEta}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-2.5">
-          <Button className="h-14 w-full rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-base font-bold text-white shadow-xl shadow-teal-500/40 hover:from-teal-400 hover:to-cyan-400" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(offer.id)}>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <Button className="h-12 w-full rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 px-4 text-sm font-bold text-white shadow-xl shadow-teal-500/35 hover:from-teal-400 hover:to-cyan-400" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(offer.id)}>
             {acceptMutation.isPending ? "Accepting..." : "Accept Ride"}
           </Button>
-          <Button variant="outline" className="h-12 w-full rounded-xl border-slate-700/50 bg-slate-800/60 text-sm font-medium text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(offer.id)}>
+          <Button variant="outline" className="h-12 min-w-[102px] rounded-xl border-slate-700/50 bg-slate-800/60 px-4 text-sm font-medium text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(offer.id)}>
             Decline
           </Button>
         </div>

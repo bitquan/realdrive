@@ -402,22 +402,22 @@ export function DriverDashboardPage() {
                   ) : null}
                 </div>
 
-                <div className="absolute inset-x-0 bottom-[calc(4.7rem+env(safe-area-inset-bottom))] z-20 px-3">
-                  <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.86),rgba(6,10,18,0.97))] shadow-[0_30px_80px_rgba(2,6,23,0.62)] backdrop-blur-2xl">
-                    <div className="flex justify-center pb-2 pt-3">
+                <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 px-3">
+                  <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.8),rgba(6,10,18,0.95))] shadow-[0_24px_64px_rgba(2,6,23,0.52)] backdrop-blur-2xl">
+                    <div className="flex justify-center pb-1.5 pt-2.5">
                       <div className="h-1 w-10 rounded-full bg-slate-700" />
                     </div>
 
-                    <div className="max-h-[calc(100dvh-13rem)] overflow-y-auto overscroll-contain px-5 pb-4">
-                      <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="max-h-[calc(100dvh-18.5rem)] overflow-y-auto overscroll-contain px-4 pb-3.5">
+                      <div className="mb-3 flex items-start justify-between gap-3">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">Driver work surface</p>
-                          <h2 className="mt-1 text-base font-semibold text-white">{mobileHomeTitle}</h2>
-                          <p className="mt-1 max-w-[16rem] text-xs leading-5 text-slate-400">{mobileHomeDescription}</p>
+                          <h2 className="mt-1 text-[15px] font-semibold text-white">{mobileHomeTitle}</h2>
+                          <p className="mt-1 max-w-[15rem] text-[11px] leading-4 text-slate-400">{mobileHomeDescription}</p>
                         </div>
                         <Button
                           variant="outline"
-                          className="h-9 rounded-full border-slate-700/50 bg-slate-800/65 px-3 text-slate-200 hover:bg-slate-800"
+                          className="h-8 rounded-full border-slate-700/50 bg-slate-800/65 px-3 text-xs text-slate-200 hover:bg-slate-800"
                           disabled={availabilityMutation.isPending || (!profileQuery.data?.available && suspended)}
                           onClick={() => availabilityMutation.mutate(!profileQuery.data?.available)}
                         >
@@ -425,7 +425,7 @@ export function DriverDashboardPage() {
                         </Button>
                       </div>
 
-                      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-slate-800/60 p-1">
+                      <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-slate-800/60 p-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -449,7 +449,7 @@ export function DriverDashboardPage() {
                       </div>
 
                       {hasActiveTrip && mobileHomeState !== "ride" ? (
-                        <div className="mb-3.5">
+                        <div className="mb-2.5">
                           <DriverActiveRideCard ride={activeRide} emphasize={requestedTab === "ride" || (!liveOffer && hasActiveTrip)} mobileDocked />
                         </div>
                       ) : null}
@@ -477,7 +477,7 @@ export function DriverDashboardPage() {
                         />
                       )}
 
-                      <div className="mt-4 border-t border-slate-800/50 pt-4">
+                      <div className="mt-3 border-t border-slate-800/50 pt-3">
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-1.5 text-slate-400">
                             <span className="h-2 w-2 rounded-full bg-teal-400" />
