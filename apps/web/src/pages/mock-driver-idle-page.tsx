@@ -9,18 +9,7 @@ export function MockDriverIdlePage() {
   const [activeTab, setActiveTab] = useState<"live" | "inbox">("live");
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.45rem] border border-ops-border-soft/80 bg-ops-panel/35 px-4 py-3 text-sm text-ops-muted">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-primary">Mock driver preview</p>
-          <p className="mt-1 text-sm text-ops-text">Idle / online reference route using local-only data.</p>
-        </div>
-        <div className="rounded-full border border-ops-primary/25 bg-ops-primary/10 px-3 py-1 text-xs font-semibold text-ops-text">
-          /__mock/driver/idle
-        </div>
-      </div>
-
-      <DriverMockMapShell>
+    <DriverMockMapShell>
         <div className="flex items-start justify-between gap-3">
           <DriverMockFloatingPill accent="teal">
             <span className="h-2 w-2 rounded-full bg-teal-400 shadow-lg shadow-teal-400/50" />
@@ -105,6 +94,5 @@ export function MockDriverIdlePage() {
           <DriverMockBottomNav />
         </div>
       </DriverMockMapShell>
-    </div>
   );
 }

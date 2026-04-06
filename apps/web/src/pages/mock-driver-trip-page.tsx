@@ -26,18 +26,7 @@ const mockTrip = {
 
 export function MockDriverTripPage() {
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.45rem] border border-ops-border-soft/80 bg-ops-panel/35 px-4 py-3 text-sm text-ops-muted">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-primary">Mock driver preview</p>
-          <p className="mt-1 text-sm text-ops-text">Trip-in-motion reference route using local-only data.</p>
-        </div>
-        <div className="rounded-full border border-ops-primary/25 bg-ops-primary/10 px-3 py-1 text-xs font-semibold text-ops-text">
-          /__mock/driver/trip
-        </div>
-      </div>
-
-      <DriverMockMapShell>
+    <DriverMockMapShell>
         <div className="pointer-events-none absolute inset-0 z-0">
           <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
             <defs>
@@ -204,6 +193,5 @@ export function MockDriverTripPage() {
           <DriverMockBottomNav />
         </div>
       </DriverMockMapShell>
-    </div>
   );
 }
