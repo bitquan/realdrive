@@ -37,12 +37,12 @@ export function DriverLiveOfferCard({
   if (!offer) {
     if (mobile) {
       return (
-        <div className="py-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800/60">
-            <Navigation className="h-6 w-6 text-slate-500" />
+        <div className="rounded-[1.1rem] border border-dashed border-white/10 bg-slate-950/22 px-4 py-5 text-center">
+          <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-slate-800/55">
+            <Navigation className="h-5 w-5 text-slate-500" />
           </div>
           <p className="text-sm text-slate-300">Ready to drive</p>
-          <p className="mt-1 text-xs text-slate-500">New requests will appear here without leaving the live work surface.</p>
+          <p className="mt-1 text-[11px] leading-4 text-slate-500">New requests will appear here without leaving the live work surface.</p>
         </div>
       );
     }
@@ -69,7 +69,7 @@ export function DriverLiveOfferCard({
 
   if (mobile) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-[15px] font-semibold text-white">New Request</h3>
@@ -78,38 +78,38 @@ export function DriverLiveOfferCard({
           <Badge className="border-cyan-500/25 bg-cyan-500/14 px-2.5 py-1 text-[11px] text-cyan-300">{countdown ?? "Queued"}</Badge>
         </div>
 
-        <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/32 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <div className="mb-3 flex items-end justify-between gap-4 border-b border-white/8 pb-3">
-            <div>
-              <div className="mb-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">Est. Earnings</div>
-              <div className="text-[1.7rem] font-bold tracking-[-0.03em] text-teal-400">{displayPayout}</div>
+        <div className="rounded-[1.15rem] border border-white/10 bg-slate-950/30 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <div className="rounded-[0.95rem] border border-white/8 bg-white/[0.03] px-3 py-2.5">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Est. Earnings</div>
+              <div className="mt-1.5 text-[1.45rem] font-bold tracking-[-0.03em] text-teal-400">{displayPayout}</div>
             </div>
-            <div className="text-right">
-              <div className="mb-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">Pickup ETA</div>
-              <div className="text-base font-semibold text-white">{displayEta}</div>
-              <div className="text-xs text-slate-400">{displayMiles} away</div>
+            <div className="rounded-[0.95rem] border border-white/8 bg-white/[0.03] px-3 py-2.5 text-right">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Pickup ETA</div>
+              <div className="mt-1.5 text-sm font-semibold text-white">{displayEta}</div>
+              <div className="mt-0.5 text-[11px] text-slate-400">{displayMiles} away</div>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-start gap-2.5">
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-2.5 rounded-[0.95rem] bg-white/[0.02] px-2.5 py-2">
               <div className="mt-1 flex flex-col items-center gap-1">
                 <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
-                <div className="h-5 w-0.5 bg-white/10" />
+                <div className="h-4 w-0.5 bg-white/10" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="mb-0.5 text-xs font-medium text-cyan-400">Pickup</div>
+                <div className="mb-0.5 text-[11px] font-medium text-cyan-400">Pickup</div>
                 <div className="text-sm font-medium leading-4.5 text-white">{offer.pickup.address}</div>
-                <div className="text-xs text-slate-400">{displayMiles} away</div>
+                <div className="mt-0.5 text-[11px] text-slate-400">{displayMiles} away</div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5">
+            <div className="flex items-start gap-2.5 rounded-[0.95rem] bg-white/[0.02] px-2.5 py-2">
               <div className="mt-1 h-2.5 w-2.5 rounded-full bg-slate-600" />
               <div className="min-w-0 flex-1">
-                <div className="mb-0.5 text-xs text-slate-400">Dropoff</div>
+                <div className="mb-0.5 text-[11px] text-slate-400">Dropoff</div>
                 <div className="text-sm font-medium leading-4.5 text-white">{offer.dropoff.address}</div>
-                <div className="text-xs text-slate-400">{displayMiles} • ~{displayEta}</div>
+                <div className="mt-0.5 text-[11px] text-slate-400">{displayMiles} • ~{displayEta}</div>
               </div>
             </div>
           </div>

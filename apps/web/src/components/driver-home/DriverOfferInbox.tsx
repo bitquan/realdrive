@@ -47,11 +47,11 @@ export function DriverOfferInbox({
           const displayMinutes = formatDriverMinutesCompact(ride.estimatedMinutes);
 
           return (
-            <div key={ride.id} className="rounded-[1.2rem] border border-white/10 bg-slate-950/34 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div key={ride.id} className="rounded-[1.1rem] border border-white/10 bg-slate-950/30 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{ride.pickup.address}</p>
-                  <p className="mt-1 truncate text-xs text-slate-400">{ride.dropoff.address}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-slate-400">{ride.dropoff.address}</p>
                 </div>
                 <Badge className="border-white/10 bg-slate-950/70 px-2 py-1 text-[11px] text-slate-200">{countdown ?? "Queued"}</Badge>
               </div>
@@ -67,11 +67,11 @@ export function DriverOfferInbox({
                 </div>
               </div>
 
-              <div className="mt-2.5 flex gap-2">
-                <Button className="h-10 flex-1 text-sm" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
+              <div className="mt-2.5 grid grid-cols-[1fr_auto] gap-2">
+                <Button className="h-10 text-sm" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
                   {acceptMutation.isPending ? "Accepting..." : "Accept"}
                 </Button>
-                <Button variant="outline" className="h-10 flex-1 border-slate-700/50 bg-slate-800/60 text-sm text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
+                <Button variant="outline" className="h-10 min-w-[96px] border-slate-700/50 bg-slate-800/60 px-4 text-sm text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
                   Decline
                 </Button>
               </div>

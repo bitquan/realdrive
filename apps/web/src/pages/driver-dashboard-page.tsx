@@ -402,18 +402,18 @@ export function DriverDashboardPage() {
                   ) : null}
                 </div>
 
-                <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 px-3">
-                  <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.8),rgba(6,10,18,0.95))] shadow-[0_24px_64px_rgba(2,6,23,0.52)] backdrop-blur-2xl">
+                <div className="absolute inset-x-0 bottom-[calc(4.8rem+env(safe-area-inset-bottom))] z-20 px-3">
+                  <div className="overflow-hidden rounded-[1.65rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.74),rgba(6,10,18,0.93))] shadow-[0_22px_54px_rgba(2,6,23,0.46)] backdrop-blur-2xl">
                     <div className="flex justify-center pb-1.5 pt-2.5">
                       <div className="h-1 w-10 rounded-full bg-slate-700" />
                     </div>
 
-                    <div className="max-h-[calc(100dvh-18.5rem)] overflow-y-auto overscroll-contain px-4 pb-3.5">
-                      <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="max-h-[calc(100dvh-20rem)] overflow-y-auto overscroll-contain px-4 pb-3">
+                      <div className="mb-2.5 flex items-start justify-between gap-3">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">Driver work surface</p>
                           <h2 className="mt-1 text-[15px] font-semibold text-white">{mobileHomeTitle}</h2>
-                          <p className="mt-1 max-w-[15rem] text-[11px] leading-4 text-slate-400">{mobileHomeDescription}</p>
+                          <p className="mt-0.5 max-w-[14rem] text-[11px] leading-4 text-slate-400">{mobileHomeDescription}</p>
                         </div>
                         <Button
                           variant="outline"
@@ -425,14 +425,14 @@ export function DriverDashboardPage() {
                         </Button>
                       </div>
 
-                      <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-slate-800/60 p-1">
+                      <div className="mb-2.5 grid grid-cols-2 gap-1 rounded-xl bg-slate-800/52 p-1">
                         <button
                           type="button"
                           onClick={() => {
                             setOfferView("live");
                             updateDriverHomeTab("home");
                           }}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "live" && requestedTab !== "ride" ? "border border-teal-500/30 bg-teal-500/20 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "live" && requestedTab !== "ride" ? "border border-teal-500/26 bg-teal-500/18 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
                         >
                           Live
                         </button>
@@ -442,14 +442,14 @@ export function DriverDashboardPage() {
                             setOfferView("inbox");
                             updateDriverHomeTab("inbox");
                           }}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "inbox" ? "border border-teal-500/30 bg-teal-500/20 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "inbox" ? "border border-teal-500/26 bg-teal-500/18 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
                         >
                           Inbox
                         </button>
                       </div>
 
                       {hasActiveTrip && mobileHomeState !== "ride" ? (
-                        <div className="mb-2.5">
+                        <div className="mb-2">
                           <DriverActiveRideCard ride={activeRide} emphasize={requestedTab === "ride" || (!liveOffer && hasActiveTrip)} mobileDocked />
                         </div>
                       ) : null}
@@ -477,7 +477,7 @@ export function DriverDashboardPage() {
                         />
                       )}
 
-                      <div className="mt-3 border-t border-slate-800/50 pt-3">
+                      <div className="mt-2.5 border-t border-white/8 pt-2.5">
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-1.5 text-slate-400">
                             <span className="h-2 w-2 rounded-full bg-teal-400" />

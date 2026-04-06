@@ -59,30 +59,31 @@ export function DriverActiveRideCard({ ride, emphasize, mobileDocked = false }: 
 
   if (mobileDocked) {
     return (
-      <div className={`rounded-[1.15rem] border p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] ${emphasize ? "border-teal-500/24 bg-teal-500/8" : "border-white/10 bg-slate-950/30"}`}>
-        <div className="flex items-start justify-between gap-3">
+      <div className={`rounded-[1.05rem] border px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] ${emphasize ? "border-teal-500/22 bg-teal-500/[0.07]" : "border-white/10 bg-slate-950/26"}`}>
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active ride</p>
               <Badge className="border-white/10 bg-slate-950/70 px-2 py-0.5 text-[11px] text-slate-100">{formatDriverStage(ride.status)}</Badge>
             </div>
-            <p className="mt-1.5 truncate text-sm font-semibold text-white">{ride.rider.name}</p>
-            <p className="mt-1 truncate text-xs text-slate-400">{ride.pickup.address}</p>
+            <p className="mt-1 truncate text-sm font-semibold text-white">{ride.rider.name}</p>
+            <p className="truncate text-[11px] text-slate-400">{ride.pickup.address}</p>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Subtotal</p>
-            <p className="mt-1.5 text-sm font-semibold text-white">{formatDriverMoneyCompact(pricing.subtotal)}</p>
-            <p className="mt-1 text-[11px] text-slate-400">{formatDriverMilesCompact(ride.estimatedMiles)} · {formatDriverMinutesCompact(ride.estimatedMinutes)}</p>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Subtotal</p>
+              <p className="mt-1 text-sm font-semibold text-white">{formatDriverMoneyCompact(pricing.subtotal)}</p>
+              <p className="text-[11px] text-slate-400">{formatDriverMilesCompact(ride.estimatedMiles)} · {formatDriverMinutesCompact(ride.estimatedMinutes)}</p>
+            </div>
+            <Link
+              to={`/driver/rides/${ride.id}`}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-teal-500/24 bg-teal-500/14 px-3.5 text-sm font-semibold text-white transition hover:bg-teal-500/20"
+            >
+              Resume
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
-
-        <Link
-          to={`/driver/rides/${ride.id}`}
-          className="mt-2.5 inline-flex h-10 w-full items-center justify-center rounded-xl border border-teal-500/24 bg-teal-500/14 px-4 text-sm font-semibold text-white transition hover:bg-teal-500/20"
-        >
-          Resume trip
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Link>
       </div>
     );
   }
