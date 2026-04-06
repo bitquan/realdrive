@@ -41,6 +41,8 @@ export function AppShell() {
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
   const [dismissedPrompt, setDismissedPrompt] = useState(false);
   const isDriverContext = user?.role === "driver" || location.pathname.startsWith("/driver");
+  const isAdminContext = user?.role === "admin" || location.pathname.startsWith("/admin");
+  const isRiderShellContext = !isDriverContext && !isAdminContext;
   const mobileItems = getMobileNavItems(user, { driverRidePath: "/driver?tab=ride", driverInboxPath: "/driver/inbox" });
 
   const canCheckNotificationApi = typeof window !== "undefined" && "Notification" in window;
@@ -255,25 +257,25 @@ export function AppShell() {
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-40 border-b border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(7,9,13,0.96),rgba(6,8,12,0.94))] backdrop-blur supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
-            <div className="px-3 py-2.5 md:px-6 md:py-4">
+            <div className={cn("px-3 md:px-6 md:py-4", isRiderShellContext ? "py-2" : "py-2.5")}>
               <div className="flex min-w-0 items-center justify-between gap-2 lg:hidden">
                 <Link to="/" className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <div className="rounded-2xl border border-ops-border bg-ops-panel/88 p-2 text-ops-primary">
+                  <div className={cn("rounded-2xl border border-ops-border bg-ops-panel/88 text-ops-primary", isRiderShellContext ? "p-1.5" : "p-2")}>
                     <CarFront className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{shellIntro}</p>
-                    <p className="truncate text-sm font-bold tracking-[-0.03em] text-ops-text">{shellTitle}</p>
+                    <p className={cn("truncate font-bold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[0.95rem]" : "text-sm")}>{shellTitle}</p>
                   </div>
                 </Link>
 
                 <div className="flex shrink-0 items-center gap-1.5">
                   {user && !isDriverContext ? (
-                    <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
+                    <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
                       {roleLabel(user.role)}
                     </Badge>
                   ) : !user ? (
-                    <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
+                    <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
                       {t("shell.guestMode")}
                     </Badge>
                   ) : null}
@@ -281,7 +283,7 @@ export function AppShell() {
                   {user ? (
                     <Link
                       to="/notifications"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-ops-border-soft bg-ops-panel/82 text-ops-muted transition hover:text-ops-text"
+                      className={cn("inline-flex items-center justify-center rounded-xl border border-ops-border-soft bg-ops-panel/82 text-ops-muted transition hover:text-ops-text", isRiderShellContext ? "h-8.5 w-8.5" : "h-9 w-9")}
                       aria-label="Open notifications"
                     >
                       <Bell className="h-4 w-4" />
@@ -289,7 +291,7 @@ export function AppShell() {
                   ) : null}
 
                   {user ? (
-                    <Button variant="ghost" className="h-9 w-9 px-0" onClick={() => void logout()} aria-label={t("shell.signOut")}>
+                    <Button variant="ghost" className={cn("w-9 px-0", isRiderShellContext ? "h-8.5" : "h-9")} onClick={() => void logout()} aria-label={t("shell.signOut")}>
                       <LogOut className="h-4 w-4" />
                     </Button>
                   ) : null}
@@ -325,9 +327,9 @@ export function AppShell() {
               ) : null}
 
               {!mobileHeaderMinimal ? (
-                <div className="mt-2.5 min-w-0 lg:hidden">
+                <div className={cn("min-w-0 lg:hidden", isRiderShellContext ? "mt-2" : "mt-2.5")}>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{frame.eyebrow}</p>
-                  <h1 className="mt-1 truncate text-lg font-extrabold tracking-[-0.03em] text-ops-text">{frame.title}</h1>
+                  <h1 className={cn("mt-1 truncate font-extrabold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[1.05rem]" : "text-lg")}>{frame.title}</h1>
                 </div>
               ) : null}
 
@@ -416,6 +418,7 @@ export function AppShell() {
           <main
             className={cn(
               "min-w-0 flex-1 px-4 pb-28 pt-3 md:px-6 md:pb-10 md:pt-5",
+              isRiderShellContext && "px-3 pb-24 pt-2.5 md:px-6 md:pb-10 md:pt-4",
               isDriverContext && "pt-2 md:pt-3",
               frame.layout === "immersive" && "px-3 pt-3 md:px-5 md:pt-4"
             )}
@@ -428,7 +431,7 @@ export function AppShell() {
       </div>
 
       {mobileItems.length ? (
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))] px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-elevated lg:hidden">
+        <nav className={cn("fixed inset-x-0 bottom-0 z-40 border-t border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))] px-2 shadow-elevated lg:hidden", isRiderShellContext ? "pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5" : "pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2")}>
           <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
             {mobileItems.map((item) => {
               const active = isNavItemActive(item, location.pathname, location.search);
@@ -439,13 +442,15 @@ export function AppShell() {
                   key={item.id}
                   to={item.to}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-center text-[11px] font-semibold transition",
+                    "flex flex-col items-center rounded-2xl px-2 text-center text-[11px] font-semibold transition",
+                    isRiderShellContext ? "gap-0.5 py-1.5" : "gap-1 py-2",
                     active ? "bg-ops-panel text-ops-text" : "text-ops-muted hover:bg-ops-panel/72 hover:text-ops-text"
                   )}
                 >
                   <span
                     className={cn(
-                      "rounded-xl border p-2",
+                      "rounded-xl border",
+                      isRiderShellContext ? "p-1.5" : "p-2",
                       active
                         ? "border-ops-primary/28 bg-ops-primary/18 text-ops-primary"
                         : "border-ops-border-soft bg-ops-surface/86 text-ops-muted"

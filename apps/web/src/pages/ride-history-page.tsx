@@ -29,6 +29,7 @@ export function RideHistoryPage() {
   const activeRides = rides.filter((ride) => ["requested", "scheduled", "offered", "accepted", "en_route", "arrived", "in_progress"].includes(ride.status));
   const pastRides = rides.filter((ride) => !activeRides.includes(ride));
   const nextRide = activeRides[0] ?? rides[0] ?? null;
+  const hasRides = rides.length > 0;
 
   return (
     <div className="space-y-6">
@@ -38,7 +39,7 @@ export function RideHistoryPage() {
         description="This rider surface stays focused on real trips only: live rides, scheduled pickups, completed trips, and follow-up context from one mobile-first queue."
         actions={[{ label: "Book ride", to: "/", icon: CarFront, variant: "primary" }]}
         aside={(
-          <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-4 text-sm text-ops-muted">
+          <div className="hidden rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-4 text-sm text-ops-muted md:block">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Rider snapshot</p>
             {nextRide ? (
               <>
@@ -60,10 +61,41 @@ export function RideHistoryPage() {
       <MetricStrip>
         <MetricCard label="Total rides" value={rides.length} meta="Trip records on this account" icon={Route} />
         <MetricCard label="Live or scheduled" value={activeCount} meta="Trips still in motion or waiting" icon={CalendarClock} tone="primary" />
-        <MetricCard label="Completed" value={completedCount} meta="Finished rider trips" icon={Sparkles} tone="success" />
-        <MetricCard label="Total spend" value={formatMoney(totalSpend)} meta={canceledCount ? `${canceledCount} canceled trip${canceledCount === 1 ? "" : "s"}` : "All recorded ride totals"} icon={Receipt} />
+        <MetricCard className="hidden xl:block" label="Completed" value={completedCount} meta="Finished rider trips" icon={Sparkles} tone="success" />
+        <MetricCard className="hidden xl:block" label="Total spend" value={formatMoney(totalSpend)} meta={canceledCount ? `${canceledCount} canceled trip${canceledCount === 1 ? "" : "s"}` : "All recorded ride totals"} icon={Receipt} />
       </MetricStrip>
 
+      {!hasRides ? (
+        <PanelSection title="No rider trips yet" description="Book first, then use this rider home to open live trip state, follow-up details, and receipts without extra shell scrolling.">
+          <div className="grid gap-3 md:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-[1.5rem] border border-ops-border-soft bg-ops-panel/45 p-4 text-sm text-ops-muted">
+              <p className="font-semibold text-ops-text">Start from the public booking flow</p>
+              <p className="mt-2 leading-6">Guest booking remains open on the home page. After you sign in, active rides and completed receipts show up here automatically.</p>
+              <Link to="/" className="mt-4 inline-flex font-semibold text-ops-primary hover:underline">
+                Book a ride now
+              </Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
+              <div className="rounded-[1.45rem] border border-ops-border-soft bg-ops-panel/45 p-4 text-sm text-ops-muted">
+                <div className="flex items-center gap-2 text-ops-text">
+                  <Clock3 className="h-4 w-4 text-ops-primary" />
+                  <p className="font-semibold">Fast rider follow-up</p>
+                </div>
+                <p className="mt-2 leading-6">Open live ride detail, payment method, and support context from one rider-side queue.</p>
+              </div>
+              <div className="rounded-[1.45rem] border border-ops-border-soft bg-ops-panel/45 p-4 text-sm text-ops-muted">
+                <div className="flex items-center gap-2 text-ops-text">
+                  <Route className="h-4 w-4 text-ops-primary" />
+                  <p className="font-semibold">Minimal rider shell</p>
+                </div>
+                <p className="mt-2 leading-6">This home stays compact until there are real trips to show, so you are not forced through extra empty panels.</p>
+              </div>
+            </div>
+          </div>
+        </PanelSection>
+      ) : null}
+
+      {hasRides ? (
       <PanelSection title="Live and upcoming rides" description="Open the current trip first when you need live map context, driver updates, or rider actions.">
         <div className="space-y-3">
           {activeRides.length ? (
@@ -94,7 +126,9 @@ export function RideHistoryPage() {
           )}
         </div>
       </PanelSection>
+      ) : null}
 
+      {hasRides ? (
       <PanelSection title="Past rides and receipts" description="Review completed and canceled trips with payment totals and timestamps for support follow-up.">
         <div className="space-y-3">
           {pastRides.length ? (
@@ -122,7 +156,9 @@ export function RideHistoryPage() {
           )}
         </div>
       </PanelSection>
+      ) : null}
 
+      {hasRides ? (
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/45 p-5 text-sm text-ops-muted">
           <div className="flex items-center gap-2 text-ops-text">
@@ -139,6 +175,7 @@ export function RideHistoryPage() {
           <p className="mt-3 leading-6">Guest booking remains open on the home page, while signed-in rider history keeps your repeat trips, totals, and live follow-up in one place.</p>
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

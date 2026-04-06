@@ -142,16 +142,18 @@ export function HomePage() {
     Boolean(bookingForm.pickupAddress) &&
     Boolean(bookingForm.dropoffAddress) &&
     !bookingMutation.isPending;
+  const riderEntryLabel = userHasRole(user, "rider") ? "My rides" : "Rider sign in";
+  const riderEntryTo = userHasRole(user, "rider") ? "/rider/rides" : "/rider/login";
 
   return (
-    <div className="space-y-3 md:space-y-5">
+    <div className="space-y-2.5 md:space-y-5">
       <PageHero
         eyebrow="Community-powered rideshare pilot"
         icon={Shield}
         title="Book your ride in under a minute and track everything from one live link."
         description="RealDrive keeps the rider flow simple and guest-first: instant quote, no-login booking, live trip tracking, and personal share links for referral growth."
         aside={(
-          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:p-5">
+          <div className="hidden rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:block md:p-5">
             <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Rider operations snapshot</p>
             <p className="mt-2 font-semibold text-ops-text">What riders get now</p>
             <div className="mt-2.5 space-y-1.5 text-ops-muted">
@@ -168,27 +170,39 @@ export function HomePage() {
             ) : null}
           </div>
         )}
+        className="p-4 md:p-7"
       />
 
+      <div className="grid grid-cols-2 gap-2 md:hidden">
+        <Stat icon={Car} label="Drivers" value={availableDriver ? "Online" : "Ready"} />
+        <Stat icon={Clock3} label="ETA" value={quoteQuery.data ? `${Math.max(5, Math.round(quoteQuery.data.estimatedMinutes / 2))} min` : "Quote"} />
+      </div>
+
       <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-surface to-[#0d1421] p-2 shadow-panel">
-        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:flex-wrap">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap">
           <a
             href="#book"
             className="inline-flex w-full items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3b8fff] sm:w-auto"
           >
             Start booking
           </a>
-          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row sm:gap-2">
+          <Link
+            to={riderEntryTo}
+            className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+          >
+            {riderEntryLabel}
+          </Link>
+          <div className="col-span-2 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-2">
             <Link
               to="/tablet/ads/login"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+              className="hidden w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text md:inline-flex sm:w-auto"
             >
               <LayoutPanelTop className="mr-2 h-4 w-4" />
               Tablet ad login
             </Link>
             <Link
               to="/advertise"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+              className="hidden w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text md:inline-flex sm:w-auto"
             >
               <Megaphone className="mr-2 h-4 w-4" />
               Post an ad
@@ -199,22 +213,12 @@ export function HomePage() {
             >
               Driver signup
             </Link>
-            {!userHasRole(user, "rider") ? (
-              <Link
-                to="/rider/login"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
-              >
-                Rider sign in
-              </Link>
-            ) : null}
-            {userHasRole(user, "rider") ? (
-              <Link
-                to="/rider/rides"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
-              >
-                My rides
-              </Link>
-            ) : null}
+            <Link
+              to={riderEntryTo}
+              className="hidden w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text md:inline-flex sm:w-auto"
+            >
+              {riderEntryLabel}
+            </Link>
           </div>
         </div>
       </div>
@@ -226,7 +230,7 @@ export function HomePage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3">
+      <div className="hidden grid-cols-2 gap-2 sm:grid sm:grid-cols-3 md:gap-3">
         <Stat icon={Car} label="Driver network" value={availableDriver ? "Drivers online" : "On demand"} />
         <Stat
           icon={Clock3}
