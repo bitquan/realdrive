@@ -915,8 +915,8 @@ export const marketConfigsResponseSchema = z.object({
 });
 
 export const createMarketConfigSchema = z.object({
-  marketKey: z.string().min(2).max(12),
-  copyFromMarketKey: z.string().min(2).max(12).optional()
+  marketKey: z.string().regex(/^[A-Za-z0-9_-]{2,12}$/),
+  copyFromMarketKey: z.string().regex(/^[A-Za-z0-9_-]{2,12}$/).optional()
 });
 
 export const adminAuditLogSchema = z.object({
@@ -934,14 +934,24 @@ export const adminAuditLogsResponseSchema = z.object({
   logs: z.array(adminAuditLogSchema)
 });
 
+const serviceHoursDaySchema = z.object({
+  open: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  close: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
+});
+
+const serviceHoursSchema = z.record(
+  z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
+  serviceHoursDaySchema
+);
+
 // Market Region (full multi-city region config)
 export const marketRegionSchema = z.object({
   id: z.string(),
-  marketKey: z.string(),
+  marketKey: z.string().regex(/^[A-Za-z0-9_-]{2,20}$/),
   displayName: z.string(),
   timezone: z.string(),
-  serviceStates: z.array(z.string()),
-  serviceHours: z.record(z.object({ open: z.string(), close: z.string() })).nullable(),
+  serviceStates: z.array(z.string().regex(/^[A-Za-z]{2}$/)),
+  serviceHours: serviceHoursSchema.nullable(),
   dispatchWeightMultiplier: z.number(),
   active: z.boolean(),
   createdAt: z.string(),
@@ -949,11 +959,11 @@ export const marketRegionSchema = z.object({
 });
 
 export const createMarketRegionSchema = z.object({
-  marketKey: z.string().min(2).max(20),
+  marketKey: z.string().regex(/^[A-Za-z0-9_-]{2,20}$/),
   displayName: z.string().min(2).max(80),
   timezone: z.string().min(3).max(60).optional(),
-  serviceStates: z.array(z.string().min(2).max(2)).max(60).optional(),
-  serviceHours: z.record(z.object({ open: z.string(), close: z.string() })).nullable().optional(),
+  serviceStates: z.array(z.string().regex(/^[A-Za-z]{2}$/)).max(60).optional(),
+  serviceHours: serviceHoursSchema.nullable().optional(),
   dispatchWeightMultiplier: z.number().min(0.1).max(10).optional()
 });
 

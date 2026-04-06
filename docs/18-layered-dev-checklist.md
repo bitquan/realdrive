@@ -81,12 +81,18 @@ Primary docs:
 
 Checklist:
 
-- [ ] Add domain-specific error classes and cleaner `4xx` mappings.
-- [ ] Add `/readiness` alongside health coverage.
-- [ ] Move remaining scheduled jobs out of the API process where practical.
-- [ ] Add refresh-token or stronger session invalidation strategy.
-- [ ] Expand audit logging exports and richer filtering.
-- [ ] Tighten region, market, and service-rule modeling where current assumptions are too shallow.
+- [x] Add domain-specific error classes and cleaner `4xx` mappings.
+	- Added domain error primitives in [apps/api/src/lib/errors.ts](../apps/api/src/lib/errors.ts) and wired structured `4xx`/Prisma mappings in [apps/api/src/app.ts](../apps/api/src/app.ts) and [apps/api/src/lib/store.ts](../apps/api/src/lib/store.ts).
+- [x] Add `/readiness` alongside health coverage.
+	- Added runtime dependency checks via [apps/api/src/app.ts](../apps/api/src/app.ts) at `GET /readiness` with database and scheduler readiness state.
+- [x] Move remaining scheduled jobs out of the API process where practical.
+	- Switched default scheduler runner to worker mode in [apps/api/src/config/env.ts](../apps/api/src/config/env.ts) and removed API-process interval ownership in [apps/api/src/app.ts](../apps/api/src/app.ts).
+- [x] Add refresh-token or stronger session invalidation strategy.
+	- Added stamped JWT sessions with compatibility fallback plus explicit logout invalidation hooks in [apps/api/src/app.ts](../apps/api/src/app.ts), with backing stamp/invalidation support in [apps/api/src/lib/store.ts](../apps/api/src/lib/store.ts) and [apps/api/src/services/types.ts](../apps/api/src/services/types.ts).
+- [x] Expand audit logging exports and richer filtering.
+	- Expanded admin audit filters (`actorId`, `entityId`, `from`, `to`) and added CSV export endpoint in [apps/api/src/app.ts](../apps/api/src/app.ts) with query support in [apps/api/src/lib/store.ts](../apps/api/src/lib/store.ts).
+- [x] Tighten region, market, and service-rule modeling where current assumptions are too shallow.
+	- Tightened market/region schema constraints in [shared/contracts.ts](../shared/contracts.ts) and enforced region-to-market pricing rule relationships plus stricter state/hour normalization in [apps/api/src/lib/store.ts](../apps/api/src/lib/store.ts).
 
 ## Layer 3 — Rider And Public Flows
 

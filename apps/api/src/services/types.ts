@@ -129,6 +129,8 @@ export interface UpdateRideAdminPatch {
 
 export interface Store {
   findSessionUserById(userId: string): Promise<SessionUser | null>;
+  getUserAuthStamp(userId: string): Promise<string | null>;
+  invalidateUserAuthStamp(userId: string): Promise<void>;
   findUserForOtp(phone: string, role: "rider" | "driver"): Promise<AuthIdentity | null>;
   createRiderIdentity(input: { phone?: string | null; email?: string | null; name: string }): Promise<AuthIdentity>;
   getAdminSetupStatus(): Promise<AdminSetupStatusResponse>;
@@ -165,7 +167,15 @@ export interface Store {
   upsertPlatformRateBenchmarks(rules: Array<Omit<PlatformRateBenchmarkRule, "observedAt">>): Promise<PlatformRateBenchmarkRule[]>;
   listMarketConfigs(): Promise<MarketConfig[]>;
   createMarketConfig(input: CreateMarketConfigInput): Promise<MarketConfig>;
-  listAdminAuditLogs(options?: { limit?: number; action?: string; entityType?: string }): Promise<AdminAuditLog[]>;
+  listAdminAuditLogs(options?: {
+    limit?: number;
+    action?: string;
+    entityType?: string;
+    actorId?: string;
+    entityId?: string;
+    from?: Date;
+    to?: Date;
+  }): Promise<AdminAuditLog[]>;
   createRide(input: CreateRideRecordInput): Promise<Ride>;
   getRideById(rideId: string): Promise<Ride | null>;
   getRideByPublicTrackingToken(token: string): Promise<Ride | null>;

@@ -1,4 +1,7 @@
 import {
+  createHash
+} from "node:crypto";
+import {
   AdSubmissionStatus as DbAdSubmissionStatus,
   BenchmarkProvider as DbBenchmarkProvider,
   DriverAdCreditStatus as DbDriverAdCreditStatus,
@@ -56,6 +59,7 @@ import type {
 } from "../services/types.js";
 import { createCommunityAccessToken, createPublicTrackingToken, createReferralCode } from "./codes.js";
 import { prisma } from "./db.js";
+import { badRequestError, notFoundError, unprocessableEntityError } from "./errors.js";
 import {
   persistDriverDocumentUpload,
   removeStoredDriverDocument,
@@ -189,6 +193,78 @@ function normalizeStateList(states: string[]) {
 
 function normalizeAcceptedPaymentMethods(methods: PaymentMethod[]) {
   return Array.from(new Set(methods));
+}
+
+function buildAuthStamp(user: {
+  id: string;
+  role: DbRole;
+  roles: DbRole[];
+  passwordHash: string | null;
+  updatedAt: Date;
+  driverProfile?: { approvalStatus: string } | null;
+}) {
+  const serialized = [
+    user.id,
+    user.role,
+    [...(user.roles ?? [])].sort().join(","),
+    user.passwordHash ?? "",
+    user.driverProfile?.approvalStatus ?? "",
+    user.updatedAt.toISOString()
+  ].join("|");
+
+  return createHash("sha256").update(serialized).digest("hex");
+}
+
+const timeOfDayPattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const dayKeys = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+
+function normalizeServiceHours(
+  serviceHours: CreateMarketRegionInput["serviceHours"] | UpdateMarketRegionInput["serviceHours"]
+) {
+  if (serviceHours == null) {
+    return serviceHours;
+  }
+
+  for (const [day, hours] of Object.entries(serviceHours)) {
+    if (!dayKeys.has(day.toLowerCase())) {
+      throw unprocessableEntityError(`Unsupported day key: ${day}`, "invalid_service_hours");
+    }
+
+    const open = String(hours.open ?? "").trim();
+    const close = String(hours.close ?? "").trim();
+    if (!timeOfDayPattern.test(open) || !timeOfDayPattern.test(close)) {
+      throw unprocessableEntityError(`Invalid service hours for ${day}. Use HH:mm format.`, "invalid_service_hours");
+    }
+  }
+
+  return serviceHours;
+}
+
+function normalizeServiceStates(states?: string[]) {
+  if (!states) {
+    return [];
+  }
+
+  const normalized = normalizeStateList(states);
+  for (const state of normalized) {
+    if (!/^[A-Z]{2}$/.test(state)) {
+      throw unprocessableEntityError(`Invalid service state code: ${state}`, "invalid_service_states");
+    }
+  }
+
+  return normalized;
+}
+
+async function ensureMarketPricingRulesExist(marketKey: string) {
+  const count = await prisma.pricingRule.count({
+    where: {
+      marketKey: normalizeMarketKey(marketKey)
+    }
+  });
+
+  if (count === 0) {
+    throw notFoundError(`Market ${normalizeMarketKey(marketKey)} has no service pricing rules`, "market_rules_not_found");
+  }
 }
 
 const requiredDriverDocumentTypes: DriverDocumentType[] = [
@@ -1337,6 +1413,30 @@ export const store: Store = {
     return user ? mapSessionUser(user) : null;
   },
 
+  async getUserAuthStamp(userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+        roles: true,
+        passwordHash: true,
+        updatedAt: true,
+        driverProfile: {
+          select: {
+            approvalStatus: true
+          }
+        }
+      }
+    });
+
+    return user ? buildAuthStamp(user) : null;
+  },
+
+  async invalidateUserAuthStamp(userId) {
+    await prisma.$executeRaw`UPDATE "User" SET "updatedAt" = NOW() WHERE "id" = ${userId}`;
+  },
+
   async findUserForOtp(phone, role) {
     const user = await prisma.user.findFirst({
       where: {
@@ -2250,7 +2350,17 @@ export const store: Store = {
     const rows = await prisma.auditLog.findMany({
       where: {
         ...(options?.action ? { action: { contains: options.action, mode: "insensitive" } } : {}),
-        ...(options?.entityType ? { entityType: { equals: options.entityType, mode: "insensitive" } } : {})
+        ...(options?.entityType ? { entityType: { equals: options.entityType, mode: "insensitive" } } : {}),
+        ...(options?.actorId ? { actorId: options.actorId } : {}),
+        ...(options?.entityId ? { entityId: options.entityId } : {}),
+        ...(options?.from || options?.to
+          ? {
+              createdAt: {
+                ...(options?.from ? { gte: options.from } : {}),
+                ...(options?.to ? { lte: options.to } : {})
+              }
+            }
+          : {})
       },
       include: {
         actor: {
@@ -3641,7 +3751,7 @@ export const store: Store = {
     ]);
 
     if (!submission || !submission.assignedDriverId) {
-      throw new Error("Ad destination not found");
+      throw notFoundError("Ad destination not found", "ad_destination_not_found");
     }
 
     const fingerprint = buildAdScanFingerprint({
@@ -3702,7 +3812,7 @@ export const store: Store = {
 
   async applyDriverAdCredits(driverId: string, input: ApplyDriverAdCreditsInput) {
     if (!input.platformDueBatchId) {
-      throw new Error("Select an open due batch before applying ad credits.");
+      throw badRequestError("Select an open due batch before applying ad credits.", "platform_due_batch_required");
     }
 
     await prisma.$transaction(async (tx) => {
@@ -3723,14 +3833,14 @@ export const store: Store = {
       });
 
       if (!batch) {
-        throw new Error("Open due batch not found for this driver.");
+        throw notFoundError("Open due batch not found for this driver.", "platform_due_batch_not_found");
       }
 
       const alreadyAppliedTotal = batch.adCredits.reduce((sum: number, credit: { amount: Prisma.Decimal | number }) => sum + Number(credit.amount), 0);
       let remainingCapacity = toFixedMoney(Number(batch.amount) - alreadyAppliedTotal);
 
       if (remainingCapacity <= 0) {
-        throw new Error("This due batch already has enough applied ad credit.");
+        throw badRequestError("This due batch already has enough applied ad credit.", "platform_due_batch_no_capacity");
       }
 
       const pendingCredits = await tx.driverAdCredit.findMany({
@@ -3755,7 +3865,7 @@ export const store: Store = {
       }
 
       if (!appliedIds.length) {
-        throw new Error("No pending ad credits fit within the remaining due balance for that batch.");
+        throw badRequestError("No pending ad credits fit within the remaining due balance for that batch.", "ad_credit_not_applicable");
       }
 
       await tx.driverAdCredit.updateMany({
@@ -4545,13 +4655,16 @@ export const store: Store = {
   },
 
   async createMarketRegion(input: CreateMarketRegionInput): Promise<MarketRegion> {
+    const marketKey = normalizeMarketKey(input.marketKey);
+    await ensureMarketPricingRulesExist(marketKey);
+
     const region = await prisma.marketRegion.create({
       data: {
-        marketKey: input.marketKey.trim().toUpperCase(),
-        displayName: input.displayName,
+        marketKey,
+        displayName: input.displayName.trim(),
         timezone: input.timezone ?? "America/New_York",
-        serviceStates: input.serviceStates ?? [],
-        serviceHours: input.serviceHours ?? undefined,
+        serviceStates: normalizeServiceStates(input.serviceStates),
+        serviceHours: normalizeServiceHours(input.serviceHours) ?? undefined,
         dispatchWeightMultiplier: input.dispatchWeightMultiplier ?? 1.0
       }
     });
@@ -4570,13 +4683,23 @@ export const store: Store = {
   },
 
   async updateMarketRegion(id: string, input: UpdateMarketRegionInput): Promise<MarketRegion> {
+    const existing = await prisma.marketRegion.findUnique({
+      where: { id },
+      select: { id: true, marketKey: true }
+    });
+    if (!existing) {
+      throw notFoundError("Market region not found", "market_region_not_found");
+    }
+
+    await ensureMarketPricingRulesExist(existing.marketKey);
+
     const region = await prisma.marketRegion.update({
       where: { id },
       data: {
-        ...(input.displayName !== undefined && { displayName: input.displayName }),
+        ...(input.displayName !== undefined && { displayName: input.displayName.trim() }),
         ...(input.timezone !== undefined && { timezone: input.timezone }),
-        ...(input.serviceStates !== undefined && { serviceStates: input.serviceStates }),
-        ...(input.serviceHours !== undefined && { serviceHours: input.serviceHours ?? Prisma.JsonNull }),
+        ...(input.serviceStates !== undefined && { serviceStates: normalizeServiceStates(input.serviceStates) }),
+        ...(input.serviceHours !== undefined && { serviceHours: (normalizeServiceHours(input.serviceHours) ?? Prisma.JsonNull) as Prisma.InputJsonValue }),
         ...(input.dispatchWeightMultiplier !== undefined && { dispatchWeightMultiplier: input.dispatchWeightMultiplier }),
         ...(input.active !== undefined && { active: input.active })
       }
@@ -4596,7 +4719,10 @@ export const store: Store = {
   },
 
   async deleteMarketRegion(id: string): Promise<void> {
-    await prisma.marketRegion.delete({ where: { id } });
+    const deleted = await prisma.marketRegion.deleteMany({ where: { id } });
+    if (deleted.count === 0) {
+      throw notFoundError("Market region not found", "market_region_not_found");
+    }
   },
 
   // ─── API Keys ─────────────────────────────────────────────────────────

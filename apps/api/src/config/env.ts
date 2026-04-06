@@ -43,7 +43,7 @@ export const env = {
   platformRateAutoApplyEnabled: asBoolean(process.env.PLATFORM_RATE_AUTO_APPLY_ENABLED, false),
   platformRateAutoApplyMinutes: asNumber(process.env.PLATFORM_RATE_AUTO_APPLY_MINUTES, 60),
   platformRateUndercutAmount: asNumber(process.env.PLATFORM_RATE_UNDERCUT_AMOUNT, 0.05),
-  platformRateAutoApplyRunner: process.env.PLATFORM_RATE_AUTO_APPLY_RUNNER ?? "api",
+  platformRateAutoApplyRunner: process.env.PLATFORM_RATE_AUTO_APPLY_RUNNER ?? "worker",
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
   driverDocumentUploadDir: process.env.DRIVER_DOCUMENT_UPLOAD_DIR ?? "uploads/driver-documents"
 };

@@ -64,6 +64,8 @@ import {
 } from "@shared/contracts";
 import { env } from "./config/env.js";
 import { createPublicTrackingToken } from "./lib/codes.js";
+import { prisma } from "./lib/db.js";
+import { isDomainError } from "./lib/errors.js";
 import { normalizePhone } from "./lib/phone.js";
 import { store } from "./lib/store.js";
 import { createMapsService } from "./services/maps.js";
@@ -173,30 +175,9 @@ export function buildApp() {
     secret: env.jwtSecret
   });
 
-  let autoApplyInterval: NodeJS.Timeout | null = null;
   if (env.platformRateAutoApplyEnabled && autoApplyRunnerMode === "api") {
-    const runScheduled = async (trigger: "scheduled" | "startup") => {
-      try {
-        await applyAutoPlatformRates(trigger);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Auto platform-rate apply failed";
-        autoRateState.lastError = message;
-        app.log.error({ error }, "Auto platform-rate apply failed");
-      }
-    };
-
-    void runScheduled("startup");
-    autoApplyInterval = setInterval(() => {
-      void runScheduled("scheduled");
-    }, autoApplyIntervalMinutes * 60 * 1000);
+    app.log.warn("PLATFORM_RATE_AUTO_APPLY_RUNNER=api is deprecated; scheduled auto-apply should run in worker mode");
   }
-
-  app.addHook("onClose", async () => {
-    if (autoApplyInterval) {
-      clearInterval(autoApplyInterval);
-      autoApplyInterval = null;
-    }
-  });
 
   const io = new Server(app.server, {
     cors: {
@@ -215,6 +196,37 @@ export function buildApp() {
     return {
       ok: true
     };
+  });
+
+  app.get("/readiness", async (_request, reply) => {
+    let dbOk = true;
+    let dbError: string | null = null;
+
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (error) {
+      dbOk = false;
+      dbError = error instanceof Error ? error.message : "database unavailable";
+    }
+
+    const schedulerOk = !env.platformRateAutoApplyEnabled || autoApplyRunnerMode === "worker";
+    const ok = dbOk && schedulerOk;
+
+    return reply.status(ok ? 200 : 503).send({
+      ok,
+      checks: {
+        database: {
+          ok: dbOk,
+          error: dbError
+        },
+        autoPricingScheduler: {
+          ok: schedulerOk,
+          enabled: env.platformRateAutoApplyEnabled,
+          runnerMode: autoApplyRunnerMode,
+          expectedRunnerMode: "worker"
+        }
+      }
+    });
   });
 
   app.get("/public/push/config", async () => {
@@ -699,14 +711,17 @@ export function buildApp() {
         return next(new Error("Missing auth token"));
       }
 
-      const payload = (await app.jwt.verify<{ sub: string }>(token)) as { sub: string };
+      const payload = (await app.jwt.verify<{ sub: string; ast?: string }>(token)) as { sub: string; ast?: string };
       let user = await store.findSessionUserById(payload.sub);
       if (!user) {
         return next(new Error("User not found"));
       }
 
-      if (!user.referralCode) {
-        user = await store.ensureUserReferralCode(user.id);
+      if (typeof payload.ast === "string") {
+        const currentAuthStamp = await store.getUserAuthStamp(user.id);
+        if (!currentAuthStamp || payload.ast !== currentAuthStamp) {
+          return next(new Error("Session expired"));
+        }
       }
 
       socket.data.user = user;
@@ -738,14 +753,17 @@ export function buildApp() {
         return reply.unauthorized("Missing bearer token");
       }
 
-      const payload = (await request.jwtVerify<{ sub: string }>()) as { sub: string };
+      const payload = (await request.jwtVerify<{ sub: string; ast?: string }>()) as { sub: string; ast?: string };
       let user = await store.findSessionUserById(payload.sub);
       if (!user) {
         return reply.unauthorized("Invalid token");
       }
 
-      if (!user.referralCode) {
-        user = await store.ensureUserReferralCode(user.id);
+      if (typeof payload.ast === "string") {
+        const currentAuthStamp = await store.getUserAuthStamp(user.id);
+        if (!currentAuthStamp || payload.ast !== currentAuthStamp) {
+          return reply.unauthorized("Session expired. Please sign in again.");
+        }
       }
 
       request.userContext = user;
@@ -774,8 +792,13 @@ export function buildApp() {
     };
   }
 
-  function signToken(userId: string) {
-    return app.jwt.sign({ sub: userId }, { expiresIn: "7d" });
+  async function signToken(userId: string) {
+    const authStamp = await store.getUserAuthStamp(userId);
+    if (!authStamp) {
+      throw new Error("Unable to issue auth token");
+    }
+
+    return app.jwt.sign({ sub: userId, ast: authStamp }, { expiresIn: "24h" });
   }
 
   /**
@@ -812,6 +835,24 @@ export function buildApp() {
   }
 
   function sendKnownOperationalError(reply: FastifyReply, error: unknown) {
+    if (isDomainError(error)) {
+      return reply.status(error.statusCode).send({
+        message: error.message,
+        code: error.code
+      });
+    }
+
+    const prismaCode =
+      error && typeof error === "object" && "code" in error && typeof (error as { code?: unknown }).code === "string"
+        ? (error as { code: string }).code
+        : null;
+    if (prismaCode === "P2002") {
+      return reply.status(409).send({ message: "Duplicate resource conflict" });
+    }
+    if (prismaCode === "P2025") {
+      return reply.status(404).send({ message: "Resource not found" });
+    }
+
     const message = error instanceof Error ? error.message : "Request failed";
 
     if (message.includes("overdue platform dues")) {
@@ -854,7 +895,7 @@ export function buildApp() {
       });
 
       return reply.status(201).send({
-        token: signToken(admin.id),
+        token: await signToken(admin.id),
         user: toSessionUser(admin)
       });
     } catch (error) {
@@ -884,7 +925,7 @@ export function buildApp() {
       });
 
       return reply.status(201).send({
-        token: signToken(admin.id),
+        token: await signToken(admin.id),
         user: toSessionUser(admin)
       });
     } catch (error) {
@@ -929,9 +970,11 @@ export function buildApp() {
         name: parsed.data.name ?? "Rider"
       }));
 
+    const riderWithReferral = rider.referralCode ? rider : await store.ensureUserReferralCode(rider.id);
+
     return reply.send({
-      token: signToken(rider.id),
-      user: toSessionUser(rider)
+      token: await signToken(riderWithReferral.id),
+      user: toSessionUser(riderWithReferral)
     });
   });
 
@@ -988,13 +1031,16 @@ export function buildApp() {
       return reply.forbidden("Driver account is not approved");
     }
 
+    const driverWithReferral = driver.referralCode ? driver : await store.ensureUserReferralCode(driver.id);
+
     return reply.send({
-      token: signToken(driver.id),
-      user: toSessionUser(driver)
+      token: await signToken(driverWithReferral.id),
+      user: toSessionUser(driverWithReferral)
     });
   });
 
-  app.post("/driver/auth/logout", async (_request, reply) => {
+  app.post("/driver/auth/logout", { preHandler: app.authenticate }, async (request, reply) => {
+    await store.invalidateUserAuthStamp(request.userContext.id);
     return reply.send({ ok: true });
   });
 
@@ -1014,13 +1060,16 @@ export function buildApp() {
       return reply.unauthorized("Invalid email or password");
     }
 
+    const adminWithReferral = admin.referralCode ? admin : await store.ensureUserReferralCode(admin.id);
+
     return reply.send({
-      token: signToken(admin.id),
-      user: toSessionUser(admin)
+      token: await signToken(adminWithReferral.id),
+      user: toSessionUser(adminWithReferral)
     });
   });
 
-  app.post("/auth/logout", async (_request, reply) => {
+  app.post("/auth/logout", { preHandler: app.authenticate }, async (request, reply) => {
+    await store.invalidateUserAuthStamp(request.userContext.id);
     return reply.send({ ok: true });
   });
 
@@ -2507,15 +2556,77 @@ export function buildApp() {
       limit?: string;
       action?: string;
       entityType?: string;
+      actorId?: string;
+      entityId?: string;
+      from?: string;
+      to?: string;
     };
+
+    const from = query.from ? new Date(query.from) : undefined;
+    const to = query.to ? new Date(query.to) : undefined;
 
     const logs = await store.listAdminAuditLogs({
       limit: query.limit ? Number(query.limit) : undefined,
       action: query.action?.trim() || undefined,
-      entityType: query.entityType?.trim() || undefined
+      entityType: query.entityType?.trim() || undefined,
+      actorId: query.actorId?.trim() || undefined,
+      entityId: query.entityId?.trim() || undefined,
+      from: from && !Number.isNaN(from.getTime()) ? from : undefined,
+      to: to && !Number.isNaN(to.getTime()) ? to : undefined
     });
 
     return { logs };
+  });
+
+  app.get("/admin/audit-logs/export", { preHandler: requireRole("admin") }, async (request, reply) => {
+    const query = request.query as {
+      limit?: string;
+      action?: string;
+      entityType?: string;
+      actorId?: string;
+      entityId?: string;
+      from?: string;
+      to?: string;
+    };
+
+    const from = query.from ? new Date(query.from) : undefined;
+    const to = query.to ? new Date(query.to) : undefined;
+    const logs = await store.listAdminAuditLogs({
+      limit: query.limit ? Number(query.limit) : 500,
+      action: query.action?.trim() || undefined,
+      entityType: query.entityType?.trim() || undefined,
+      actorId: query.actorId?.trim() || undefined,
+      entityId: query.entityId?.trim() || undefined,
+      from: from && !Number.isNaN(from.getTime()) ? from : undefined,
+      to: to && !Number.isNaN(to.getTime()) ? to : undefined
+    });
+
+    const escapeCsv = (value: string | null | undefined) => {
+      const raw = value ?? "";
+      const escaped = raw.replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+
+    const rows = [
+      ["id", "createdAt", "actorId", "actorName", "action", "entityType", "entityId", "metadata"].join(","),
+      ...logs.map((log) =>
+        [
+          escapeCsv(log.id),
+          escapeCsv(log.createdAt),
+          escapeCsv(log.actorId),
+          escapeCsv(log.actorName),
+          escapeCsv(log.action),
+          escapeCsv(log.entityType),
+          escapeCsv(log.entityId),
+          escapeCsv(log.metadata ? JSON.stringify(log.metadata) : "")
+        ].join(",")
+      )
+    ];
+
+    return reply
+      .header("Content-Type", "text/csv; charset=utf-8")
+      .header("Content-Disposition", `attachment; filename="audit-logs-${new Date().toISOString().slice(0, 10)}.csv"`)
+      .send(rows.join("\n"));
   });
 
   app.get("/admin/pricing", { preHandler: requireRole("admin") }, async () => {
@@ -2544,7 +2655,7 @@ export function buildApp() {
     }
 
     return reply.send({
-      token: signToken(user.id),
+      token: await signToken(user.id),
       user
     });
   });
