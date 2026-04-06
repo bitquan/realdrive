@@ -12,6 +12,7 @@ import {
   Lightbulb,
   Megaphone,
   MessageSquare,
+  Map,
   QrCode,
   Route,
   Settings2,
@@ -109,6 +110,14 @@ const sharedItems: ShellNavItem[] = [
     icon: MessageSquare,
     matchPatterns: ["/community"],
     requiresAuth: true
+  },
+  {
+    id: "roadmap",
+    label: "Roadmap",
+    shortLabel: "Roadmap",
+    to: "/roadmap",
+    icon: Map,
+    matchPatterns: ["/roadmap"]
   },
   {
     id: "request-feature",
@@ -553,6 +562,16 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
       title: "Community board",
       description: "Read, post, vote, and moderate proposals inside the same ops language as the rest of the app.",
       mapMode: "ambient",
+      mobileHeaderMode: "minimal"
+    }
+  },
+  {
+    patterns: ["/roadmap"],
+    frame: {
+      eyebrow: "Product",
+      title: "Public roadmap",
+      description: "Review active and next work, then use the same feature and bug intake flows that feed admin triage.",
+      mapMode: "off",
       mobileHeaderMode: "minimal"
     }
   },

@@ -178,11 +178,16 @@ Primary docs:
 
 Checklist:
 
-- [ ] Notification center polish.
-- [ ] Improve shared realtime event visibility and status continuity.
-- [ ] Expand push flows beyond baseline ride events where product value is clear.
-- [ ] Build the public roadmap page in app.
-- [ ] Keep feature request and bug intake tied to existing real workflows.
+- [x] Notification center polish.
+	- Upgraded notification center UX and delivery summaries in [apps/web/src/pages/notification-preferences-page.tsx](../apps/web/src/pages/notification-preferences-page.tsx), with shell framing updates in [apps/web/src/lib/shell.ts](../apps/web/src/lib/shell.ts).
+- [x] Improve shared realtime event visibility and status continuity.
+	- Added live socket connection state and realtime ride-event continuity indicators to [apps/web/src/pages/notification-preferences-page.tsx](../apps/web/src/pages/notification-preferences-page.tsx).
+- [x] Expand push flows beyond baseline ride events where product value is clear.
+	- Added issue-intake confirmation push delivery on report submission in [apps/api/src/app.ts](../apps/api/src/app.ts), so users get non-ride workflow confirmation in notification history.
+- [x] Build the public roadmap page in app.
+	- Exposed public roadmap data in [apps/api/src/app.ts](../apps/api/src/app.ts) and wired public access routing/consumption in [apps/web/src/main.tsx](../apps/web/src/main.tsx), [apps/web/src/lib/api.ts](../apps/web/src/lib/api.ts), and [apps/web/src/pages/roadmap-page.tsx](../apps/web/src/pages/roadmap-page.tsx).
+- [x] Keep feature request and bug intake tied to existing real workflows.
+	- Added direct workflow-safe links to `/request-feature` and `/report-bug` from [apps/web/src/pages/roadmap-page.tsx](../apps/web/src/pages/roadmap-page.tsx) and [apps/web/src/pages/notification-preferences-page.tsx](../apps/web/src/pages/notification-preferences-page.tsx), preserving existing issue intake endpoints.
 
 ## Layer 7 — Quality, QA, And DevOps
 

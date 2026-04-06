@@ -695,6 +695,9 @@ export const api = {
       body: JSON.stringify(input)
     }, token);
   },
+  getPublicRoadmap() {
+    return apiFetch<RoadmapResponse>("/public/roadmap");
+  },
   getRoadmap(token: string) {
     return apiFetch<RoadmapResponse>("/roadmap", undefined, token);
   },

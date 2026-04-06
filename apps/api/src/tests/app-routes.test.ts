@@ -6,6 +6,8 @@ const { mockStore, mockMaps } = vi.hoisted(() => ({
     ensureUserReferralCode: vi.fn(),
     listDriverOffers: vi.fn(),
     listPlatformPricingRules: vi.fn(),
+    getFeatureVoteCount: vi.fn(),
+    hasUserVotedForFeature: vi.fn(),
     getRideById: vi.fn(),
     listIssueReports: vi.fn(),
     updateRideAdmin: vi.fn(),
@@ -82,6 +84,8 @@ describe("app route integration", () => {
         updatedAt: new Date("2026-04-05T12:00:00.000Z").toISOString()
       }
     ]);
+    mockStore.getFeatureVoteCount.mockResolvedValue(0);
+    mockStore.hasUserVotedForFeature.mockResolvedValue(false);
     mockStore.getRideById.mockResolvedValue({
       id: "ride-1",
       riderId: "rider-1",
@@ -200,6 +204,21 @@ describe("app route integration", () => {
       estimatedPlatformDue: 1.43,
       estimatedCustomerTotal: 30.08
     });
+  });
+
+  it("serves public roadmap data without authentication", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/public/roadmap"
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual(
+      expect.objectContaining({
+        features: expect.any(Array),
+        totalVotes: expect.any(Number)
+      })
+    );
   });
 
   it("accepts driver cancellation reasons through the route layer", async () => {

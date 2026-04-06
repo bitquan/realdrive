@@ -262,9 +262,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route
               path="roadmap"
               element={
-                <RequireAuth>
-                  <PageLoader><RoadmapPage /></PageLoader>
-                </RequireAuth>
+                <PageLoader><RoadmapPage /></PageLoader>
               }
             />
             <Route

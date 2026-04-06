@@ -1379,30 +1379,37 @@ export function buildApp() {
   });
 
   // Roadmap endpoints
-  app.get("/roadmap", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
+  async function buildRoadmapResponse(userId?: string | null) {
     const { getRoadmapFeatures } = await import("./data/roadmap-features.js");
-    const features = getRoadmapFeatures(true); // publicOnly=true, hides deferred
-    
+    const features = getRoadmapFeatures(true);
+
     const votes = await Promise.all(
       features.map(async (feature) => ({
         featureId: feature.id,
         count: await store.getFeatureVoteCount(feature.id),
-        userVoted: await store.hasUserVotedForFeature(request.userContext.id, feature.id)
+        userVoted: userId ? await store.hasUserVotedForFeature(userId, feature.id) : false
       }))
     );
-    
-    const voteMap = new Map(votes.map(v => [v.featureId, v]));
-    
-    const featuresWithVotes = features.map(f => ({
-      ...f,
-      voteCount: voteMap.get(f.id)?.count ?? 0,
-      userVoted: voteMap.get(f.id)?.userVoted ?? false
+
+    const voteMap = new Map(votes.map((vote) => [vote.featureId, vote]));
+    const featuresWithVotes = features.map((feature) => ({
+      ...feature,
+      voteCount: voteMap.get(feature.id)?.count ?? 0,
+      userVoted: voteMap.get(feature.id)?.userVoted ?? false
     }));
 
     return {
       features: featuresWithVotes,
-      totalVotes: votes.reduce((sum, v) => sum + v.count, 0)
+      totalVotes: votes.reduce((sum, vote) => sum + vote.count, 0)
     };
+  }
+
+  app.get("/public/roadmap", async () => {
+    return buildRoadmapResponse(null);
+  });
+
+  app.get("/roadmap", { preHandler: requireRole("rider", "driver", "admin") }, async (request) => {
+    return buildRoadmapResponse(request.userContext.id);
   });
 
   app.post(
@@ -1517,6 +1524,15 @@ export function buildApp() {
         source: report.source,
         rideId: report.rideId
       }
+    });
+
+    void sendPushForUser({
+      userId: user.id,
+      rideId: report.rideId,
+      eventKey: "issue_report_received",
+      title: "Report received",
+      body: "Your feature request or bug report is now in the triage queue.",
+      url: "/notifications"
     });
 
     void (async () => {
