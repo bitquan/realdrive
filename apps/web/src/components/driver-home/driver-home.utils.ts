@@ -1,4 +1,5 @@
 import type { DriverDispatchSettings, Ride } from "@shared/contracts";
+import { formatMoney } from "@/lib/utils";
 
 export function getDriverRidePricing(ride: Ride) {
   return {
@@ -46,4 +47,44 @@ export function getDriverOfferCountdown(ride: Ride, now: number) {
   const seconds = totalSeconds % 60;
 
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function formatDriverMoneyCompact(amount: number) {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return "$0";
+  }
+
+  if (amount >= 1_000) {
+    return "$999+";
+  }
+
+  return formatMoney(amount);
+}
+
+export function formatDriverMinutesCompact(minutes: number) {
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return "—";
+  }
+
+  if (minutes >= 100) {
+    return "99+ min";
+  }
+
+  return `${Math.round(minutes)} min`;
+}
+
+export function formatDriverMilesCompact(miles: number) {
+  if (!Number.isFinite(miles) || miles <= 0) {
+    return "—";
+  }
+
+  if (miles >= 100) {
+    return "99+ mi";
+  }
+
+  if (miles >= 10) {
+    return `${Math.round(miles)} mi`;
+  }
+
+  return `${miles.toFixed(1).replace(/\.0$/, "")} mi`;
 }

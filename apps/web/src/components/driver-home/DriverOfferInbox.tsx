@@ -3,7 +3,13 @@ import { DataField, EntityList } from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDriverOfferCountdown, getDriverRidePricing } from "@/components/driver-home/driver-home.utils";
+import {
+  formatDriverMilesCompact,
+  formatDriverMinutesCompact,
+  formatDriverMoneyCompact,
+  getDriverOfferCountdown,
+  getDriverRidePricing
+} from "@/components/driver-home/driver-home.utils";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
 
 interface RideActionMutation {
@@ -36,33 +42,36 @@ export function DriverOfferInbox({
         {offers.map((ride) => {
           const pricing = getDriverRidePricing(ride);
           const countdown = getDriverOfferCountdown(ride, now);
+          const displayPayout = formatDriverMoneyCompact(pricing.subtotal);
+          const displayMiles = formatDriverMilesCompact(ride.estimatedMiles);
+          const displayMinutes = formatDriverMinutesCompact(ride.estimatedMinutes);
 
           return (
-            <div key={ride.id} className="rounded-[1.35rem] border border-slate-700/50 bg-slate-800/55 p-4">
+            <div key={ride.id} className="rounded-[1.35rem] border border-white/10 bg-slate-950/34 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{ride.pickup.address}</p>
-                  <p className="mt-1 truncate text-xs text-slate-500">{ride.dropoff.address}</p>
+                  <p className="mt-1 truncate text-xs text-slate-400">{ride.dropoff.address}</p>
                 </div>
-                <Badge className="border-slate-700/60 bg-slate-900/70 text-slate-200">{countdown ?? "Queued"}</Badge>
+                <Badge className="border-white/10 bg-slate-950/70 text-slate-200">{countdown ?? "Queued"}</Badge>
               </div>
 
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-[1rem] border border-slate-700/40 bg-slate-900/35 p-3">
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-[1rem] border border-white/8 bg-slate-900/28 p-3">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Payout</p>
-                  <p className="mt-2 font-semibold text-white">{formatMoney(pricing.subtotal)}</p>
+                  <p className="mt-2 font-semibold text-white">{displayPayout}</p>
                 </div>
-                <div className="rounded-[1rem] border border-slate-700/40 bg-slate-900/35 p-3">
+                <div className="rounded-[1rem] border border-white/8 bg-slate-900/28 p-3">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Trip size</p>
-                  <p className="mt-2 font-semibold text-white">{ride.estimatedMiles} mi · {ride.estimatedMinutes} min</p>
+                  <p className="mt-2 font-semibold text-white">{displayMiles} · {displayMinutes}</p>
                 </div>
               </div>
 
               <div className="mt-3 flex gap-2">
-                <Button className="flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
+                <Button className="h-11 flex-1" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(ride.id)}>
                   {acceptMutation.isPending ? "Accepting..." : "Accept"}
                 </Button>
-                <Button variant="outline" className="flex-1 border-slate-700/50 bg-slate-800/60 text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
+                <Button variant="outline" className="h-11 flex-1 border-slate-700/50 bg-slate-800/60 text-slate-300 hover:bg-slate-800" disabled={declineMutation.isPending} onClick={() => declineMutation.mutate(ride.id)}>
                   Decline
                 </Button>
               </div>
@@ -71,8 +80,8 @@ export function DriverOfferInbox({
         })}
       </div>
     ) : (
-      <div className="py-6 text-center">
-        <p className="text-sm text-slate-300">{available ? "No offers in the inbox right now." : "Go online to start receiving jobs in the inbox."}</p>
+      <div className="rounded-[1.35rem] border border-dashed border-white/10 bg-slate-950/28 px-4 py-6 text-center">
+        <p className="text-sm text-slate-200">{available ? "No offers in the inbox right now." : "Go online to start receiving jobs in the inbox."}</p>
       </div>
     );
   }

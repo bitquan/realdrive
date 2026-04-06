@@ -322,6 +322,29 @@ export function DriverDashboardPage() {
   const dispatchSummary = formatDriverDispatchSummary(dispatchQuery.data);
   const statusLabel = suspended ? "Blocked" : profileQuery.data?.available ? "Online" : "Offline";
   const hasActiveTrip = activeRides.length > 0;
+  const mobileHomeState = requestedTab === "ride" && hasActiveTrip
+    ? "ride"
+    : offerView === "inbox"
+      ? "inbox"
+      : liveOffer
+        ? "offer"
+        : hasActiveTrip
+          ? "ride"
+          : "idle";
+  const mobileHomeTitle = mobileHomeState === "ride"
+    ? "Active ride"
+    : mobileHomeState === "inbox"
+      ? "Inbox"
+      : mobileHomeState === "offer"
+        ? "Live offer"
+        : "Stand by";
+  const mobileHomeDescription = mobileHomeState === "ride"
+    ? "Trip continuity stays docked on home until you jump back into the live ride route."
+    : mobileHomeState === "inbox"
+      ? "Pending requests stay inside the same map shell instead of breaking the flow."
+      : mobileHomeState === "offer"
+        ? "The current live request owns the sheet until you accept or decline it."
+        : "Stay online and keep the shell open. New requests will land here first.";
 
   function updateDriverHomeTab(tab: "home" | "inbox" | "ride" | "account") {
     const params = new URLSearchParams(searchParams);
@@ -369,7 +392,7 @@ export function DriverDashboardPage() {
                     </div>
                   </div>
 
-                  {liveOffer ? (
+                  {liveOffer && mobileHomeState !== "ride" ? (
                     <div className="mt-2 flex justify-center">
                       <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-slate-950/72 px-4 py-2 shadow-[0_18px_44px_rgba(2,6,23,0.32)] backdrop-blur-2xl">
                         <span className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Offer</span>
@@ -380,16 +403,17 @@ export function DriverDashboardPage() {
                 </div>
 
                 <div className="absolute inset-x-0 bottom-[calc(4.7rem+env(safe-area-inset-bottom))] z-20 px-3">
-                  <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.88),rgba(6,10,18,0.96))] shadow-[0_28px_60px_rgba(2,6,23,0.55)] backdrop-blur-2xl">
+                  <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,18,29,0.86),rgba(6,10,18,0.97))] shadow-[0_30px_80px_rgba(2,6,23,0.62)] backdrop-blur-2xl">
                     <div className="flex justify-center pb-2 pt-3">
                       <div className="h-1 w-10 rounded-full bg-slate-700" />
                     </div>
 
-                    <div className="px-5 pb-4">
-                      <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="max-h-[calc(100dvh-13rem)] overflow-y-auto overscroll-contain px-5 pb-4">
+                      <div className="mb-4 flex items-start justify-between gap-3">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">Driver work surface</p>
-                          <h2 className="mt-1 text-base font-semibold text-white">{offerView === "live" ? "Live" : "Inbox"}</h2>
+                          <h2 className="mt-1 text-base font-semibold text-white">{mobileHomeTitle}</h2>
+                          <p className="mt-1 max-w-[16rem] text-xs leading-5 text-slate-400">{mobileHomeDescription}</p>
                         </div>
                         <Button
                           variant="outline"
@@ -408,7 +432,7 @@ export function DriverDashboardPage() {
                             setOfferView("live");
                             updateDriverHomeTab("home");
                           }}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "live" ? "border border-teal-500/30 bg-teal-500/20 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${offerView === "live" && requestedTab !== "ride" ? "border border-teal-500/30 bg-teal-500/20 text-teal-300" : "text-slate-400 hover:text-slate-200"}`}
                         >
                           Live
                         </button>
@@ -424,21 +448,29 @@ export function DriverDashboardPage() {
                         </button>
                       </div>
 
-                      {offerView === "live" ? (
-                        <DriverLiveOfferCard
-                          offer={liveOffer}
-                          suspended={suspended}
-                          countdown={liveOffer ? getDriverOfferCountdown(liveOffer, now) : null}
-                          acceptMutation={acceptMutation}
-                          declineMutation={declineMutation}
-                          mobile
-                        />
-                      ) : (
+                      {hasActiveTrip && mobileHomeState !== "ride" ? (
+                        <div className="mb-3.5">
+                          <DriverActiveRideCard ride={activeRide} emphasize={requestedTab === "ride" || (!liveOffer && hasActiveTrip)} mobileDocked />
+                        </div>
+                      ) : null}
+
+                      {mobileHomeState === "ride" ? (
+                        <DriverActiveRideCard ride={activeRide} emphasize mobileDocked />
+                      ) : mobileHomeState === "inbox" ? (
                         <DriverOfferInbox
                           offers={offers}
                           suspended={suspended}
                           available={Boolean(profileQuery.data?.available)}
                           now={now}
+                          acceptMutation={acceptMutation}
+                          declineMutation={declineMutation}
+                          mobile
+                        />
+                      ) : (
+                        <DriverLiveOfferCard
+                          offer={liveOffer}
+                          suspended={suspended}
+                          countdown={liveOffer ? getDriverOfferCountdown(liveOffer, now) : null}
                           acceptMutation={acceptMutation}
                           declineMutation={declineMutation}
                           mobile
@@ -459,12 +491,6 @@ export function DriverDashboardPage() {
                 </div>
               </div>
             </div>
-
-            {hasActiveTrip ? (
-              <div className="mt-4 px-1">
-                <DriverActiveRideCard ride={activeRide} emphasize={requestedTab === "ride" || (!liveOffer && hasActiveTrip)} />
-              </div>
-            ) : null}
           </div>
 
           <div className="hidden xl:block">

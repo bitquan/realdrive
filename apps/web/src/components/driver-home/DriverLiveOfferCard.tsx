@@ -4,7 +4,12 @@ import { DataField } from "@/components/layout/ops-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDriverRidePricing } from "@/components/driver-home/driver-home.utils";
+import {
+  formatDriverMilesCompact,
+  formatDriverMinutesCompact,
+  formatDriverMoneyCompact,
+  getDriverRidePricing
+} from "@/components/driver-home/driver-home.utils";
 import { formatMoney, formatPaymentMethod } from "@/lib/utils";
 
 interface RideActionMutation {
@@ -58,41 +63,44 @@ export function DriverLiveOfferCard({
   }
 
   const pricing = getDriverRidePricing(offer);
+  const displayPayout = formatDriverMoneyCompact(pricing.subtotal);
+  const displayEta = formatDriverMinutesCompact(offer.estimatedMinutes);
+  const displayMiles = formatDriverMilesCompact(offer.estimatedMiles);
 
   if (mobile) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
+      <div className="space-y-3.5">
+        <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold text-white">New Request</h3>
-            <p className="mt-1 text-xs text-slate-500">Accepting moves straight into the active trip flow.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-400">Accepting moves straight into the active trip flow.</p>
           </div>
-          <Badge className="border-cyan-500/30 bg-cyan-500/20 text-cyan-300">{countdown ?? "Queued"}</Badge>
+          <Badge className="border-cyan-500/25 bg-cyan-500/14 text-cyan-300">{countdown ?? "Queued"}</Badge>
         </div>
 
-        <div className="rounded-[1.45rem] border border-slate-700/50 bg-slate-800/60 p-4">
-          <div className="mb-4 flex items-center justify-between border-b border-slate-700/50 pb-4">
+        <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/34 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/8 pb-4">
             <div>
-              <div className="mb-1 text-xs text-slate-400">Est. Earnings</div>
-              <div className="text-3xl font-bold text-teal-400">{formatMoney(pricing.subtotal)}</div>
+              <div className="mb-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">Est. Earnings</div>
+              <div className="text-[2rem] font-bold tracking-[-0.03em] text-teal-400">{displayPayout}</div>
             </div>
             <div className="text-right">
-              <div className="mb-1 text-xs text-slate-400">Pickup ETA</div>
-              <div className="text-2xl font-bold text-white">{offer.estimatedMinutes} min</div>
-              <div className="text-xs text-slate-500">{offer.estimatedMiles} mi away</div>
+              <div className="mb-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">Pickup ETA</div>
+              <div className="text-lg font-semibold text-white">{displayEta}</div>
+              <div className="text-xs text-slate-400">{displayMiles} away</div>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             <div className="flex items-start gap-3">
               <div className="mt-1 flex flex-col items-center gap-1">
                 <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
-                <div className="h-6 w-0.5 bg-slate-700" />
+                <div className="h-7 w-0.5 bg-white/10" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="mb-0.5 text-xs font-medium text-cyan-400">Pickup</div>
-                <div className="text-sm font-medium text-white">{offer.pickup.address}</div>
-                <div className="text-xs text-slate-500">{offer.estimatedMiles} mi away</div>
+                <div className="text-sm font-medium leading-5 text-white">{offer.pickup.address}</div>
+                <div className="text-xs text-slate-400">{displayMiles} away</div>
               </div>
             </div>
 
@@ -100,14 +108,14 @@ export function DriverLiveOfferCard({
               <div className="mt-1 h-2.5 w-2.5 rounded-full bg-slate-600" />
               <div className="min-w-0 flex-1">
                 <div className="mb-0.5 text-xs text-slate-400">Dropoff</div>
-                <div className="text-sm font-medium text-white">{offer.dropoff.address}</div>
-                <div className="text-xs text-slate-500">{offer.estimatedMiles} mi • ~{offer.estimatedMinutes} min trip</div>
+                <div className="text-sm font-medium leading-5 text-white">{offer.dropoff.address}</div>
+                <div className="text-xs text-slate-400">{displayMiles} • ~{displayEta}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <Button className="h-14 w-full rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-base font-bold text-white shadow-xl shadow-teal-500/40 hover:from-teal-400 hover:to-cyan-400" disabled={suspended || acceptMutation.isPending} onClick={() => acceptMutation.mutate(offer.id)}>
             {acceptMutation.isPending ? "Accepting..." : "Accept Ride"}
           </Button>
