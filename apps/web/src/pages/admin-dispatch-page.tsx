@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CarFront, CreditCard, ExternalLink, LayoutDashboard, Navigation, Route, Search, TestTubeDiagonal, UserRound, Users } from "lucide-react";
+import { CarFront, ChevronLeft, ChevronRight, CreditCard, ExternalLink, LayoutDashboard, Navigation, Route, Search, TestTubeDiagonal, UserRound, Users } from "lucide-react";
 import type { AdminCreateTestRideInput, DriverAccount, Ride, RideStatus } from "@shared/contracts";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { RideTimeline } from "@/components/ride/ride-timeline";
@@ -128,7 +128,9 @@ function getNextTestRideStep(status: RideStatus) {
 
 function DispatchDetailCard({
   ride,
-  updateRideMutation
+  updateRideMutation,
+  className,
+  contentClassName
 }: {
   ride: Ride | null;
   updateRideMutation: {
@@ -136,10 +138,12 @@ function DispatchDetailCard({
     error: Error | null;
     mutate: (input: { rideId: string; paymentStatus?: "pending" | "collected" | "waived"; status?: RideStatus }) => void;
   };
+  className?: string;
+  contentClassName?: string;
 }) {
   if (!ride) {
     return (
-      <Card className="overflow-hidden">
+      <Card className={`overflow-hidden ${className ?? ""}`}>
         <CardContent className="p-6">
           <EmptyState
             title="No ride selected"
@@ -151,8 +155,8 @@ function DispatchDetailCard({
   }
 
   return (
-    <Card className="overflow-hidden border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.96),rgba(9,12,17,0.95))] shadow-panel backdrop-blur">
-      <CardContent className="space-y-4 p-5">
+    <Card className={`overflow-hidden border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.96),rgba(9,12,17,0.95))] shadow-panel backdrop-blur ${className ?? ""}`}>
+      <CardContent className={`space-y-4 p-5 ${contentClassName ?? ""}`}>
         <div className="flex flex-wrap items-center gap-2">
           <Badge>{formatRideStatus(ride.status)}</Badge>
           <Badge className="bg-ops-surface">{formatPaymentMethod(ride.payment.method)}</Badge>
@@ -164,7 +168,7 @@ function DispatchDetailCard({
 
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Selected ride</p>
-          <h2 className="mt-2 text-[2rem] font-extrabold tracking-[-0.04em] text-ops-text">{ride.rider.name}</h2>
+          <h2 className="mt-2 break-words text-[1.5rem] font-extrabold tracking-[-0.04em] text-ops-text sm:text-[1.7rem] xl:text-[2rem]">{ride.rider.name}</h2>
           <p className="mt-2 text-sm text-ops-muted">
             {formatDateTime(ride.scheduledFor ?? ride.requestedAt)} · {ride.estimatedMiles} miles · {ride.estimatedMinutes} minutes
           </p>
@@ -426,6 +430,8 @@ export function AdminDispatchPage() {
   const [workspaceTab, setWorkspaceTab] = useState<DispatchWorkspaceTab>("queue");
   const [bucket, setBucket] = useState<DispatchQueueBucket>("active");
   const [priorityMode, setPriorityMode] = useState<DispatchPriorityMode>("dispatch_balance");
+  const [queuePanelCollapsed, setQueuePanelCollapsed] = useState(false);
+  const [detailPanelCollapsed, setDetailPanelCollapsed] = useState(false);
   const [selectedRideId, setSelectedRideId] = useState("");
   const [selectedTestRideId, setSelectedTestRideId] = useState("");
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
@@ -517,6 +523,13 @@ export function AdminDispatchPage() {
   const selectedRide = [...prioritizedActiveRides, ...prioritizedScheduledRides].find((ride) => ride.id === selectedRideId) ?? queueRides[0] ?? alternateQueue[0] ?? null;
   const selectedTestRide = testRides.find((ride) => ride.id === selectedTestRideId) ?? testRides[0] ?? null;
   const scheduledOpsRows = prioritizedScheduledRides.slice(0, 6).map((ride) => ({ ride, meta: getScheduledRideOpsMeta(ride) }));
+  const mapShellGridClass = queuePanelCollapsed
+    ? detailPanelCollapsed
+      ? "grid h-full grid-cols-[0_minmax(0,1fr)_0] gap-4"
+      : "grid h-full grid-cols-[0_minmax(0,1fr)_340px] gap-4 xl:grid-cols-[0_minmax(0,1fr)_380px]"
+    : detailPanelCollapsed
+      ? "grid h-full grid-cols-[300px_minmax(0,1fr)_0] gap-4 xl:grid-cols-[320px_minmax(0,1fr)_0]"
+      : "grid h-full grid-cols-[300px_minmax(0,1fr)_340px] gap-4 xl:grid-cols-[320px_minmax(0,1fr)_380px]";
 
   useEffect(() => {
     if (selectedTestRide?.publicTrackingToken) {
@@ -556,7 +569,7 @@ export function AdminDispatchPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <SurfaceHeader
         eyebrow="Dispatch"
         title="Ride-first admin dispatch"
@@ -577,7 +590,7 @@ export function AdminDispatchPage() {
         }
       />
 
-      <MetricStrip>
+      <MetricStrip className="xl:grid-cols-5">
         <MetricCard label="Active rides" value={activeRides.length} meta="Requested through in-progress rides" icon={Route} />
         <MetricCard label="Scheduled rides" value={scheduledRides.length} meta="Future dispatch holds" icon={Navigation} tone="primary" />
         <MetricCard label="Awaiting collection" value={ridesAwaitingCollection} meta="Dispatch rides not marked collected yet" icon={CreditCard} tone="warning" />
@@ -644,48 +657,48 @@ export function AdminDispatchPage() {
       </div>
 
       {workspaceTab === "queue" ? (
-        <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <PanelSection title="Ride queue" description="Filter by rider, driver, ride status, payment method, and test labels without leaving the live dispatch view." contentClassName="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button variant={bucket === "active" ? "default" : "outline"} onClick={() => setBucket("active")}>
-                Active ({filteredActiveRides.length})
-              </Button>
-              <Button variant={bucket === "scheduled" ? "default" : "outline"} onClick={() => setBucket("scheduled")}>
-                Scheduled ({filteredScheduledRides.length})
-              </Button>
-            </div>
+        <>
+          <div className="space-y-5 lg:hidden">
+            <PanelSection title="Ride queue" description="Filter by rider, driver, ride status, payment method, and test labels without leaving the live dispatch view." contentClassName="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Button variant={bucket === "active" ? "default" : "outline"} onClick={() => setBucket("active")}>
+                  Active ({filteredActiveRides.length})
+                </Button>
+                <Button variant={bucket === "scheduled" ? "default" : "outline"} onClick={() => setBucket("scheduled")}>
+                  Scheduled ({filteredScheduledRides.length})
+                </Button>
+              </div>
 
-            <EntityList className="max-h-[760px] overflow-y-auto pr-1">
-              {queueRides.length ? (
-                queueRides.map((ride) => (
-                  <EntityListItem key={ride.id} active={ride.id === selectedRide?.id} onClick={() => setSelectedRideId(ride.id)}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-ops-text">{ride.rider.name}</p>
-                        <p className="truncate text-sm text-ops-muted">{ride.driver?.name ?? "Awaiting assignment"}</p>
+              <EntityList className="max-h-[420px] overflow-y-auto pr-1">
+                {queueRides.length ? (
+                  queueRides.map((ride) => (
+                    <EntityListItem key={ride.id} active={ride.id === selectedRide?.id} onClick={() => setSelectedRideId(ride.id)}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-ops-text">{ride.rider.name}</p>
+                          <p className="truncate text-sm text-ops-muted">{ride.driver?.name ?? "Awaiting assignment"}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {ride.test.isTest ? <Badge className="bg-amber-500/20 text-amber-200">Test</Badge> : null}
+                          <Badge>{formatRideStatus(ride.status)}</Badge>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {ride.test.isTest ? <Badge className="bg-amber-500/20 text-amber-200">Test</Badge> : null}
-                        <Badge>{formatRideStatus(ride.status)}</Badge>
+                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-ops-text">{ride.pickup.address}</p>
+                      <p className="mt-1 line-clamp-2 text-sm leading-6 text-ops-muted">{ride.dropoff.address}</p>
+                      <p className="mt-2 text-sm text-ops-muted">{getDispatchPriorityMeta(ride, priorityMode).detail}</p>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
+                        <span>{formatPaymentMethod(ride.payment.method)}</span>
+                        <span>{getDispatchPriorityMeta(ride, priorityMode).label}</span>
                       </div>
-                    </div>
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-ops-text">{ride.pickup.address}</p>
-                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-ops-muted">{ride.dropoff.address}</p>
-                    <p className="mt-2 text-sm text-ops-muted">{getDispatchPriorityMeta(ride, priorityMode).detail}</p>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
-                      <span>{formatPaymentMethod(ride.payment.method)}</span>
-                      <span>{getDispatchPriorityMeta(ride, priorityMode).label}</span>
-                    </div>
-                    {ride.test.label ? <p className="mt-2 text-xs text-amber-200">{ride.test.label}</p> : null}
-                  </EntityListItem>
-                ))
-              ) : (
-                <EmptyState title="No queue matches" description="No rides match this dispatch queue right now." />
-              )}
-            </EntityList>
-          </PanelSection>
+                      {ride.test.label ? <p className="mt-2 text-xs text-amber-200">{ride.test.label}</p> : null}
+                    </EntityListItem>
+                  ))
+                ) : (
+                  <EmptyState title="No queue matches" description="No rides match this dispatch queue right now." />
+                )}
+              </EntityList>
+            </PanelSection>
 
-          <div className="space-y-6">
             <PanelSection title="Scheduled ride ops" description="The next future rides releasing into dispatch are grouped here for proactive handling.">
               <EntityList>
                 {scheduledOpsRows.length ? (
@@ -713,27 +726,162 @@ export function AdminDispatchPage() {
               </EntityList>
             </PanelSection>
 
-            <div className="xl:hidden">
-              <DispatchDetailCard ride={selectedRide} updateRideMutation={updateRideMutation} />
-            </div>
+            <DispatchDetailCard ride={selectedRide} updateRideMutation={updateRideMutation} />
 
-            <div className="relative">
-              {selectedRide ? (
-                <DeferredLiveMap ride={selectedRide} title="Live route map" height={860} meta="Ride-first dispatch uses the selected ride's pickup, dropoff, and latest driver ping when the live workflow has already sent one." />
-              ) : (
-                <Card className="overflow-hidden">
-                  <CardContent className="flex min-h-[860px] items-center justify-center p-8 text-center">
-                    <EmptyState title="No ride in focus" description="Select a ride from the queue to load the live route context here." className="max-w-md" />
-                  </CardContent>
-                </Card>
-              )}
+            {selectedRide ? (
+              <DeferredLiveMap ride={selectedRide} title="Live route map" height={520} meta="Ride-first dispatch uses the selected ride's pickup, dropoff, and latest driver ping when the live workflow has already sent one." />
+            ) : (
+              <Card className="overflow-hidden">
+                <CardContent className="flex min-h-[520px] items-center justify-center p-8 text-center">
+                  <EmptyState title="No ride in focus" description="Select a ride from the queue to load the live route context here." className="max-w-md" />
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-              <div className="hidden xl:absolute xl:left-6 xl:top-6 xl:z-10 xl:block xl:w-[440px]">
-                <DispatchDetailCard ride={selectedRide} updateRideMutation={updateRideMutation} />
+          <div className="relative hidden overflow-hidden rounded-[1.7rem] border border-ops-border-soft/95 lg:block">
+            {selectedRide ? (
+              <DeferredLiveMap
+                ride={selectedRide}
+                title="Live route map"
+                height={760}
+                meta="Map is the dispatch shell. Queue, schedule, and ride detail overlays stay anchored over this live route context."
+              />
+            ) : (
+              <Card className="overflow-hidden border-0">
+                <CardContent className="flex min-h-[760px] items-center justify-center p-8 text-center">
+                  <EmptyState title="No ride in focus" description="Select a ride from the queue to load the live route context here." className="max-w-md" />
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="pointer-events-none absolute inset-0 p-4 xl:p-5">
+              <div className={mapShellGridClass}>
+                <div className={queuePanelCollapsed ? "pointer-events-none h-full overflow-hidden rounded-[1.4rem] border border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(10,14,20,0.92),rgba(8,11,16,0.92))] p-0 opacity-0" : "pointer-events-auto h-full overflow-hidden rounded-[1.4rem] border border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(10,14,20,0.92),rgba(8,11,16,0.92))] p-4 backdrop-blur"}>
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    <Button variant={bucket === "active" ? "default" : "outline"} onClick={() => setBucket("active")}>
+                      Active ({filteredActiveRides.length})
+                    </Button>
+                    <Button variant={bucket === "scheduled" ? "default" : "outline"} onClick={() => setBucket("scheduled")}>
+                      Scheduled ({filteredScheduledRides.length})
+                    </Button>
+                  </div>
+
+                  <EntityList className="h-[calc(100%-3.25rem)] overflow-y-auto pr-1">
+                    {queueRides.length ? (
+                      queueRides.map((ride) => (
+                        <EntityListItem key={ride.id} active={ride.id === selectedRide?.id} onClick={() => setSelectedRideId(ride.id)}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-ops-text">{ride.rider.name}</p>
+                              <p className="truncate text-sm text-ops-muted">{ride.driver?.name ?? "Awaiting assignment"}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {ride.test.isTest ? <Badge className="bg-amber-500/20 text-amber-200">Test</Badge> : null}
+                              <Badge>{formatRideStatus(ride.status)}</Badge>
+                            </div>
+                          </div>
+                          <p className="mt-3 line-clamp-2 text-sm leading-6 text-ops-text">{ride.pickup.address}</p>
+                          <p className="mt-1 line-clamp-2 text-sm leading-6 text-ops-muted">{ride.dropoff.address}</p>
+                          <p className="mt-2 text-sm text-ops-muted">{getDispatchPriorityMeta(ride, priorityMode).detail}</p>
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-[0.18em] text-ops-muted">
+                            <span>{formatPaymentMethod(ride.payment.method)}</span>
+                            <span>{getDispatchPriorityMeta(ride, priorityMode).label}</span>
+                          </div>
+                          {ride.test.label ? <p className="mt-2 text-xs text-amber-200">{ride.test.label}</p> : null}
+                        </EntityListItem>
+                      ))
+                    ) : (
+                      <EmptyState title="No queue matches" description="No rides match this dispatch queue right now." />
+                    )}
+                  </EntityList>
+                </div>
+
+                <div className="pointer-events-none relative">
+                  <div className="pointer-events-auto absolute left-0 top-0 z-10 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      aria-label={queuePanelCollapsed ? "Show queue" : "Hide queue"}
+                      className="h-10 rounded-2xl border-ops-border-soft bg-[linear-gradient(180deg,rgba(10,14,20,0.92),rgba(8,11,16,0.92))] px-2.5 xl:px-3"
+                      onClick={() => setQueuePanelCollapsed((value) => !value)}
+                    >
+                      {queuePanelCollapsed ? (
+                        <>
+                          <ChevronRight className="h-4 w-4 xl:mr-1.5" />
+                          <span className="hidden xl:inline">Show queue</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronLeft className="h-4 w-4 xl:mr-1.5" />
+                          <span className="hidden xl:inline">Hide queue</span>
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      aria-label={detailPanelCollapsed ? "Show details" : "Hide details"}
+                      className="h-10 rounded-2xl border-ops-border-soft bg-[linear-gradient(180deg,rgba(10,14,20,0.92),rgba(8,11,16,0.92))] px-2.5 xl:px-3"
+                      onClick={() => setDetailPanelCollapsed((value) => !value)}
+                    >
+                      {detailPanelCollapsed ? (
+                        <>
+                          <ChevronLeft className="h-4 w-4 xl:mr-1.5" />
+                          <span className="hidden xl:inline">Show details</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronRight className="h-4 w-4 xl:mr-1.5" />
+                          <span className="hidden xl:inline">Hide details</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className={detailPanelCollapsed ? "pointer-events-none grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 opacity-0" : "pointer-events-auto grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3"}>
+                  <div className="max-h-[220px] overflow-y-auto rounded-[1.4rem] border border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(10,14,20,0.94),rgba(8,11,16,0.94))] p-4 backdrop-blur">
+                    <p className="text-sm font-semibold text-ops-text">Scheduled ride ops</p>
+                    <p className="mt-1 text-xs text-ops-muted">Next future rides releasing into dispatch.</p>
+                    <EntityList className="mt-3">
+                      {scheduledOpsRows.length ? (
+                        scheduledOpsRows.map(({ ride, meta }) => (
+                          <button
+                            key={ride.id}
+                            type="button"
+                            onClick={() => {
+                              setBucket("scheduled");
+                              setSelectedRideId(ride.id);
+                            }}
+                            className="w-full rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-surface/72 p-3 text-left transition hover:border-ops-primary/35"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="font-semibold text-ops-text">{ride.rider.name}</p>
+                              <Badge>{meta.label}</Badge>
+                            </div>
+                            <p className="mt-2 text-xs text-ops-muted">{meta.detail}</p>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="rounded-[1.2rem] border border-dashed border-ops-border p-4 text-sm text-ops-muted">No scheduled rides are waiting right now.</div>
+                      )}
+                    </EntityList>
+                  </div>
+
+                  <div className="relative min-h-0 overflow-y-auto overscroll-contain rounded-[1.4rem] pr-1">
+                    <DispatchDetailCard
+                      ride={selectedRide}
+                      updateRideMutation={updateRideMutation}
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[rgba(9,12,17,0.92)] to-transparent" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[390px_minmax(0,1fr)]">
           <div className="space-y-6">
