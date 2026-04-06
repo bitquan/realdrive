@@ -28,7 +28,7 @@ export function MockDriverTripPage() {
   return (
     <DriverMockMapShell>
         <div className="pointer-events-none absolute inset-0 z-0">
-          <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+          <svg className="absolute inset-0 h-full w-full" aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
               <linearGradient id="mock-trip-route" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="rgb(34, 211, 238)" />
@@ -50,7 +50,7 @@ export function MockDriverTripPage() {
             </defs>
 
             <path
-              d="M 50% 50% L 52% 46% L 54% 42% L 57% 38% L 60% 34% L 63% 30% L 65% 28%"
+              d="M 50 50 L 52 46 L 54 42 L 57 38 L 60 34 L 63 30 L 65 28"
               fill="none"
               stroke="url(#mock-trip-route)"
               strokeWidth="6"
@@ -59,7 +59,7 @@ export function MockDriverTripPage() {
               filter="url(#mock-trip-glow)"
             />
             <path
-              d="M 50% 50% L 52% 46% L 54% 42% L 57% 38% L 60% 34% L 63% 30% L 65% 28%"
+              d="M 50 50 L 52 46 L 54 42 L 57 38 L 60 34 L 63 30 L 65 28"
               fill="none"
               stroke="rgb(34, 211, 238)"
               strokeWidth="6"
@@ -69,7 +69,7 @@ export function MockDriverTripPage() {
               className="animate-pulse"
             />
             <path
-              d="M 65% 28% L 67% 25% L 69% 22% L 72% 20% L 75% 18%"
+              d="M 65 28 L 67 25 L 69 22 L 72 20 L 75 18"
               fill="none"
               stroke="url(#mock-trip-future)"
               strokeWidth="4"
