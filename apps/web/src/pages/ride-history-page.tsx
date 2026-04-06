@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarClock, CarFront, Clock3, Receipt, Route, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ListRowLink, MetricCard, MetricStrip, PanelSection, SurfaceHeader } from "@/components/layout/ops-layout";
+import { RiderMapShell } from "@/components/rider-home/rider-map-shell";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/utils";
@@ -29,10 +30,22 @@ export function RideHistoryPage() {
   const activeRides = rides.filter((ride) => ["requested", "scheduled", "offered", "accepted", "en_route", "arrived", "in_progress"].includes(ride.status));
   const pastRides = rides.filter((ride) => !activeRides.includes(ride));
   const nextRide = activeRides[0] ?? rides[0] ?? null;
+  const mapRide = nextRide;
   const hasRides = rides.length > 0;
 
   return (
     <div className="space-y-6">
+      <RiderMapShell
+        mapRide={mapRide}
+        nextRide={nextRide}
+        recentRides={rides}
+        activeCount={activeCount}
+        completedCount={completedCount}
+        totalSpend={totalSpend}
+        hasRides={hasRides}
+      />
+
+      <div className="hidden md:block space-y-6">
       <SurfaceHeader
         eyebrow="Rider queue"
         title="Open every trip from one rider-side home"
@@ -176,6 +189,7 @@ export function RideHistoryPage() {
         </div>
       </div>
       ) : null}
+      </div>
     </div>
   );
 }
