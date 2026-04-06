@@ -3,6 +3,10 @@
  * 
  * Source of truth for features displayed in the public roadmap page.
  * Maps to: docs/13-roadmap-baseline-25-features.md
+ *
+ * Release hygiene:
+ * - Move shipped items to phase: "completed" in the same PR that ships them.
+ * - Keep public endpoint visibility limited to now/next/completed.
  */
 
 export type RoadmapPhase = "now" | "next" | "completed" | "later" | "deferred";
