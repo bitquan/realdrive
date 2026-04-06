@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.OPS_TIMEOUT_MS ?? "10000", 10);
+const DEFAULT_TIMEOUT_MS = parseIntegerEnv(process.env.OPS_TIMEOUT_MS, 10000);
 const CREATE_ISSUE_ON_FAILURE = (process.env.OPS_CREATE_ISSUE_ON_FAILURE ?? "true").toLowerCase() === "true";
-const MAX_LATENCY_MS = Number.parseInt(process.env.OPS_MAX_LATENCY_MS ?? "0", 10);
+const MAX_LATENCY_MS = parseIntegerEnv(process.env.OPS_MAX_LATENCY_MS, 0);
 const endpointList = parseEndpointList(process.env.OPS_HEALTH_ENDPOINTS ?? "");
 
 if (endpointList.length === 0) {
@@ -79,6 +79,11 @@ function parseEndpointList(raw) {
     .split(",")
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
+}
+
+function parseIntegerEnv(value, fallback) {
+  const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 async function maybeCreateIncidentIssue(summary) {
