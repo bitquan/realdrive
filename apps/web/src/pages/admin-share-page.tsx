@@ -238,8 +238,8 @@ function isWithinDays(isoDate: string | null, days: number) {
 }
 
 function buildReferralCodeStats(
-  leads: Array<{ referredByCode: string | null }>,
-  rides: Array<{ referredByCode: string | null; status: string }>
+  leads: Array<{ referredByCode?: string | null }>,
+  rides: Array<{ referredByCode?: string | null; status: string }>
 ) {
   const stats = new Map<string, { code: string; leads: number; rides: number; completedRides: number }>();
 
