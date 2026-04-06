@@ -162,7 +162,8 @@ Primary docs:
 
 Checklist:
 
-- [ ] Expand Playwright from screenshots into interactive core journeys.
+- [x] Expand Playwright from screenshots into interactive core journeys.
+	- First checkpoint completed with the mobile driver continuity flow in [apps/web/tests/playwright/driver-mobile-flow.spec.ts](../apps/web/tests/playwright/driver-mobile-flow.spec.ts).
 - [ ] Expand frontend component coverage beyond baseline tests.
 - [ ] Add backend integration coverage for protected routes and pricing logic.
 - [ ] Harden CI/CD with required checks, release gates, and promotion rules.
