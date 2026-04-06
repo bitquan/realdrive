@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Ride } from "@shared/contracts";
-import Map, { Marker } from "react-map-gl/mapbox";
-import { MapPinned, Navigation } from "lucide-react";
+import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
+import { LocateFixed, MapPinned, Navigation } from "lucide-react";
 import { DataField } from "@/components/layout/ops-layout";
 import { DeferredLiveMap } from "@/components/maps/deferred-live-map";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ export function DriverMapSurface({
   mobileFitPaddingBottom
 }: DriverMapSurfaceProps) {
   const [idleCenter, setIdleCenter] = useState(DEFAULT_IDLE_CENTER);
+  const idleMapRef = useRef<MapRef | null>(null);
   const mobileShellClass = "relative min-h-[calc(100dvh-10.5rem)] overflow-hidden rounded-[2.25rem] bg-slate-950 shadow-[0_32px_100px_rgba(2,6,23,0.58)] ring-1 ring-white/10";
 
   useEffect(() => {
@@ -56,6 +57,18 @@ export function DriverMapSurface({
       }
     );
   }, [mobileOverlayMode, ride]);
+
+  useEffect(() => {
+    if (ride || !mobileOverlayMode) {
+      return;
+    }
+
+    idleMapRef.current?.flyTo({
+      center: [idleCenter.longitude, idleCenter.latitude],
+      zoom: idleCenter.zoom,
+      duration: 700
+    });
+  }, [idleCenter, mobileOverlayMode, ride]);
 
   if (ride) {
     return (
@@ -90,10 +103,8 @@ export function DriverMapSurface({
       return (
         <div className={mobileShellClass}>
           <Map
+            ref={idleMapRef}
             initialViewState={idleCenter}
-            longitude={idleCenter.longitude}
-            latitude={idleCenter.latitude}
-            zoom={idleCenter.zoom}
             style={{ width: "100%", height: 760 }}
             mapStyle="mapbox://styles/mapbox/dark-v11"
             mapboxAccessToken={MAPBOX_TOKEN}
@@ -109,6 +120,21 @@ export function DriverMapSurface({
               </div>
             </Marker>
           </Map>
+
+          <button
+            type="button"
+            className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-950/78 text-white shadow-[0_12px_30px_rgba(2,6,23,0.34)] backdrop-blur-xl transition hover:bg-slate-900"
+            onClick={() => {
+              idleMapRef.current?.flyTo({
+                center: [idleCenter.longitude, idleCenter.latitude],
+                zoom: idleCenter.zoom,
+                duration: 700
+              });
+            }}
+            aria-label="Recenter map"
+          >
+            <LocateFixed className="h-4 w-4 text-teal-300" />
+          </button>
 
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(56,189,248,0.06),transparent_20%),radial-gradient(circle_at_78%_74%,rgba(45,212,191,0.08),transparent_24%)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-slate-950/70 via-slate-950/20 to-transparent" />

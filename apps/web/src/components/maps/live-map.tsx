@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/mapbox";
-import { MapPin, Navigation } from "lucide-react";
+import { LocateFixed, MapPin, Navigation } from "lucide-react";
 import type { Ride } from "@shared/contracts";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,6 +97,12 @@ function getBoundsFromCoordinates(coordinates: Coordinate[]) {
   ] as [[number, number], [number, number]];
 }
 
+function getFitPadding(surfaceChrome: "card" | "bare", fitPaddingBottom?: number) {
+  return surfaceChrome === "bare"
+    ? { top: 120, right: 28, bottom: fitPaddingBottom ?? 420, left: 28 }
+    : { top: 48, right: 48, bottom: 48, left: 48 };
+}
+
 export function LiveMap({
   ride,
   title = "Live trip map",
@@ -158,6 +164,7 @@ export function LiveMap({
 
   const primaryRoute = roadSegments.primary?.coordinates ?? routeSegments.primary;
   const secondaryRoute = roadSegments.secondary?.coordinates ?? routeSegments.secondary;
+  const rideViewportKey = `${ride.id}:${ride.status}`;
 
   const fitCoordinates = useMemo(() => {
     const all = [
@@ -173,7 +180,7 @@ export function LiveMap({
     return unique;
   }, [primaryRoute, routeSegments.points, secondaryRoute]);
 
-  useEffect(() => {
+  const fitMapToRoute = useCallback(() => {
     const map = mapRef.current;
     const bounds = getBoundsFromCoordinates(fitCoordinates);
     if (!map || !bounds) {
@@ -181,13 +188,15 @@ export function LiveMap({
     }
 
     map.fitBounds(bounds, {
-      padding: surfaceChrome === "bare"
-        ? { top: 120, right: 28, bottom: fitPaddingBottom ?? 420, left: 28 }
-        : { top: 48, right: 48, bottom: 48, left: 48 },
-      duration: 0,
+      padding: getFitPadding(surfaceChrome, fitPaddingBottom),
+      duration: 500,
       maxZoom: 14
     });
   }, [fitCoordinates, fitPaddingBottom, surfaceChrome]);
+
+  useEffect(() => {
+    fitMapToRoute();
+  }, [fitMapToRoute, rideViewportKey]);
 
   const renderFallbackMap = () => {
     if (surfaceChrome === "bare") {
@@ -277,7 +286,7 @@ export function LiveMap({
   };
 
   const renderMapCanvas = () => (
-    <div className={surfaceChrome === "bare" ? "h-full overflow-hidden" : "overflow-hidden rounded-[1.9rem]"}>
+    <div className={surfaceChrome === "bare" ? "relative h-full overflow-hidden" : "relative overflow-hidden rounded-[1.9rem]"}>
       <Map
         ref={mapRef}
         initialViewState={{
@@ -369,6 +378,15 @@ export function LiveMap({
           </Marker>
         ) : null}
       </Map>
+
+      <button
+        type="button"
+        className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-950/78 text-white shadow-[0_12px_30px_rgba(2,6,23,0.34)] backdrop-blur-xl transition hover:bg-slate-900"
+        onClick={fitMapToRoute}
+        aria-label="Recenter map"
+      >
+        <LocateFixed className="h-4 w-4 text-teal-300" />
+      </button>
     </div>
   );
 
