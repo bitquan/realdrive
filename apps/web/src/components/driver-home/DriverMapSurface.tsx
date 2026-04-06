@@ -20,6 +20,8 @@ export function DriverMapSurface({
   vehicleLabel,
   mobileOverlayMode = false
 }: DriverMapSurfaceProps) {
+  const mobileShellClass = "relative min-h-[calc(100dvh-10.5rem)] overflow-hidden rounded-[2.25rem] bg-slate-950 shadow-[0_32px_100px_rgba(2,6,23,0.58)] ring-1 ring-white/10";
+
   if (ride) {
     return (
       <div className="relative">
@@ -27,14 +29,21 @@ export function DriverMapSurface({
           <Badge className="border-ops-border-soft bg-[#08101a]/90 text-ops-text">{statusLabel}</Badge>
           <Badge className="border-ops-border-soft bg-[#08101a]/90 text-ops-text">{dispatchSummary}</Badge>
         </div>
-        <div className={mobileOverlayMode ? "overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 shadow-[0_36px_120px_rgba(2,6,23,0.55)]" : undefined}>
+        <div className={mobileOverlayMode ? mobileShellClass : undefined}>
           <DeferredLiveMap
             ride={ride}
             title={ride.status === "offered" ? "Live dispatch map" : "Driver route map"}
-            height={mobileOverlayMode ? 680 : 520}
+            height={mobileOverlayMode ? 760 : 520}
             meta={ride.status === "offered" ? "Offers and active trips stay attached to a live map-first work surface." : "Pickup, dropoff, and route progress stay visible while you work."}
             surfaceChrome={mobileOverlayMode ? "bare" : "card"}
           />
+          {mobileOverlayMode ? (
+            <>
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(56,189,248,0.06),transparent_20%),radial-gradient(circle_at_78%_74%,rgba(45,212,191,0.08),transparent_24%)]" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-slate-950/70 via-slate-950/20 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-slate-950 via-slate-950/82 to-transparent" />
+            </>
+          ) : null}
         </div>
       </div>
     );
@@ -42,7 +51,7 @@ export function DriverMapSurface({
 
   if (mobileOverlayMode) {
     return (
-      <div className="relative min-h-[680px] overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 shadow-[0_36px_120px_rgba(2,6,23,0.55)]">
+      <div className={mobileShellClass}>
         <div className="absolute inset-0 bg-slate-900" />
         <svg className="absolute inset-0 h-full w-full opacity-30" aria-hidden="true">
           <defs>
@@ -79,8 +88,8 @@ export function DriverMapSurface({
 
         <div className="absolute left-[29%] top-[19%] h-64 w-64 rounded-full bg-cyan-500/5 blur-3xl" />
         <div className="absolute bottom-[18%] right-[24%] h-80 w-80 rounded-full bg-teal-500/5 blur-3xl" />
-        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-slate-950/30 via-transparent to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-slate-950/55 via-slate-950/10 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-slate-950/72 via-slate-950/20 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-[46%] bg-gradient-to-t from-slate-950 via-slate-950/78 to-transparent" />
       </div>
     );
   }

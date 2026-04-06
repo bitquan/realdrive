@@ -16,7 +16,13 @@ function MapPlaceholder({
   surfaceChrome?: "card" | "bare";
 }) {
   if (surfaceChrome === "bare") {
-    return <div className="animate-pulse rounded-[1.9rem] border border-ops-border-soft bg-ops-panel/80" style={{ height }} />;
+    return (
+      <div className="relative overflow-hidden bg-[#050815]" style={{ height }}>
+        <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle_at_20%_18%,rgba(45,212,191,0.08),transparent_18%),radial-gradient(circle_at_82%_26%,rgba(56,189,248,0.08),transparent_20%),linear-gradient(180deg,rgba(15,23,42,0.84),rgba(2,6,23,0.96))]" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-slate-950/70 via-slate-950/25 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent" />
+      </div>
+    );
   }
 
   return (
