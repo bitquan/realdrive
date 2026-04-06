@@ -526,6 +526,17 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     }
   },
   {
+    patterns: ["/rider/login"],
+    frame: {
+      eyebrow: "Rider",
+      title: "Rider access",
+      description: "Returning riders can sign in with a phone code while guest booking stays available on the public home page.",
+      mapMode: "off",
+      mobileHeaderMode: "minimal",
+      actions: [{ label: "Book ride", to: "/", icon: CarFront, variant: "primary" }]
+    }
+  },
+  {
     patterns: ["/rider/rides"],
     frame: {
       eyebrow: "Rider",

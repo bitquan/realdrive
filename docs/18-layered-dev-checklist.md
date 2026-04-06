@@ -115,6 +115,8 @@ Checklist:
 	- Added status-specific trust/support messaging and timeline context in [apps/web/src/pages/ride-details-page.tsx](../apps/web/src/pages/ride-details-page.tsx) and [apps/web/src/pages/public-track-page.tsx](../apps/web/src/pages/public-track-page.tsx).
 - [x] Keep guest rider flow as the primary acquisition path while improving conversion quality.
 	- Reinforced no-login booking path and conversion-support messaging in [apps/web/src/pages/home-page.tsx](../apps/web/src/pages/home-page.tsx) while preserving rider lead/share conversion flow.
+- [~] Add a clearer returning-rider sign-in entry and rider-side trip queue refresh.
+	- In progress with a new rider login route, shared auth-page shell, and refreshed rider queue in [apps/web/src/pages/rider-login-page.tsx](../apps/web/src/pages/rider-login-page.tsx), [apps/web/src/components/auth/auth-page-shell.tsx](../apps/web/src/components/auth/auth-page-shell.tsx), and [apps/web/src/pages/ride-history-page.tsx](../apps/web/src/pages/ride-history-page.tsx).
 
 ## Layer 4 — Driver Layer
 

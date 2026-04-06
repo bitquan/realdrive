@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { LayoutDashboard, Settings2, ShieldCheck, Users } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { AuthPageShell } from "@/components/auth/auth-page-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormActions, FormField, FormLayout } from "@/components/ui/form-layout";
@@ -51,10 +53,36 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg">
+    <AuthPageShell
+      eyebrow="Admin access"
+      title="Admin sign in"
+      description="Use the operations account created during setup or accepted from an admin invite to manage dispatch, drivers, dues, pricing, and reports from one control layer."
+      highlights={[
+        {
+          title: "Dispatch control",
+          description: "Open the real dispatch queue, rider live state, and release timing from the same admin surface.",
+          icon: LayoutDashboard
+        },
+        {
+          title: "Secure ops access",
+          description: "Admin entry stays tied to the real setup and invite system already in production.",
+          icon: ShieldCheck
+        },
+        {
+          title: "Driver governance",
+          description: "Review team readiness, approvals, and dues without leaving the protected admin workspace.",
+          icon: Users
+        },
+        {
+          title: "Pricing and config",
+          description: "Manage pricing, regions, API keys, and share tools from the same sign-in system.",
+          icon: Settings2
+        }
+      ]}
+    >
       <Card>
         <CardHeader>
-          <CardTitle>Admin sign-in</CardTitle>
+          <CardTitle>Access admin operations</CardTitle>
           <CardDescription>Use the admin account you created during the one-time setup or from an admin invite.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -95,6 +123,6 @@ export function AdminLoginPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </AuthPageShell>
   );
 }

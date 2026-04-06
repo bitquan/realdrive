@@ -15,6 +15,7 @@ const AdsVisitPage = lazy(() => import("@/pages/ads-visit-page").then((module) =
 const TabletAdLoginPage = lazy(() => import("@/pages/tablet-ad-login-page").then((module) => ({ default: module.TabletAdLoginPage })));
 const TabletAdKioskPage = lazy(() => import("@/pages/tablet-ad-kiosk-page").then((module) => ({ default: module.TabletAdKioskPage })));
 const PublicTrackPage = lazy(() => import("@/pages/public-track-page").then((module) => ({ default: module.PublicTrackPage })));
+const RiderLoginPage = lazy(() => import("@/pages/rider-login-page").then((module) => ({ default: module.RiderLoginPage })));
 const RideHistoryPage = lazy(() => import("@/pages/ride-history-page").then((module) => ({ default: module.RideHistoryPage })));
 const RideDetailsPage = lazy(() => import("@/pages/ride-details-page").then((module) => ({ default: module.RideDetailsPage })));
 const DriverInterestPage = lazy(() => import("@/pages/driver-interest-page").then((module) => ({ default: module.DriverInterestPage })));
@@ -138,7 +139,7 @@ function RequireRole({
   }
 
   if (!user) {
-    return <Navigate to={role === "driver" ? "/driver/login" : role === "admin" ? "/admin/login" : "/"} replace />;
+    return <Navigate to={role === "driver" ? "/driver/login" : role === "admin" ? "/admin/login" : "/rider/login"} replace />;
   }
 
   if (role === "driver" && userHasRole(user, "driver") && user.approvalStatus !== "approved") {
@@ -264,6 +265,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               element={
                 <PageLoader><RoadmapPage /></PageLoader>
               }
+            />
+            <Route
+              path="rider/login"
+              element={<PageLoader><RiderLoginPage /></PageLoader>}
             />
             <Route
               path="rider/rides"

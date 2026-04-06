@@ -45,7 +45,7 @@ export function roleHome(role: Role) {
     return "/admin";
   }
 
-  return "/";
+  return "/rider/rides";
 }
 
 export function userHasRole(user: SessionUser | null | undefined, role: Role) {

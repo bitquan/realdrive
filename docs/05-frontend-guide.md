@@ -45,6 +45,8 @@ Providers:
   Rider history
 - `/rider/rides/:rideId`
   Rider ride details
+- `/rider/login`
+  Rider phone-code sign-in for returning riders
 
 ## Driver
 

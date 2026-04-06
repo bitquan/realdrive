@@ -199,6 +199,14 @@ export function HomePage() {
             >
               Driver signup
             </Link>
+            {!userHasRole(user, "rider") ? (
+              <Link
+                to="/rider/login"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-ops-border bg-ops-panel px-4 py-2 text-sm font-semibold text-ops-muted transition hover:bg-ops-surface hover:text-ops-text sm:w-auto"
+              >
+                Rider sign in
+              </Link>
+            ) : null}
             {userHasRole(user, "rider") ? (
               <Link
                 to="/rider/rides"
@@ -240,6 +248,11 @@ export function HomePage() {
             <div className="rounded-3xl border border-ops-primary/24 bg-ops-primary/10 p-4 text-sm text-ops-muted">
               <p className="font-semibold text-ops-text">Guest booking stays primary</p>
               <p className="mt-2">Enter rider contact, pickup, and dropoff. Dispatch and live status updates still work without creating an account.</p>
+              {!userHasRole(user, "rider") ? (
+                <Link to="/rider/login" className="mt-3 inline-flex font-semibold text-ops-primary hover:underline">
+                  Returning rider? Sign in to open your trip history.
+                </Link>
+              ) : null}
             </div>
 
             <div className="grid gap-3 md:grid-cols-3 md:gap-4">

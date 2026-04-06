@@ -18,6 +18,11 @@ const publicScreens: ScreenConfig[] = [
     readySelector: "#businessName"
   },
   {
+    name: "rider-login",
+    route: "/rider/login",
+    readySelector: "#riderPhoneLogin"
+  },
+  {
     name: "driver-login",
     route: "/driver/login",
     readySelector: "#driverEmail"

@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Clock3, Route, ShieldCheck, Wallet } from "lucide-react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
-import { PageHero } from "@/components/layout/page-hero";
+import { AuthPageShell } from "@/components/auth/auth-page-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormActions, FormField, FormLayout } from "@/components/ui/form-layout";
 import { Input } from "@/components/ui/input";
@@ -41,25 +42,42 @@ export function DriverLoginPage() {
   }
 
   return (
-    <div className="grid gap-5 md:gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="rounded-[2rem] border border-ops-border-soft bg-ops-surface/95 p-5 shadow-soft md:p-8">
-        <PageHero
-          title="Driver sign in"
-          description="Approved drivers use email and password to access live offers, active rides, dues status, and dispatch settings."
-          className="border-0 bg-transparent p-0 shadow-none"
-        />
-
-        <div className="mt-4 rounded-4xl border border-ops-border-soft bg-ops-panel/60 p-5 text-sm text-ops-muted">
+    <AuthPageShell
+      eyebrow="Driver access"
+      title="Driver sign in"
+      description="Approved drivers sign in with email and password to open live offers, trip controls, dues status, and dispatch-ready tools from one mobile-first cockpit."
+      highlights={[
+        {
+          title: "Live offers first",
+          description: "Open current work, active ride state, and fast triage without digging through menus.",
+          icon: Route
+        },
+        {
+          title: "Approval aware",
+          description: "Driver access stays tied to the real approval flow already managed by admin review.",
+          icon: ShieldCheck
+        },
+        {
+          title: "Mobile-ready layout",
+          description: "The sign-in page stays tuned for phone screens and quick dispatch access.",
+          icon: Clock3
+        },
+        {
+          title: "Same payout context",
+          description: "Dues, payment readiness, and ride work stay inside the same live driver surface.",
+          icon: Wallet
+        }
+      ]}
+      helper={(
+        <div className="rounded-4xl border border-ops-border-soft bg-ops-panel/60 p-5 text-sm text-ops-muted">
           <p className="font-semibold text-ops-text">No account yet?</p>
-          <p className="mt-2">
-            New driver accounts begin in pending status and unlock after admin approval.
-          </p>
+          <p className="mt-2">New driver accounts begin in pending status and unlock after admin approval.</p>
           <Link to="/driver/signup" className="mt-3 inline-flex font-semibold text-ops-primary hover:underline">
             Apply to drive
           </Link>
         </div>
-      </section>
-
+      )}
+    >
       <Card>
         <CardHeader>
           <CardTitle>Access driver app</CardTitle>
@@ -105,6 +123,6 @@ export function DriverLoginPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </AuthPageShell>
   );
 }

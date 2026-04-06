@@ -21,6 +21,7 @@ Working rule:
 
 ## Final direction
 - existing `/` route for booking
+- dedicated `/rider/login` route for returning-rider access
 - existing `/rider/rides` route for history
 - existing `/rider/rides/:rideId` route for ride detail
 - real booking and tracking flow only
@@ -187,6 +188,25 @@ Working rule:
 
 ### later non-rider work
 - Do not start rider redesign implementation until driver production verification is complete.
+
+## Current reopened checkpoint
+
+### rider access and rider queue refresh
+- summary
+  - Added the first rider redesign checkpoint by introducing a dedicated rider login route and a more polished rider trip queue surface.
+- files
+  - [apps/web/src/components/auth/auth-page-shell.tsx](apps/web/src/components/auth/auth-page-shell.tsx)
+  - [apps/web/src/pages/rider-login-page.tsx](apps/web/src/pages/rider-login-page.tsx)
+  - [apps/web/src/pages/ride-history-page.tsx](apps/web/src/pages/ride-history-page.tsx)
+  - [apps/web/src/pages/home-page.tsx](apps/web/src/pages/home-page.tsx)
+  - [apps/web/src/main.tsx](apps/web/src/main.tsx)
+  - [apps/web/src/lib/shell.ts](apps/web/src/lib/shell.ts)
+- what changed
+  - Added a dedicated `/rider/login` rider entry that uses the existing OTP auth flow.
+  - Kept guest booking primary on `/` while adding a clearer returning-rider sign-in CTA.
+  - Refreshed rider history so signed-in riders land on a stronger rider-side queue instead of a bare list.
+- verification summary
+  - In progress in the current workstream.
 
 ## Deferred / intentionally not included
 - no rider visual redesign has been started yet
