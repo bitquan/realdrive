@@ -118,6 +118,12 @@ Run Playwright screenshot coverage:
 pnpm screenshots
 ```
 
+Generate web bundle performance report:
+
+```bash
+pnpm ops:bundle
+```
+
 ## Documentation Audit Runbook
 
 Run this audit before pushing product behavior changes:
@@ -152,6 +158,8 @@ pnpm --filter @realdrive/api test
 GitHub Actions workflow: `.github/workflows/ci.yml`
 
 Screenshot artifact workflow: `.github/workflows/playwright-screenshots.yml`
+Health monitor workflow: `.github/workflows/ops-health-check.yml`
+Daily digest workflow: `.github/workflows/ops-daily-digest.yml`
 
 Runs on `push` and `pull_request` to `main`:
 
@@ -159,8 +167,103 @@ Runs on `push` and `pull_request` to `main`:
 - Run API tests
 - Run web tests
 - Run typecheck/build validation
+- Generate a web bundle report for performance review
 - Publish a pull-request web build artifact for safer manual review
+- Publish a pull-request bundle report artifact for performance review
 - Finish on one `Quality Gate` job that can be used as the required merge check
+
+## Monitoring And Performance Runbook
+
+Current tooling:
+
+- `scripts/ops/health-check.mjs`
+  - checks configured runtime endpoints
+  - fails on non-2xx responses
+  - can also fail on latency breaches using `OPS_MAX_LATENCY_MS`
+- `scripts/ops/daily-digest.mjs`
+  - creates a daily ops digest issue in GitHub
+- `scripts/ops/web-bundle-check.mjs`
+  - generates `apps/web/dist/bundle-report.json`
+  - reports largest built assets and gzip size estimates
+
+Recommended routine:
+
+1. Run runtime health checks against production URLs.
+2. Review Render runtime logs and metrics.
+3. Review Vercel deployment analytics and bundle report artifacts.
+4. If the largest JS chunk grows unexpectedly, log the regression in the PR before merge.
+
+Local bundle review:
+
+```bash
+pnpm --filter @realdrive/web build
+pnpm ops:bundle
+cat apps/web/dist/bundle-report.json
+```
+
+## Backup, Restore, And Disaster Recovery Runbook
+
+### Backup baseline
+
+- Render PostgreSQL remains the primary managed backup source.
+- Keep Render automatic backups enabled.
+- Capture a manual `pg_dump` before risky schema or data operations.
+
+Manual backup example:
+
+```bash
+pg_dump "$DATABASE_URL" > backup-$(date +%Y%m%d-%H%M%S).sql
+```
+
+### Restore drill
+
+1. Create a fresh target database.
+2. Restore the latest known-good backup:
+
+```bash
+psql "$TARGET_DATABASE_URL" < backup-YYYYMMDD-HHMMSS.sql
+```
+
+3. Run app smoke checks:
+   - `/health`
+   - quote flow
+   - `/driver`
+   - `/admin`
+4. Verify Prisma migrations and runtime startup succeed.
+
+### Disaster recovery checklist
+
+- [ ] Confirm whether the incident is app-only, database-only, or full platform outage.
+- [ ] Freeze risky deploys until the incident is understood.
+- [ ] Capture latest logs from Render and Vercel.
+- [ ] Decide whether to roll forward, redeploy last good commit, or restore data.
+- [ ] Re-run smoke checks after recovery.
+- [ ] Add incident notes to the ops issue or daily digest.
+
+## Secret Rotation And Operational Hygiene Runbook
+
+Rotation baseline:
+
+- Rotate `JWT_SECRET` every 6 months or immediately after exposure risk.
+- Rotate API/provider credentials whenever staff or access scope changes.
+- Keep browser-visible variables in Vercel and server secrets in Render/GitHub secrets only.
+
+Rotation checklist:
+
+1. Generate a replacement secret.
+2. Update the secret in the platform dashboard first.
+3. Redeploy the affected service.
+4. Validate login, quote, and protected-route flows.
+5. Revoke the old secret.
+6. Record the rotation date in operator notes.
+
+Operational hygiene checklist:
+
+- [ ] No production secrets in tracked files
+- [ ] No secrets in screenshots, logs, or PR comments
+- [ ] GitHub Actions secrets used for ops workflows
+- [ ] Render/Vercel env vars reviewed after deployment changes
+- [ ] Push protection issues resolved before merge, not after
 
 ## Demo Data Runbook
 

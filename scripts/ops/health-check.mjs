@@ -2,6 +2,7 @@
 
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.OPS_TIMEOUT_MS ?? "10000", 10);
 const CREATE_ISSUE_ON_FAILURE = (process.env.OPS_CREATE_ISSUE_ON_FAILURE ?? "true").toLowerCase() === "true";
+const MAX_LATENCY_MS = Number.parseInt(process.env.OPS_MAX_LATENCY_MS ?? "0", 10);
 const endpointList = parseEndpointList(process.env.OPS_HEALTH_ENDPOINTS ?? "");
 
 if (endpointList.length === 0) {
@@ -48,14 +49,16 @@ async function checkEndpoint(url, timeoutMs) {
     });
 
     const elapsedMs = Date.now() - started;
-    const ok = response.status >= 200 && response.status < 300;
+    const statusOk = response.status >= 200 && response.status < 300;
+    const latencyOk = MAX_LATENCY_MS <= 0 ? true : elapsedMs <= MAX_LATENCY_MS;
+    const ok = statusOk && latencyOk;
 
     return {
       url,
       ok,
       status: response.status,
       elapsedMs,
-      error: ok ? null : `unexpected_status_${response.status}`,
+      error: !statusOk ? `unexpected_status_${response.status}` : !latencyOk ? `latency_exceeded_${MAX_LATENCY_MS}ms` : null,
     };
   } catch (error) {
     const elapsedMs = Date.now() - started;
@@ -116,7 +119,7 @@ async function maybeCreateIncidentIssue(summary) {
     "",
     "### Next actions",
     "1) Validate deploy status (Vercel/Render)",
-    "2) Check API logs and recent releases",
+    "2) Check API logs, latency, and recent releases",
     "3) Add resolution notes and close this issue",
   ].join("\n");
 

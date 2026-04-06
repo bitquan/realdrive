@@ -172,9 +172,12 @@ Checklist:
 	- CI now ends on a single `Quality Gate` job after API tests, web tests, and typecheck/build checks pass.
 - [x] Add preview or safer pre-release verification paths.
 	- Pull requests now upload a `web-dist-*` build artifact for safer pre-merge review.
-- [ ] Add monitoring and performance tooling.
-- [ ] Add backup/restore and disaster-recovery runbooks.
-- [ ] Add secret rotation and stronger operational hygiene.
+- [x] Add monitoring and performance tooling.
+	- Added latency-aware health thresholds in [scripts/ops/health-check.mjs](../scripts/ops/health-check.mjs), bundle reporting in [scripts/ops/web-bundle-check.mjs](../scripts/ops/web-bundle-check.mjs), and CI bundle artifacts in [.github/workflows/ci.yml](../.github/workflows/ci.yml).
+- [x] Add backup/restore and disaster-recovery runbooks.
+	- Expanded recovery guidance in [docs/08-operations-and-runbooks.md](./08-operations-and-runbooks.md) and [docs/11-live-deployment.md](./11-live-deployment.md).
+- [x] Add secret rotation and stronger operational hygiene.
+	- Documented ops secret handling in [docs/03-environment-and-services.md](./03-environment-and-services.md), [docs/17-contributor-and-copilot-guide.md](./17-contributor-and-copilot-guide.md), and [docs/11-live-deployment.md](./11-live-deployment.md).
 
 ## Layer 8 — Later / Deferred Strategy
 

@@ -282,10 +282,20 @@ Avoid these stale values:
 
 1. **Render dashboard** for API environment variables
 2. **Vercel dashboard** for web environment variables
-3. Rotate `JWT_SECRET` every 6 months
-4. Never share screenshots containing secrets or token values
+3. **GitHub Actions secrets** for ops workflow variables and automation tokens
+4. Rotate `JWT_SECRET` every 6 months
+5. Rotate provider credentials immediately after staff, ownership, or scope changes
+6. Never share screenshots containing secrets or token values
 
 Use `openssl rand -hex 32` to generate secure random secrets.
+
+Operational rotation sequence:
+
+1. Generate a replacement secret.
+2. Save it in the platform dashboard first.
+3. Redeploy the affected service.
+4. Confirm login and protected routes still work.
+5. Revoke the previous secret.
 
 ## Database Backups
 
@@ -298,6 +308,25 @@ Render PostgreSQL includes:
 ```bash
 pg_dump "$DATABASE_URL" > backup-$(date +%Y%m%d).sql
 ```
+
+Backup guidance:
+
+- Take a manual backup before risky schema changes, bulk admin imports, or cleanup scripts.
+- Store backups in an approved encrypted location outside the repo.
+- Practice restoring into a non-production database before relying on a backup.
+
+Restore drill:
+
+```bash
+psql "$TARGET_DATABASE_URL" < backup-YYYYMMDD.sql
+```
+
+After restore, verify:
+
+- `https://realdrive.onrender.com/health`
+- admin setup page does not 500
+- quote requests still succeed
+- driver and admin login paths still work
 
 ## Monitoring
 
@@ -324,6 +353,23 @@ curl https://realdrive.onrender.com/health
 # Database connectivity
 curl https://realdrive.onrender.com/admin/setup  # Should not 500
 ```
+
+Scheduled monitoring and performance checks:
+
+- `.github/workflows/ops-health-check.yml` runs production health verification on a schedule.
+- `scripts/ops/health-check.mjs` can fail on non-2xx responses and latency breaches when `OPS_MAX_LATENCY_MS` is set.
+- `.github/workflows/ops-daily-digest.yml` creates a daily operations digest issue.
+- `.github/workflows/ci.yml` publishes a web bundle report artifact for pull requests.
+
+Bundle review flow:
+
+```bash
+pnpm --filter @realdrive/web build
+pnpm ops:bundle
+cat apps/web/dist/bundle-report.json
+```
+
+If response time or bundle size regresses, pause merge or deploy until the change is explained.
 
 ## Scheduled Tasks
 

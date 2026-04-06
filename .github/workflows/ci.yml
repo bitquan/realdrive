@@ -93,12 +93,26 @@ jobs:
           VITE_API_URL: http://localhost:4000
           VITE_MAPBOX_TOKEN: placeholder
 
+      - name: Generate bundle report
+        run: node scripts/ops/web-bundle-check.mjs
+        env:
+          OPS_BUNDLE_WARN_LIMIT_KB: "500"
+
       - name: Upload web build artifact
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: web-dist-${{ github.event.pull_request.number }}
           path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload bundle report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-bundle-report-${{ github.event.pull_request.number }}
+          path: apps/web/dist/bundle-report.json
           if-no-files-found: error
           retention-days: 7
 

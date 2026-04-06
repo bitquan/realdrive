@@ -144,6 +144,17 @@ Defined in `apps/api/.env`.
 - `HOST`
   API host. Defaults to `0.0.0.0`.
 
+## Ops Workflow Variables
+
+Used by GitHub Actions and operational scripts, not the application runtime itself.
+
+- `OPS_HEALTH_ENDPOINTS`
+  Comma-separated URLs for runtime health checks.
+  Example: `https://realdrive.onrender.com/health,https://realdrive-web.vercel.app`
+- `OPS_MAX_LATENCY_MS`
+  Optional latency threshold for the health-check workflow. Requests slower than this are treated as failures.
+  Store this as a GitHub Actions secret if you want runtime latency alerts.
+
 ## Web Environment Variables
 
 Defined in `apps/web/.env`.

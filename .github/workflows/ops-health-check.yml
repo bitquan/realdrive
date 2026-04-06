@@ -29,6 +29,7 @@ jobs:
         env:
           OPS_HEALTH_ENDPOINTS: ${{ secrets.OPS_HEALTH_ENDPOINTS }}
           OPS_TIMEOUT_MS: "10000"
+          OPS_MAX_LATENCY_MS: ${{ secrets.OPS_MAX_LATENCY_MS }}
           OPS_CREATE_ISSUE_ON_FAILURE: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

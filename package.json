@@ -16,6 +16,7 @@
     "lint": "pnpm -r lint",
     "screenshots": "pnpm --filter @realdrive/web e2e:screenshots",
     "ops:health": "node scripts/ops/health-check.mjs",
+    "ops:bundle": "node scripts/ops/web-bundle-check.mjs",
     "ops:digest": "node scripts/ops/daily-digest.mjs",
     "ops:labels": "node scripts/ops/setup-labels.mjs",
     "sms:test": "node scripts/ops/sms-test.mjs",

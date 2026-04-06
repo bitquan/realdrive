@@ -51,6 +51,8 @@ Current CI gate:
 - Keep Vite browser env vars in Vercel env vars
 - Treat `apps/web/.env.production` as non-secret default config only
 - If GitHub push protection blocks a push, remove the secret from the file and commit history before pushing again
+- Keep ops workflow secrets such as `OPS_HEALTH_ENDPOINTS` and `OPS_MAX_LATENCY_MS` in GitHub Actions secrets, not tracked files
+- Rotate `JWT_SECRET` and provider credentials on a fixed schedule or immediately after exposure risk
 
 ## Documentation Update Checklist
 
