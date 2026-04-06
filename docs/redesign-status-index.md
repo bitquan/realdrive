@@ -1,5 +1,17 @@
 # Redesign Status Index
 
+## Layered execution standard (required)
+- When rider or admin redesign scope reopens, run execution through [docs/18-layered-dev-checklist.md](./18-layered-dev-checklist.md) as the active board.
+- Keep only one layer actively in progress at a time.
+- Update tracker docs and linked source-of-truth docs in the same branch as code changes.
+- Move shipped roadmap-facing work into `completed` phase in [apps/api/src/data/roadmap-features.ts](../apps/api/src/data/roadmap-features.ts).
+
+## Reopen protocol
+1. Pick the active layer for the redesign checkpoint.
+2. Copy the "Layered reopen checklist" block from the target tracker and mark only one layer as active.
+3. Ship implementation + docs + verification together, then mark the layer complete.
+4. Record commit hashes and production verification status in the same tracker.
+
 ## Current status
 - driver: [docs/driver-redesign-status.md](docs/driver-redesign-status.md)
 - rider: [docs/rider-redesign-status.md](docs/rider-redesign-status.md)

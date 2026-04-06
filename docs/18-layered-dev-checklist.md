@@ -46,7 +46,8 @@ Checklist:
 - [x] Treat `docs/` as source of truth for route, deployment, and workflow changes.
 - [x] Keep current live hosts aligned with `https://realdrive-web.vercel.app` and `https://realdrive.onrender.com`.
 - [x] Keep driver route truth aligned across docs.
-- [ ] Add the same layered execution habit to future redesign trackers when rider or admin scope reopens.
+- [x] Add the same layered execution habit to future redesign trackers when rider or admin scope reopens.
+	- Added layered execution standard and reopen protocol in [docs/redesign-status-index.md](./redesign-status-index.md), plus tracker-level reopen checklists in [docs/rider-redesign-status.md](./rider-redesign-status.md) and [docs/admin-redesign-status.md](./admin-redesign-status.md).
 
 ## Layer 1 — Design And UX System
 

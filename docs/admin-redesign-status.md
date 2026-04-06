@@ -1,5 +1,18 @@
 # Admin Redesign Status
 
+## Layered reopen checklist
+
+Use this block when admin redesign work reopens. Keep one layer in progress at a time.
+
+- [ ] Layer 1 — Design And UX System
+- [ ] Layer 2 — Architecture And Data
+- [ ] Layer 5 — Admin And Ops Layer
+- [ ] Layer 7 — Quality, QA, And DevOps
+
+Working rule:
+- Mark exactly one layer as active (`[~]` in notes or explicit "in progress" text), then complete it before advancing.
+- Sync changes with [docs/18-layered-dev-checklist.md](./18-layered-dev-checklist.md) in the same branch.
+
 ## Scope
 - A dedicated admin redesign has not been started as a new checkpointed workstream in the same way as the driver redesign.
 - This document records the current admin baseline, major existing admin milestones, and what remains before any admin redesign begins.

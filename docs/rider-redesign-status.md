@@ -1,5 +1,18 @@
 # Rider Redesign Status
 
+## Layered reopen checklist
+
+Use this block when rider redesign work reopens. Keep one layer in progress at a time.
+
+- [ ] Layer 1 — Design And UX System
+- [ ] Layer 2 — Architecture And Data
+- [ ] Layer 3 — Rider And Public Flows
+- [ ] Layer 7 — Quality, QA, And DevOps
+
+Working rule:
+- Mark exactly one layer as active (`[~]` in notes or explicit "in progress" text), then complete it before advancing.
+- Sync changes with [docs/18-layered-dev-checklist.md](./18-layered-dev-checklist.md) in the same branch.
+
 ## Scope
 - The rider redesign has not started as a dedicated checkpointed workstream yet.
 - This document records the current rider baseline so the next rider phase can start from a concrete, accurate state.
