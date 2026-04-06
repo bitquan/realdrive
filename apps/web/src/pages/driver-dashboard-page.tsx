@@ -376,6 +376,7 @@ export function DriverDashboardPage() {
                   dispatchSummary={dispatchSummary}
                   vehicleLabel={profileQuery.data?.vehicle?.makeModel ?? "Vehicle pending"}
                   mobileOverlayMode
+                  mobileFitPaddingBottom={470}
                 />
 
                 <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3">

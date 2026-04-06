@@ -11,6 +11,7 @@ export interface DriverMapSurfaceProps {
   dispatchSummary: string;
   vehicleLabel: string;
   mobileOverlayMode?: boolean;
+  mobileFitPaddingBottom?: number;
 }
 
 export function DriverMapSurface({
@@ -18,7 +19,8 @@ export function DriverMapSurface({
   statusLabel,
   dispatchSummary,
   vehicleLabel,
-  mobileOverlayMode = false
+  mobileOverlayMode = false,
+  mobileFitPaddingBottom
 }: DriverMapSurfaceProps) {
   const mobileShellClass = "relative min-h-[calc(100dvh-10.5rem)] overflow-hidden rounded-[2.25rem] bg-slate-950 shadow-[0_32px_100px_rgba(2,6,23,0.58)] ring-1 ring-white/10";
 
@@ -36,6 +38,7 @@ export function DriverMapSurface({
             height={mobileOverlayMode ? 760 : 520}
             meta={ride.status === "offered" ? "Offers and active trips stay attached to a live map-first work surface." : "Pickup, dropoff, and route progress stay visible while you work."}
             surfaceChrome={mobileOverlayMode ? "bare" : "card"}
+            fitPaddingBottom={mobileOverlayMode ? mobileFitPaddingBottom : undefined}
           />
           {mobileOverlayMode ? (
             <>

@@ -43,13 +43,15 @@ export function DeferredLiveMap({
   title,
   height,
   meta,
-  surfaceChrome = "card"
+  surfaceChrome = "card",
+  fitPaddingBottom
 }: {
   ride: Ride;
   title?: string;
   height?: number;
   meta?: ReactNode;
   surfaceChrome?: "card" | "bare";
+  fitPaddingBottom?: number;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -81,7 +83,7 @@ export function DeferredLiveMap({
     <div ref={containerRef}>
       {visible ? (
         <Suspense fallback={<MapPlaceholder title={title ?? "Live trip map"} height={height} meta={meta} surfaceChrome={surfaceChrome} />}>
-          <LazyLiveMap ride={ride} title={title} height={height} meta={meta} surfaceChrome={surfaceChrome} />
+          <LazyLiveMap ride={ride} title={title} height={height} meta={meta} surfaceChrome={surfaceChrome} fitPaddingBottom={fitPaddingBottom} />
         </Suspense>
       ) : (
         <MapPlaceholder title={title ?? "Live trip map"} height={height} meta={meta} surfaceChrome={surfaceChrome} />

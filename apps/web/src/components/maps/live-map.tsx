@@ -1,11 +1,18 @@
-import type { ReactNode } from "react";
-import Map, { Layer, Marker, Source } from "react-map-gl/mapbox";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/mapbox";
 import { MapPin, Navigation } from "lucide-react";
 import type { Ride } from "@shared/contracts";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? "";
+
+type Coordinate = [number, number];
+
+interface RouteSegment {
+  id: string;
+  coordinates: Coordinate[];
+}
 
 function midpoint(ride: Ride) {
   return {
@@ -15,28 +22,79 @@ function midpoint(ride: Ride) {
 }
 
 function getRouteSegments(ride: Ride) {
-  const pickup: [number, number] = [ride.pickup.lng, ride.pickup.lat];
-  const dropoff: [number, number] = [ride.dropoff.lng, ride.dropoff.lat];
-  const current: [number, number] | null = ride.latestLocation ? [ride.latestLocation.lng, ride.latestLocation.lat] : null;
+  const pickup: Coordinate = [ride.pickup.lng, ride.pickup.lat];
+  const dropoff: Coordinate = [ride.dropoff.lng, ride.dropoff.lat];
+  const current: Coordinate | null = ride.latestLocation ? [ride.latestLocation.lng, ride.latestLocation.lat] : null;
 
   if (ride.status === "in_progress") {
     return {
       primary: current ? [current, dropoff] : [pickup, dropoff],
-      secondary: current ? [pickup, current] : null
+      secondary: current ? [pickup, current] : null,
+      points: current ? [pickup, current, dropoff] : [pickup, dropoff]
     };
   }
 
   if (["accepted", "en_route", "arrived"].includes(ride.status)) {
     return {
       primary: current ? [current, pickup] : [pickup, dropoff],
-      secondary: [pickup, dropoff]
+      secondary: [pickup, dropoff],
+      points: current ? [current, pickup, dropoff] : [pickup, dropoff]
     };
   }
 
   return {
     primary: [pickup, dropoff],
-    secondary: null
+    secondary: null,
+    points: [pickup, dropoff]
   };
+}
+
+function nearlySameCoordinate(a: Coordinate, b: Coordinate) {
+  return Math.abs(a[0] - b[0]) < 0.00001 && Math.abs(a[1] - b[1]) < 0.00001;
+}
+
+async function fetchRoadGeometry(start: Coordinate, end: Coordinate, signal: AbortSignal) {
+  const url = new URL(`https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${start[0]},${start[1]};${end[0]},${end[1]}`);
+  url.searchParams.set("alternatives", "false");
+  url.searchParams.set("geometries", "geojson");
+  url.searchParams.set("overview", "full");
+  url.searchParams.set("steps", "false");
+  url.searchParams.set("access_token", MAPBOX_TOKEN);
+
+  const response = await fetch(url.toString(), { signal });
+  if (!response.ok) {
+    throw new Error(`Mapbox directions failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const geometry = data?.routes?.[0]?.geometry?.coordinates;
+  return Array.isArray(geometry) && geometry.length > 1 ? (geometry as Coordinate[]) : [start, end];
+}
+
+function getBoundsFromCoordinates(coordinates: Coordinate[]) {
+  if (!coordinates.length) {
+    return null;
+  }
+
+  let minLng = coordinates[0][0];
+  let maxLng = coordinates[0][0];
+  let minLat = coordinates[0][1];
+  let maxLat = coordinates[0][1];
+
+  for (const [lng, lat] of coordinates) {
+    minLng = Math.min(minLng, lng);
+    maxLng = Math.max(maxLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+  }
+
+  const lngPad = Math.max((maxLng - minLng) * 0.12, 0.01);
+  const latPad = Math.max((maxLat - minLat) * 0.18, 0.01);
+
+  return [
+    [minLng - lngPad, minLat - latPad],
+    [maxLng + lngPad, maxLat + latPad]
+  ] as [[number, number], [number, number]];
 }
 
 export function LiveMap({
@@ -44,16 +102,92 @@ export function LiveMap({
   title = "Live trip map",
   height = 360,
   meta,
-  surfaceChrome = "card"
+  surfaceChrome = "card",
+  fitPaddingBottom
 }: {
   ride: Ride;
   title?: string;
   height?: number;
   meta?: ReactNode;
   surfaceChrome?: "card" | "bare";
+  fitPaddingBottom?: number;
 }) {
+  const mapRef = useRef<MapRef | null>(null);
   const center = midpoint(ride);
-  const routeSegments = getRouteSegments(ride);
+  const routeSegments = useMemo(() => getRouteSegments(ride), [ride]);
+  const [roadSegments, setRoadSegments] = useState<{ primary: RouteSegment | null; secondary: RouteSegment | null }>({
+    primary: null,
+    secondary: null
+  });
+
+  useEffect(() => {
+    if (!MAPBOX_TOKEN) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadRoadGeometry = async () => {
+      try {
+        const primary = routeSegments.primary && routeSegments.primary.length > 1 && !nearlySameCoordinate(routeSegments.primary[0], routeSegments.primary[1])
+          ? await fetchRoadGeometry(routeSegments.primary[0], routeSegments.primary[1], controller.signal)
+          : routeSegments.primary;
+
+        const secondary = routeSegments.secondary && routeSegments.secondary.length > 1 && !nearlySameCoordinate(routeSegments.secondary[0], routeSegments.secondary[1])
+          ? await fetchRoadGeometry(routeSegments.secondary[0], routeSegments.secondary[1], controller.signal)
+          : routeSegments.secondary;
+
+        setRoadSegments({
+          primary: primary ? { id: `primary-${ride.id}-${ride.status}`, coordinates: primary } : null,
+          secondary: secondary ? { id: `secondary-${ride.id}-${ride.status}`, coordinates: secondary } : null
+        });
+      } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          return;
+        }
+
+        setRoadSegments({
+          primary: routeSegments.primary ? { id: `primary-${ride.id}-fallback`, coordinates: routeSegments.primary } : null,
+          secondary: routeSegments.secondary ? { id: `secondary-${ride.id}-fallback`, coordinates: routeSegments.secondary } : null
+        });
+      }
+    };
+
+    void loadRoadGeometry();
+    return () => controller.abort();
+  }, [ride.id, ride.status, routeSegments.primary, routeSegments.secondary]);
+
+  const primaryRoute = roadSegments.primary?.coordinates ?? routeSegments.primary;
+  const secondaryRoute = roadSegments.secondary?.coordinates ?? routeSegments.secondary;
+
+  const fitCoordinates = useMemo(() => {
+    const all = [
+      ...(primaryRoute ?? []),
+      ...(secondaryRoute ?? []),
+      ...routeSegments.points
+    ];
+
+    const unique = all.filter((coordinate, index) => {
+      return all.findIndex((candidate) => nearlySameCoordinate(candidate, coordinate)) === index;
+    });
+
+    return unique;
+  }, [primaryRoute, routeSegments.points, secondaryRoute]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const bounds = getBoundsFromCoordinates(fitCoordinates);
+    if (!map || !bounds) {
+      return;
+    }
+
+    map.fitBounds(bounds, {
+      padding: surfaceChrome === "bare"
+        ? { top: 120, right: 28, bottom: fitPaddingBottom ?? 420, left: 28 }
+        : { top: 48, right: 48, bottom: 48, left: 48 },
+      duration: 0,
+      maxZoom: 14
+    });
+  }, [fitCoordinates, fitPaddingBottom, surfaceChrome]);
 
   const renderFallbackMap = () => {
     if (surfaceChrome === "bare") {
@@ -145,6 +279,7 @@ export function LiveMap({
   const renderMapCanvas = () => (
     <div className={surfaceChrome === "bare" ? "h-full overflow-hidden" : "overflow-hidden rounded-[1.9rem]"}>
       <Map
+        ref={mapRef}
         initialViewState={{
           ...center,
           zoom: 11
@@ -153,14 +288,14 @@ export function LiveMap({
         mapStyle="mapbox://styles/mapbox/dark-v11"
         mapboxAccessToken={MAPBOX_TOKEN}
       >
-        {routeSegments.secondary && routeSegments.secondary.length > 1 ? (
+        {secondaryRoute && secondaryRoute.length > 1 ? (
           <Source
             id={`driver-route-secondary-${ride.id}`}
             type="geojson"
             data={{
               type: "Feature",
               properties: {},
-              geometry: { type: "LineString", coordinates: routeSegments.secondary }
+              geometry: { type: "LineString", coordinates: secondaryRoute }
             }}
           >
             <Layer
@@ -175,14 +310,14 @@ export function LiveMap({
           </Source>
         ) : null}
 
-        {routeSegments.primary && routeSegments.primary.length > 1 ? (
+        {primaryRoute && primaryRoute.length > 1 ? (
           <Source
             id={`driver-route-primary-${ride.id}`}
             type="geojson"
             data={{
               type: "Feature",
               properties: {},
-              geometry: { type: "LineString", coordinates: routeSegments.primary }
+              geometry: { type: "LineString", coordinates: primaryRoute }
             }}
           >
             <Layer

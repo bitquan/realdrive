@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Ride } from "@shared/contracts";
 import { Navigation } from "lucide-react";
 import { DataField } from "@/components/layout/ops-layout";
@@ -34,6 +35,12 @@ export function DriverLiveOfferCard({
   declineMutation,
   mobile
 }: DriverLiveOfferCardProps) {
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    setHidden(false);
+  }, [offer?.id]);
+
   if (!offer) {
     if (mobile) {
       return (
@@ -68,6 +75,33 @@ export function DriverLiveOfferCard({
   const displayMiles = formatDriverMilesCompact(offer.estimatedMiles);
 
   if (mobile) {
+    if (hidden) {
+      return (
+        <div className="flex items-center justify-between gap-3 rounded-[1rem] border border-white/10 bg-[linear-gradient(180deg,rgba(6,10,18,0.92),rgba(4,8,15,0.96))] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-teal-400/18 bg-teal-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-200">
+                {displayPayout}
+              </span>
+              <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-slate-300">
+                {countdown ?? "Queued"}
+              </span>
+            </div>
+            <p className="mt-1 truncate text-[12px] font-medium text-slate-200">{offer.pickup.address}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-slate-500">Live request hidden</p>
+          </div>
+
+          <button
+            type="button"
+            className="inline-flex h-8 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            onClick={() => setHidden(false)}
+          >
+            Show
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3">
@@ -75,7 +109,16 @@ export function DriverLiveOfferCard({
             <h3 className="text-[15px] font-semibold text-white">New Request</h3>
             <p className="mt-0.5 text-[11px] leading-4 text-slate-400">Accepting moves straight into the active trip flow.</p>
           </div>
-          <Badge className="border-cyan-500/25 bg-cyan-500/14 px-2.5 py-1 text-[11px] text-cyan-300">{countdown ?? "Queued"}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge className="border-cyan-500/25 bg-cyan-500/14 px-2.5 py-1 text-[11px] text-cyan-300">{countdown ?? "Queued"}</Badge>
+            <button
+              type="button"
+              className="inline-flex h-8 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+              onClick={() => setHidden(true)}
+            >
+              Hide
+            </button>
+          </div>
         </div>
 
         <div className="rounded-[1.05rem] border border-white/10 bg-slate-950/28 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
