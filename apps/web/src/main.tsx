@@ -21,6 +21,7 @@ const DriverInterestPage = lazy(() => import("@/pages/driver-interest-page").the
 const DriverLoginPage = lazy(() => import("@/pages/driver-login-page").then((module) => ({ default: module.DriverLoginPage })));
 const DriverDashboardPage = lazy(() => import("@/pages/driver-dashboard-page").then((module) => ({ default: module.DriverDashboardPage })));
 const DriverRidePage = lazy(() => import("@/pages/driver-ride-page").then((module) => ({ default: module.DriverRidePage })));
+const MockDriverIdlePage = lazy(() => import("@/pages/mock-driver-idle-page").then((module) => ({ default: module.MockDriverIdlePage })));
 const AdminLoginPage = lazy(() => import("@/pages/admin-login-page").then((module) => ({ default: module.AdminLoginPage })));
 const AdminSetupPage = lazy(() => import("@/pages/admin-setup-page").then((module) => ({ default: module.AdminSetupPage })));
 const AdminDashboardPage = lazy(() => import("@/pages/admin-dashboard-page").then((module) => ({ default: module.AdminDashboardPage })));
@@ -192,6 +193,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <AppProviders>
         <Router>
           <Routes>
+          <Route path="/__mock/driver/idle" element={<PageLoader><MockDriverIdlePage /></PageLoader>} />
           <Route path="/tablet/ads/login" element={<PageLoader><TabletAdLoginPage /></PageLoader>} />
           <Route path="/ads/display/:referralCode" element={<PageLoader><AdsDisplayPage /></PageLoader>} />
           <Route path="/ads/visit/:redirectToken" element={<PageLoader><AdsVisitPage /></PageLoader>} />
