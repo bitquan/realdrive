@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Clock3, Route, Users } from "lucide-react";
+import { Activity, AlertTriangle, Clock3, Route, Users } from "lucide-react";
+import type { AdminActivityResponse } from "@shared/contracts";
 import {
   DataField,
   EntityList,
@@ -12,11 +13,60 @@ import {
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useI18n } from "@/providers/i18n-provider";
 
 const WINDOW_OPTIONS = [15, 30, 60] as const;
 
+type AnomalySeverity = "high" | "medium";
+
+interface ActivityAnomaly {
+  id: string;
+  title: string;
+  detail: string;
+  severity: AnomalySeverity;
+}
+
+function getActivityAnomalies(activity: AdminActivityResponse | undefined): ActivityAnomaly[] {
+  if (!activity) {
+    return [];
+  }
+
+  const anomalies: ActivityAnomaly[] = [];
+  const ratio = activity.visitors24h > 0 ? activity.activeVisitors / activity.visitors24h : 0;
+
+  if (activity.visitors24h >= 40 && ratio >= 0.78) {
+    anomalies.push({
+      id: "high-active-ratio",
+      title: "Unusually high active traffic",
+      detail: `${Math.round(ratio * 100)}% of 24h visitors are active in the last ${activity.windowMinutes} minutes.`,
+      severity: "high"
+    });
+  }
+
+  if (activity.heartbeats24h >= 1000 && activity.topPaths.length <= 1) {
+    anomalies.push({
+      id: "single-path-concentration",
+      title: "Traffic concentrated on one path",
+      detail: "Most heartbeat volume is landing on a single route; review routing and bots.",
+      severity: "medium"
+    });
+  }
+
+  if (activity.visitors24h >= 25 && activity.activeVisitors === 0) {
+    anomalies.push({
+      id: "zero-active-with-traffic",
+      title: "No active visitors while traffic exists",
+      detail: "Recent site traffic exists, but no sessions appear active in the selected window.",
+      severity: "high"
+    });
+  }
+
+  return anomalies;
+}
+
 export function AdminDataPage() {
   const { token } = useAuth();
+  const { t } = useI18n();
   const [windowMinutes, setWindowMinutes] = useState<(typeof WINDOW_OPTIONS)[number]>(30);
 
   const activityQuery = useQuery({
@@ -27,6 +77,7 @@ export function AdminDataPage() {
   });
 
   const activity = activityQuery.data;
+  const anomalies = getActivityAnomalies(activity);
 
   return (
     <div className="space-y-6">
@@ -83,6 +134,37 @@ export function AdminDataPage() {
           icon={Route}
         />
       </MetricStrip>
+
+      <PanelSection title="Automated anomaly alerts" description="Auto-generated reliability signals from live traffic and session telemetry.">
+        {anomalies.length ? (
+          <EntityList>
+            {anomalies.map((anomaly) => (
+              <div key={anomaly.id} className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ops-text">{anomaly.title}</p>
+                    <p className="mt-1 text-sm text-ops-muted">{anomaly.detail}</p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                      anomaly.severity === "high"
+                        ? "border-ops-destructive/30 bg-ops-destructive/12 text-ops-destructive"
+                        : "border-ops-warning/30 bg-ops-warning/12 text-ops-warning"
+                    }`}
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {anomaly.severity}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </EntityList>
+        ) : (
+          <div className="rounded-[1.35rem] border border-dashed border-ops-border p-6 text-sm text-ops-muted">
+            {t("shell.noAnomalies")}
+          </div>
+        )}
+      </PanelSection>
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <PanelSection title="Top paths" description="Most active routes in the last 24h.">

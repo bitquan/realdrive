@@ -219,7 +219,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Better geographic dispatch control",
     category: "admin",
     area: "Driver / Admin",
-    phase: "later",
+    phase: "completed",
     impact: "medium",
     order: 20
   },
@@ -229,7 +229,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Improved transparency and pricing context",
     category: "rider",
     area: "Pricing / Rider",
-    phase: "later",
+    phase: "completed",
     impact: "medium",
     order: 21
   },
@@ -239,7 +239,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Earlier detection of system or dispatch issues",
     category: "admin",
     area: "Reliability / Admin",
-    phase: "later",
+    phase: "completed",
     impact: "high",
     order: 22
   },
@@ -269,7 +269,7 @@ export const ROADMAP_FEATURES: RoadmapFeature[] = [
     description: "Broader audience support",
     category: "product",
     area: "Platform / UX",
-    phase: "deferred",
+    phase: "completed",
     impact: "medium",
     order: 25
   },

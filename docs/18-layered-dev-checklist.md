@@ -228,12 +228,16 @@ Checklist:
 
 - [x] Share/referral analytics panel.
 	- Added a live referral analytics panel to [apps/web/src/pages/admin-share-page.tsx](../apps/web/src/pages/admin-share-page.tsx) using existing admin rides and leads workflows.
-- [ ] Service-area map editor.
-- [ ] Surge and market condition indicators.
-- [ ] Automated anomaly alerts.
+- [x] Service-area map editor.
+	- Added interactive service-area state coverage controls to [apps/web/src/pages/admin-regions-page.tsx](../apps/web/src/pages/admin-regions-page.tsx) within the existing market region create/edit workflow.
+- [x] Surge and market condition indicators.
+	- Added market condition/surge badges in [apps/web/src/pages/ride-details-page.tsx](../apps/web/src/pages/ride-details-page.tsx) and [apps/web/src/pages/public-track-page.tsx](../apps/web/src/pages/public-track-page.tsx) with shared derivation logic in [apps/web/src/lib/market-condition.ts](../apps/web/src/lib/market-condition.ts).
+- [x] Automated anomaly alerts.
+	- Added automated anomaly detection and alert cards to [apps/web/src/pages/admin-data-page.tsx](../apps/web/src/pages/admin-data-page.tsx) based on live telemetry metrics.
 - [ ] Native iOS/Android apps.
 - [ ] Fully automated payments integration.
-- [ ] Multi-language localization framework.
+- [x] Multi-language localization framework.
+	- Added app-level localization provider in [apps/web/src/providers/i18n-provider.tsx](../apps/web/src/providers/i18n-provider.tsx), wired in [apps/web/src/providers/app-providers.tsx](../apps/web/src/providers/app-providers.tsx), and added language switching in [apps/web/src/components/layout/app-shell.tsx](../apps/web/src/components/layout/app-shell.tsx).
 
 ## Suggested Current Working Stack
 

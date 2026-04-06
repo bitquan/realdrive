@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { deriveMarketCondition } from "@/lib/market-condition";
 import { getSocket } from "@/lib/socket";
 import { formatDateTime, formatMoney, formatPaymentMethod } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
@@ -136,6 +137,7 @@ export function RideDetailsPage() {
   const isMutable = ride.status !== "completed" && ride.status !== "canceled";
   const requestFeatureUrl = `/request-feature?source=rider_app&rideId=${encodeURIComponent(rideId)}&contextPath=${encodeURIComponent(`/rider/rides/${rideId}`)}`;
   const supportCopy = statusSupportCopy(ride.status);
+  const marketCondition = deriveMarketCondition(ride);
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -158,14 +160,18 @@ export function RideDetailsPage() {
             </div>
           }
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">Rider ride</p>
-              <h2 className="mt-2 text-[2rem] font-extrabold tracking-[-0.04em] text-ops-text">{ride.rider.name}</h2>
+              <h2 className="mt-2 break-words text-[1.5rem] font-extrabold tracking-[-0.04em] text-ops-text sm:text-[1.7rem] xl:text-[2rem]">{ride.rider.name}</h2>
               <p className="mt-2 text-sm text-ops-muted">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
             </div>
-            <div className="text-right">
-              <Badge>{ride.status.replaceAll("_", " ")}</Badge>
+            <div className="text-left sm:text-right">
+              <div className="flex flex-wrap gap-2 sm:justify-end">
+                <Badge>{ride.status.replaceAll("_", " ")}</Badge>
+                <Badge className={marketCondition.toneClassName}>{marketCondition.label}</Badge>
+              </div>
+              <p className="mt-1 text-xs text-ops-muted">{marketCondition.detail}</p>
               <p className="mt-3 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{formatMoney(customerTotal)}</p>
             </div>
           </div>

@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { getMobileNavItems, getShellFrame, getShellSections, isNavItemActive, type ShellAction } from "@/lib/shell";
 import { cn, roleLabel, userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useI18n } from "@/providers/i18n-provider";
 
 const roleIcons: Record<Role, typeof Shield> = {
   admin: Shield,
@@ -31,6 +32,7 @@ function actionClassName(variant: ShellAction["variant"] = "secondary") {
 
 export function AppShell() {
   const { user, token, logout, switchRole } = useAuth();
+  const { language, setLanguage, t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const frame = getShellFrame(location.pathname, user);
@@ -146,11 +148,11 @@ export function AppShell() {
     <div className={cn("rounded-2xl border border-ops-primary/35 bg-ops-panel/70 shadow-soft", isDriverContext ? "p-3" : "p-4")}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-ops-text">Enable ride notifications</p>
+          <p className="text-sm font-semibold text-ops-text">{t("shell.enableNotifications")}</p>
           <p className="mt-1 text-xs text-ops-muted">
             {permission === "denied"
-              ? "Notifications are currently blocked in your browser. Open notification settings to re-enable push alerts."
-              : "Turn on push alerts so you get new jobs, accepts, arrivals, and ride status updates in real time."}
+              ? t("shell.notificationBlocked")
+              : t("shell.notificationEnableBody")}
           </p>
         </div>
 
@@ -159,10 +161,10 @@ export function AppShell() {
             to="/notifications"
             className="inline-flex h-10 items-center justify-center rounded-xl border border-ops-primary/40 bg-ops-primary/15 px-3 text-xs font-semibold text-ops-text transition hover:bg-ops-primary/25"
           >
-            Open notification settings
+            {t("shell.openNotificationSettings")}
           </Link>
           <Button variant="ghost" className="h-10 px-3 text-xs" onClick={dismissNotificationPrompt}>
-            Dismiss
+            {t("shell.dismiss")}
           </Button>
         </div>
       </div>
@@ -272,7 +274,7 @@ export function AppShell() {
                     </Badge>
                   ) : !user ? (
                     <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1.5 normal-case tracking-[0.02em] text-ops-text">
-                      Guest
+                      {t("shell.guestMode")}
                     </Badge>
                   ) : null}
 
@@ -287,7 +289,7 @@ export function AppShell() {
                   ) : null}
 
                   {user ? (
-                    <Button variant="ghost" className="h-9 w-9 px-0" onClick={() => void logout()} aria-label="Sign out">
+                    <Button variant="ghost" className="h-9 w-9 px-0" onClick={() => void logout()} aria-label={t("shell.signOut")}>
                       <LogOut className="h-4 w-4" />
                     </Button>
                   ) : null}
@@ -340,6 +342,16 @@ export function AppShell() {
 
                 <div className="flex flex-col gap-3 xl:items-end">
                   <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      className="h-11 rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text outline-none transition focus:border-ops-primary/45"
+                      value={language}
+                      onChange={(event) => setLanguage(event.target.value as "en" | "es")}
+                      aria-label={t("shell.language")}
+                    >
+                      <option value="en">English</option>
+                      <option value="es">Español</option>
+                    </select>
+
                     {user?.roles.length && user.roles.length > 1 ? (
                       <select
                         className="h-11 rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text outline-none transition focus:border-ops-primary/45"
@@ -368,7 +380,7 @@ export function AppShell() {
                     {user ? (
                       <Button variant="ghost" className="h-11 px-3.5" onClick={() => void logout()}>
                         <LogOut className="mr-2 h-4 w-4" />
-                        Sign out
+                        {t("shell.signOut")}
                       </Button>
                     ) : null}
                   </div>

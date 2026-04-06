@@ -29,6 +29,21 @@ const EMPTY_FORM: RegionFormValues = {
   active: true
 };
 
+const US_STATE_CODES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+] as const;
+
+function parseServiceStates(value: string) {
+  return value
+    .split(",")
+    .map((state) => state.trim().toUpperCase())
+    .filter((state) => state.length === 2 && US_STATE_CODES.includes(state as (typeof US_STATE_CODES)[number]));
+}
+
 function regionToForm(r: MarketRegion): RegionFormValues {
   return {
     marketKey: r.marketKey,
@@ -84,12 +99,26 @@ function RegionDialog({
   const isEdit = Boolean(existing);
   const [form, setForm] = useState<RegionFormValues>(existing ? regionToForm(existing) : EMPTY_FORM);
   const [err, setErr] = useState<string | null>(null);
+  const selectedStateSet = new Set(parseServiceStates(form.serviceStates));
 
   function field(key: keyof RegionFormValues) {
     return {
       value: form[key] as string,
       onChange: (e: ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }))
     };
+  }
+
+  function toggleServiceState(stateCode: string) {
+    const next = new Set(selectedStateSet);
+    if (next.has(stateCode)) {
+      next.delete(stateCode);
+    } else {
+      next.add(stateCode);
+    }
+    setForm((current) => ({
+      ...current,
+      serviceStates: Array.from(next).sort().join(", ")
+    }));
   }
 
   const saveMut = useMutation({
@@ -171,6 +200,49 @@ function RegionDialog({
               className="w-full bg-ops-overlay border border-ops-border rounded-lg px-3 py-2 text-sm font-mono placeholder:text-ops-muted focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="TN"
             />
+          </div>
+          <div className="col-span-2 rounded-lg border border-ops-border bg-ops-overlay/65 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-xs text-ops-muted uppercase tracking-widest">Service-area map editor</p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-7 px-2 text-[11px]"
+                  onClick={() => setForm((current) => ({ ...current, serviceStates: "" }))}
+                >
+                  Clear
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-7 px-2 text-[11px]"
+                  onClick={() => setForm((current) => ({ ...current, serviceStates: US_STATE_CODES.join(", ") }))}
+                >
+                  All states
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-8">
+              {US_STATE_CODES.map((stateCode) => {
+                const selected = selectedStateSet.has(stateCode);
+                return (
+                  <button
+                    key={stateCode}
+                    type="button"
+                    onClick={() => toggleServiceState(stateCode)}
+                    className={cn(
+                      "h-8 rounded-md border text-[11px] font-semibold transition",
+                      selected
+                        ? "border-ops-primary/40 bg-ops-primary/16 text-ops-text"
+                        : "border-ops-border text-ops-muted hover:border-ops-primary/28 hover:text-ops-text"
+                    )}
+                  >
+                    {stateCode}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="col-span-2 flex items-center gap-2">
             <button
