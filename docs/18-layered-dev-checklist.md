@@ -108,16 +108,20 @@ Primary docs:
 
 Checklist:
 
-- [ ] Run focused production smoke tests for `/driver`, `/driver/inbox`, and `/driver/rides/:rideId`.
-- [ ] Confirm production `Accept` and `Decline` succeed end to end.
-- [ ] Confirm production `Recenter` works on stand-by and active maps.
+- [x] Run focused production smoke tests for `/driver`, `/driver/inbox`, and `/driver/rides/:rideId`.
+	- Verified against the live web and API on 2026-04-06 with production smoke identities and targeted test rides.
+- [x] Confirm production `Accept` and `Decline` succeed end to end.
+	- Live smoke flow confirmed both actions against targeted production test rides.
+- [x] Confirm production `Recenter` works on stand-by and active maps.
+	- Live smoke flow confirmed `Recenter map` on both `/driver` stand-by and `/driver/rides/:rideId`.
 - [x] Improve offer expiration UX and countdown clarity.
 	- Added urgency states, expired-action handling, and clearer timer copy in [apps/web/src/components/driver-home/DriverLiveOfferCard.tsx](../apps/web/src/components/driver-home/DriverLiveOfferCard.tsx) and [apps/web/src/components/driver-home/DriverOfferInbox.tsx](../apps/web/src/components/driver-home/DriverOfferInbox.tsx).
 - [x] Build driver onboarding checklist UI.
 	- Added [apps/web/src/components/driver-home/DriverOnboardingChecklist.tsx](../apps/web/src/components/driver-home/DriverOnboardingChecklist.tsx) and surfaced it in [apps/web/src/pages/driver-dashboard-page.tsx](../apps/web/src/pages/driver-dashboard-page.tsx).
 - [x] Add driver cancellation reason capture.
 	- Added driver-side cancellation reasons in [apps/web/src/pages/driver-ride-page.tsx](../apps/web/src/pages/driver-ride-page.tsx) with API support in [apps/api/src/app.ts](../apps/api/src/app.ts) and [apps/api/src/services/ride-service.ts](../apps/api/src/services/ride-service.ts).
-- [ ] Reopen driver polish only if smoke tests expose real issues.
+- [x] Reopen driver polish only if smoke tests expose real issues.
+	- Live smoke did not expose a driver-shell regression that requires reopening broader polish work.
 
 ## Layer 5 — Admin And Ops Layer
 
