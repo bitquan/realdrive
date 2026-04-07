@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#06080d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>RealDrive | Community-first rides</title>
     <meta
       name="description"
@@ -10,6 +13,9 @@
     />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://realdrive.app/" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="RealDrive" />
     <meta property="og:title" content="RealDrive | Community-first rides" />
@@ -18,12 +24,14 @@
       content="Book rides, track trips, and connect drivers with transparent community operations."
     />
     <meta property="og:url" content="https://realdrive.app/" />
+    <meta property="og:image" content="https://realdrive-web.vercel.app/logo.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="RealDrive | Community-first rides" />
     <meta
       name="twitter:description"
       content="Book rides, track trips, and connect drivers with transparent community operations."
     />
+    <meta name="twitter:image" content="https://realdrive-web.vercel.app/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -65,11 +73,22 @@
       }
 
       .boot-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.28em;
         text-transform: uppercase;
         color: rgba(201, 208, 224, 0.72);
+      }
+
+      .boot-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        object-fit: cover;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
       }
 
       .boot-title {
@@ -186,7 +205,7 @@
     <div id="root">
       <div class="boot-shell">
         <div class="boot-card">
-          <div class="boot-eyebrow">RealDrive</div>
+          <div class="boot-eyebrow"><img class="boot-logo" src="/logo.png" alt="RealDrive logo" /> <span>RealDrive</span></div>
           <h1 class="boot-title">Loading control center</h1>
           <p class="boot-copy">Preparing the rider, driver, and admin workspace for this device.</p>
           <div class="boot-status" id="boot-status" data-state="loading">

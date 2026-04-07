@@ -7,7 +7,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: payload.icon || "/favicon.ico",
+      icon: payload.icon || "/logo.png",
       tag: payload.tag || "realdrive-notification",
       data: {
         url,

@@ -185,8 +185,8 @@ export function AppShell() {
             className="rounded-5xl border border-ops-border bg-[linear-gradient(180deg,rgba(17,21,29,0.98),rgba(11,14,20,0.98))] p-5 shadow-panel transition hover:border-ops-primary/30"
           >
             <div className="flex items-center gap-4">
-              <div className="rounded-2xl border border-ops-border-soft bg-ops-panel/88 p-3 text-ops-primary">
-                <CarFront className="h-5 w-5" />
+              <div className="overflow-hidden rounded-2xl border border-ops-border-soft bg-ops-panel/88 p-1.5 shadow-[0_16px_34px_rgba(2,6,23,0.2)]">
+                <img src="/logo.png" alt="RealDrive logo" className="h-9 w-9 rounded-[0.9rem] object-cover" />
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">{shellIntro}</p>
@@ -282,8 +282,8 @@ export function AppShell() {
                   </div>
                 ) : (
                   <Link to="/" className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <div className={cn("rounded-2xl border border-ops-border bg-ops-panel/88 text-ops-primary", isRiderShellContext ? "p-1.5" : "p-2")}>
-                      <CarFront className="h-4 w-4" />
+                    <div className={cn("overflow-hidden rounded-2xl border border-ops-border bg-ops-panel/88 shadow-[0_12px_24px_rgba(2,6,23,0.18)]", isRiderShellContext ? "p-1" : "p-1.5")}>
+                      <img src="/logo.png" alt="RealDrive logo" className={cn("rounded-[0.8rem] object-cover", isRiderShellContext ? "h-6 w-6" : "h-7 w-7")} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{shellIntro}</p>
