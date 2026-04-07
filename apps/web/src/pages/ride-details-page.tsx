@@ -137,6 +137,7 @@ export function RideDetailsPage() {
   const customerTotal = ride.pricing.finalCustomerTotal ?? ride.pricing.estimatedCustomerTotal;
   const isMutable = ride.status !== "completed" && ride.status !== "canceled";
   const requestFeatureUrl = `/request-feature?source=rider_app&rideId=${encodeURIComponent(rideId)}&contextPath=${encodeURIComponent(`/rider/rides/${rideId}`)}`;
+  const reportBugUrl = `/report-bug?source=rider_app&rideId=${encodeURIComponent(rideId)}&contextPath=${encodeURIComponent(`/rider/rides/${rideId}`)}&summary=${encodeURIComponent("Rider support or safety issue")}`;
   const supportCopy = statusSupportCopy(ride.status);
   const marketCondition = deriveMarketCondition(ride);
   const mobileActions = [
@@ -217,6 +218,25 @@ export function RideDetailsPage() {
                 <Vote className="mr-1.5 h-3.5 w-3.5" />
                 Open community board
               </Link>
+            </div>
+
+            <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.04] p-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Safety toolkit preview</p>
+              <p className="mt-2 text-[12px] leading-5 text-slate-300">Use real support routes now while the fuller rider safety toolkit stays in the roadmap phase.</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Link
+                  to={reportBugUrl}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-3 text-[11px] font-semibold text-white transition hover:bg-white/[0.1]"
+                >
+                  Report issue
+                </Link>
+                <Link
+                  to="/notifications"
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-3 text-[11px] font-semibold text-white transition hover:bg-white/[0.1]"
+                >
+                  Alerts
+                </Link>
+              </div>
             </div>
           </>
         )}
@@ -351,6 +371,26 @@ export function RideDetailsPage() {
             >
               <Vote className="mr-2 h-4 w-4" />
               Open community board
+            </Link>
+          </div>
+        </PanelSection>
+
+        <PanelSection title="Safety toolkit preview" description="Keep support, reporting, and alerts close to the rider trip without inventing fake safety controls.">
+          <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm leading-6 text-ops-muted">
+            The full safety toolkit is still phased, but the rider trip now exposes real support paths for issue reporting and alert management.
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              to={reportBugUrl}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+            >
+              Report issue
+            </Link>
+            <Link
+              to="/notifications"
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+            >
+              Alert settings
             </Link>
           </div>
         </PanelSection>

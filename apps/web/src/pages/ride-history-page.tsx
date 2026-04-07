@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, CarFront, Clock3, Receipt, Route, Sparkles } from "lucide-react";
+import { CalendarClock, CarFront, Clock3, Receipt, Route, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ListRowLink, MetricCard, MetricStrip, PanelSection, SurfaceHeader } from "@/components/layout/ops-layout";
 import { RiderMapShell } from "@/components/rider-home/rider-map-shell";
@@ -29,6 +29,9 @@ export function RideHistoryPage() {
   const totalSpend = rides.reduce((total, ride) => total + ride.payment.amountDue, 0);
   const activeRides = rides.filter((ride) => ["requested", "scheduled", "offered", "accepted", "en_route", "arrived", "in_progress"].includes(ride.status));
   const pastRides = rides.filter((ride) => !activeRides.includes(ride));
+  const completedRides = rides.filter((ride) => ride.status === "completed");
+  const recentCompletedRides = completedRides.slice(0, 3);
+  const completedSpend = completedRides.reduce((total, ride) => total + ride.payment.amountDue, 0);
   const nextRide = activeRides[0] ?? rides[0] ?? null;
   const mapRide = nextRide;
   const hasRides = rides.length > 0;
@@ -44,6 +47,48 @@ export function RideHistoryPage() {
         totalSpend={totalSpend}
         hasRides={hasRides}
       />
+
+      <div className="space-y-3 md:hidden">
+        <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(13,18,28,0.92),rgba(8,12,18,0.98))] p-4 text-white shadow-[0_22px_60px_rgba(2,6,23,0.32)]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Receipts hub preview</p>
+              <p className="mt-1 text-base font-semibold">Review completed totals without leaving rider history</p>
+            </div>
+            <Receipt className="h-4.5 w-4.5 text-teal-300" />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-[1.1rem] border border-white/8 bg-white/[0.04] p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Completed</p>
+              <p className="mt-1 text-sm font-semibold text-white">{completedRides.length}</p>
+            </div>
+            <div className="rounded-[1.1rem] border border-white/8 bg-white/[0.04] p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Totals</p>
+              <p className="mt-1 text-sm font-semibold text-white">{formatMoney(completedSpend)}</p>
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {recentCompletedRides.length ? recentCompletedRides.map((ride) => (
+              <Link
+                key={ride.id}
+                to={`/rider/rides/${ride.id}`}
+                className="flex items-center justify-between gap-3 rounded-[1.1rem] border border-white/8 bg-white/[0.04] px-3 py-2.5 transition hover:bg-white/[0.07]"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[12px] font-semibold text-white">{ride.pickup.address}</p>
+                  <p className="truncate text-[11px] text-slate-400">{formatDateTime(ride.scheduledFor ?? ride.requestedAt)}</p>
+                </div>
+                <p className="shrink-0 text-[11px] font-semibold text-white">{formatMoney(ride.payment.amountDue)}</p>
+              </Link>
+            )) : (
+              <div className="rounded-[1.1rem] border border-dashed border-white/10 px-3 py-3 text-[12px] text-slate-400">
+                Completed rides will populate this receipts preview once your trip history grows.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="hidden md:block space-y-6">
       <SurfaceHeader
@@ -182,11 +227,45 @@ export function RideHistoryPage() {
         </div>
         <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/45 p-5 text-sm text-ops-muted">
           <div className="flex items-center gap-2 text-ops-text">
-            <Route className="h-4 w-4 text-ops-primary" />
-            <p className="font-semibold">Your trips stay connected</p>
+            <Receipt className="h-4 w-4 text-ops-primary" />
+            <p className="font-semibold">Receipt hub preview</p>
           </div>
-          <p className="mt-3 leading-6">Guest booking remains open on the home page, while signed-in rider history keeps your repeat trips, totals, and live follow-up in one place.</p>
+          <p className="mt-3 leading-6">Completed ride totals, payment context, and follow-up details are being pulled closer to the rider shell instead of staying buried in the full trip list.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[1.3rem] border border-ops-border-soft bg-ops-surface/65 p-4">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-ops-muted">Completed rides</p>
+              <p className="mt-2 text-xl font-bold text-ops-text">{completedRides.length}</p>
+            </div>
+            <div className="rounded-[1.3rem] border border-ops-border-soft bg-ops-surface/65 p-4">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-ops-muted">Receipt totals</p>
+              <p className="mt-2 text-xl font-bold text-ops-text">{formatMoney(completedSpend)}</p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            {recentCompletedRides.length ? recentCompletedRides.map((ride) => (
+              <ListRowLink
+                key={`receipt-${ride.id}`}
+                to={`/rider/rides/${ride.id}`}
+                title={ride.dropoff.address}
+                description={formatDateTime(ride.scheduledFor ?? ride.requestedAt)}
+                badge={<Badge>receipt</Badge>}
+                meta={formatMoney(ride.payment.amountDue)}
+              />
+            )) : (
+              <div className="rounded-[1.3rem] border border-dashed border-ops-border p-4 text-sm text-ops-muted">Receipt summaries will appear here after your first completed trip.</div>
+            )}
+          </div>
         </div>
+      </div>
+      ) : null}
+
+      {hasRides ? (
+      <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/45 p-5 text-sm text-ops-muted">
+        <div className="flex items-center gap-2 text-ops-text">
+          <ShieldCheck className="h-4 w-4 text-ops-primary" />
+          <p className="font-semibold">Safety toolkit direction</p>
+        </div>
+        <p className="mt-3 leading-6">Ride detail now keeps trust and support modules closer to the map shell. Next rider steps keep those support actions tighter, shorter, and easier to reach during live trips.</p>
       </div>
       ) : null}
       </div>

@@ -70,6 +70,7 @@ export function PublicTrackPage() {
   const { ride, share, communityAccess } = trackQuery.data;
   const supportCopy = statusSupportCopy(ride.status);
   const marketCondition = deriveMarketCondition(ride);
+  const riderAccessUrl = `/rider/login`;
   const mobileActions = [
     communityAccess
       ? {
@@ -124,6 +125,16 @@ export function PublicTrackPage() {
                 </a>
               </div>
             ) : null}
+            <div className="rounded-[1.2rem] border border-white/8 bg-white/[0.04] p-3.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Safety toolkit preview</p>
+              <p className="mt-2 text-[12px] leading-5 text-slate-300">Public tracking now points riders back into the signed-in support path for alerts and issue follow-up.</p>
+              <Link
+                to={riderAccessUrl}
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-3.5 text-[11px] font-semibold text-white transition hover:bg-white/[0.1]"
+              >
+                Rider access
+              </Link>
+            </div>
           </>
         )}
       />
@@ -226,6 +237,20 @@ export function PublicTrackPage() {
             </div>
           </PanelSection>
         ) : null}
+
+        <PanelSection title="Safety toolkit preview" description="Public tracking should still route into real rider support paths instead of pretending to have unauthenticated safety controls.">
+          <div className="rounded-[1.45rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4 text-sm leading-6 text-ops-muted">
+            Sign in from the rider side to manage alerts or submit support issues tied to this trip.
+          </div>
+          <div className="mt-4">
+            <Link
+              to={riderAccessUrl}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(21,26,34,0.96),rgba(12,15,21,0.96))] px-4 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+            >
+              Open rider access
+            </Link>
+          </div>
+        </PanelSection>
 
         {share ? (
           <ShareQrCard

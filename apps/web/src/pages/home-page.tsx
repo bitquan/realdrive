@@ -30,6 +30,47 @@ import { api } from "@/lib/api";
 import { formatMoney, userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
+const SAVED_PLACES_STORAGE_KEY = "realdrive:rider-saved-places:v1";
+
+const rideModeOptions = [
+  {
+    id: "now" as const,
+    title: "Ride now",
+    description: "Keep guest booking fast for immediate pickup.",
+    icon: Car,
+    badge: "Live now"
+  },
+  {
+    id: "scheduled" as const,
+    title: "Reserve",
+    description: "Open the scheduled booking path without digging through the form.",
+    icon: Clock3,
+    badge: "Next"
+  }
+];
+
+const savedPlaceSlots = [
+  {
+    id: "home" as const,
+    title: "Home",
+    description: "Quick return destination"
+  },
+  {
+    id: "work" as const,
+    title: "Work",
+    description: "Commute shortcut"
+  }
+];
+
+function defaultScheduledTime() {
+  const next = new Date();
+  next.setMinutes(0, 0, 0);
+  next.setHours(next.getHours() + 1);
+  const timezoneOffset = next.getTimezoneOffset();
+  const local = new Date(next.getTime() - timezoneOffset * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 const paymentMethods = [
   { id: "jim", label: "Pay with Jim", icon: Wallet },
   { id: "cashapp", label: "Cash App", icon: CreditCard },
@@ -82,6 +123,8 @@ export function HomePage() {
     email: "",
     phone: ""
   });
+  const [savedPlaces, setSavedPlaces] = useState<Record<"home" | "work", string>>({ home: "", work: "" });
+  const [savedPlacesReady, setSavedPlacesReady] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -95,6 +138,35 @@ export function HomePage() {
       email: current.email || user.email || ""
     }));
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(SAVED_PLACES_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Record<"home" | "work", string>>;
+        setSavedPlaces({
+          home: typeof parsed.home === "string" ? parsed.home : "",
+          work: typeof parsed.work === "string" ? parsed.work : ""
+        });
+      }
+    } catch {
+      // ignore invalid local data
+    }
+
+    setSavedPlacesReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!savedPlacesReady || typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(SAVED_PLACES_STORAGE_KEY, JSON.stringify(savedPlaces));
+  }, [savedPlaces, savedPlacesReady]);
 
   const deferredQuoteInput = useDeferredValue({
     pickupAddress: bookingForm.pickupAddress,
@@ -147,6 +219,38 @@ export function HomePage() {
   const riderEntryLabel = userHasRole(user, "rider") ? "My rides" : "Rider sign in";
   const riderEntryTo = userHasRole(user, "rider") ? "/rider/rides" : "/rider/login";
   const riderFeatureContext = userHasRole(user, "rider") ? "rider" : "public";
+
+  function setRideMode(mode: "now" | "scheduled") {
+    setBookingForm((current) => ({
+      ...current,
+      scheduleMode: mode,
+      scheduledFor: mode === "scheduled" && !current.scheduledFor ? defaultScheduledTime() : current.scheduledFor
+    }));
+  }
+
+  function saveCurrentDestination(slot: "home" | "work") {
+    const destination = bookingForm.dropoffAddress.trim();
+    if (!destination) {
+      return;
+    }
+
+    setSavedPlaces((current) => ({
+      ...current,
+      [slot]: destination
+    }));
+  }
+
+  function useSavedDestination(slot: "home" | "work") {
+    const destination = savedPlaces[slot].trim();
+    if (!destination) {
+      return;
+    }
+
+    setBookingForm((current) => ({
+      ...current,
+      dropoffAddress: destination
+    }));
+  }
 
   return (
     <div className="space-y-2.5 md:space-y-5">
@@ -289,6 +393,72 @@ export function HomePage() {
                   Returning rider? Sign in to open your trip history.
                 </Link>
               ) : null}
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {rideModeOptions.map(({ id, title, description, icon: Icon, badge }) => {
+                const active = bookingForm.scheduleMode === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setRideMode(id)}
+                    className={`rounded-[1.6rem] border p-4 text-left transition ${
+                      active
+                        ? "border-ops-primary/45 bg-ops-primary/12 shadow-soft"
+                        : "border-ops-border-soft bg-ops-panel/45 hover:bg-ops-panel/65"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className={`rounded-2xl p-2.5 ${active ? "bg-ops-primary text-white" : "bg-ops-surface text-ops-primary"}`}>
+                        <Icon className="h-4.5 w-4.5" />
+                      </div>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${active ? "border-ops-primary/35 bg-ops-primary/12 text-ops-primary" : "border-ops-border-soft text-ops-muted"}`}>
+                        {badge}
+                      </span>
+                    </div>
+                    <p className="mt-3 font-semibold text-ops-text">{title}</p>
+                    <p className="mt-1 text-sm leading-6 text-ops-muted">{description}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="rounded-[1.6rem] border border-ops-border-soft bg-ops-panel/45 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ops-muted">Saved places preview</p>
+                  <p className="mt-1 font-semibold text-ops-text">Quick-fill your most common destinations</p>
+                  <p className="mt-1 text-sm leading-6 text-ops-muted">Save the current dropoff as Home or Work, then reuse it in one tap from this booking shell.</p>
+                </div>
+                <span className="rounded-full border border-ops-border-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-ops-muted">Pilot</span>
+              </div>
+
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {savedPlaceSlots.map((slot) => {
+                  const savedValue = savedPlaces[slot.id];
+                  return (
+                    <div key={slot.id} className="rounded-[1.35rem] border border-ops-border-soft bg-ops-surface/65 p-3.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-ops-text">{slot.title}</p>
+                          <p className="text-[11px] text-ops-muted">{slot.description}</p>
+                        </div>
+                        <MapPin className="h-4 w-4 text-ops-primary" />
+                      </div>
+                      <p className="mt-3 min-h-[2.75rem] text-sm leading-5 text-ops-muted">{savedValue || "No saved destination yet. Enter a dropoff, then save it here."}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" disabled={!savedValue} onClick={() => useSavedDestination(slot.id)}>
+                          Use destination
+                        </Button>
+                        <Button type="button" variant="ghost" disabled={!bookingForm.dropoffAddress.trim()} onClick={() => saveCurrentDestination(slot.id)}>
+                          {savedValue ? "Replace with current dropoff" : "Save current dropoff"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-3 md:gap-4">

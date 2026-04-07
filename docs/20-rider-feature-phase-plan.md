@@ -66,7 +66,7 @@ Every rider tile visible in the mobile shell must have a plan entry here.
 - why it matters
   - The booking form already supports scheduled pickups, but the mock suggests a clearer dedicated reserve path.
 - current design-phase behavior
-  - Show as `Coming soon · Phase 2` in the rider shell.
+  - The public booking shell now exposes a dedicated `Reserve` entry card that toggles the existing scheduled booking controls, while the full reserve-specific review flow remains phased.
 - target implementation
   - Introduce a distinct reserve entry and scheduled-trip review flow tied to the existing booking engine.
 - acceptance direction
@@ -77,7 +77,7 @@ Every rider tile visible in the mobile shell must have a plan entry here.
 - why it matters
   - Quick home/work shortcuts reduce typing and make the shell feel closer to the mock.
 - current design-phase behavior
-  - Show as `Coming soon · Phase 2` in the rider shell.
+  - The booking shell now includes a local Home/Work quick-save preview so riders can reuse real destinations without pretending there is a full backend-managed saved places system yet.
 - target implementation
   - Store rider-approved favorite destinations and surface them as quick-select tiles.
 - acceptance direction
@@ -88,7 +88,7 @@ Every rider tile visible in the mobile shell must have a plan entry here.
 - why it matters
   - Riders need a cleaner way to review totals and trip records beyond the current queue.
 - current design-phase behavior
-  - Show as `Coming soon · Phase 3` in the rider shell.
+  - Rider history now includes a receipt-summary preview that pulls completed totals and recent completed trips closer to the shell.
 - target implementation
   - Add receipt-first trip summaries and filters inside rider history.
 - acceptance direction
@@ -99,7 +99,7 @@ Every rider tile visible in the mobile shell must have a plan entry here.
 - why it matters
   - Trust and support should be easier to reach during active trips.
 - current design-phase behavior
-  - Show as `Coming soon · Phase 3` in the rider shell.
+  - Ride detail and public tracking now include safety-toolkit preview modules that route into real support paths such as rider access, issue reporting, and alert settings.
 - target implementation
   - Add compact rider help, contact, and trip-assistance shortcuts for live rides and public tracking.
 - acceptance direction
