@@ -40,11 +40,15 @@ export function AppShell() {
   const CurrentRoleIcon = user ? roleIcons[user.role] : UserRound;
   const mobileHeaderMinimal = frame.mobileHeaderMode === "minimal";
   const [dismissedPrompt, setDismissedPrompt] = useState(false);
-  const isDriverContext = user?.role === "driver" || location.pathname.startsWith("/driver");
-  const isAdminContext = user?.role === "admin" || location.pathname.startsWith("/admin");
+  const isDriverContext = location.pathname.startsWith("/driver");
+  const isAdminContext = location.pathname.startsWith("/admin");
   const isRiderShellContext = !isDriverContext && !isAdminContext;
   const isBookScreen = location.pathname === "/book";
   const isPublicStateRoute = ["/", "/book", "/rider", "/more"].includes(location.pathname);
+  const multiRoleUser = user && user.roles.length > 1 ? user : null;
+  const mobileRoleOptions = multiRoleUser?.roles ?? [];
+  const activeMobileRole = multiRoleUser?.role ?? null;
+  const showMobileRoleSwitcher = Boolean(multiRoleUser && !isBookScreen);
   const mobileItems = getMobileNavItems(user, { driverRidePath: "/driver?tab=ride", driverInboxPath: "/driver/inbox" });
 
   const canCheckNotificationApi = typeof window !== "undefined" && "Notification" in window;
@@ -264,7 +268,7 @@ export function AppShell() {
               ? "border-b-0 bg-[linear-gradient(180deg,rgba(5,8,14,0.92),rgba(7,9,13,0.72),transparent)]"
               : "border-b border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(7,9,13,0.96),rgba(6,8,12,0.94))]"
           )}>
-            <div className={cn("px-3 md:px-6 md:py-4", isBookScreen ? "py-1.5" : isRiderShellContext ? "py-2" : "py-2.5")}>
+            <div className={cn("px-3 md:px-6 md:py-4", isBookScreen ? "py-1.5" : isRiderShellContext ? "py-2" : isAdminContext ? "py-2" : "py-2.5")}>
               <div className="flex min-w-0 items-center justify-between gap-2 lg:hidden">
                 {isBookScreen ? (
                   <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -282,23 +286,23 @@ export function AppShell() {
                   </div>
                 ) : (
                   <Link to="/" className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <div className={cn("overflow-hidden rounded-2xl border border-ops-border bg-ops-panel/88 shadow-[0_12px_24px_rgba(2,6,23,0.18)]", isRiderShellContext ? "p-1" : "p-1.5")}>
-                      <img src="/logo.png" alt="RealDrive logo" className={cn("rounded-[0.8rem] object-cover", isRiderShellContext ? "h-6 w-6" : "h-7 w-7")} />
+                    <div className={cn("overflow-hidden rounded-2xl border border-ops-border bg-ops-panel/88 shadow-[0_12px_24px_rgba(2,6,23,0.18)]", isRiderShellContext ? "p-1" : isAdminContext ? "p-0.5" : "p-1.5")}>
+                      <img src="/logo.png" alt="RealDrive logo" className={cn("rounded-[0.8rem] object-cover", isRiderShellContext ? "h-6 w-6" : isAdminContext ? "h-5 w-5" : "h-7 w-7")} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{shellIntro}</p>
-                      <p className={cn("truncate font-bold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[0.95rem]" : "text-sm")}>{shellTitle}</p>
+                      <p className={cn("truncate font-bold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[0.95rem]" : isAdminContext ? "text-[0.92rem]" : "text-sm")}>{shellTitle}</p>
                     </div>
                   </Link>
                 )}
 
                 <div className="flex shrink-0 items-center gap-1.5">
-                  {user && !isDriverContext && !isBookScreen ? (
-                    <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
+                  {user && !isBookScreen ? (
+                    <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : isAdminContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
                       {roleLabel(user.role)}
                     </Badge>
                   ) : !user && !isBookScreen ? (
-                    <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
+                    <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : isAdminContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
                       {t("shell.guestMode")}
                     </Badge>
                   ) : null}
@@ -306,7 +310,7 @@ export function AppShell() {
                   {user ? (
                     <Link
                       to="/notifications"
-                      className={cn("inline-flex items-center justify-center rounded-xl border border-ops-border-soft bg-ops-panel/82 text-ops-muted transition hover:text-ops-text", isRiderShellContext ? "h-8.5 w-8.5" : "h-9 w-9")}
+                      className={cn("inline-flex items-center justify-center rounded-xl border border-ops-border-soft bg-ops-panel/82 text-ops-muted transition hover:text-ops-text", isRiderShellContext ? "h-8.5 w-8.5" : isAdminContext ? "h-8.5 w-8.5" : "h-9 w-9")}
                       aria-label="Open notifications"
                     >
                       <Bell className="h-4 w-4" />
@@ -314,19 +318,19 @@ export function AppShell() {
                   ) : null}
 
                   {user ? (
-                    <Button variant="ghost" className={cn("w-9 px-0", isRiderShellContext ? "h-8.5" : "h-9")} onClick={() => void logout()} aria-label={t("shell.signOut")}>
+                    <Button variant="ghost" className={cn("w-9 px-0", isRiderShellContext ? "h-8.5" : isAdminContext ? "h-8.5" : "h-9")} onClick={() => void logout()} aria-label={t("shell.signOut")}>
                       <LogOut className="h-4 w-4" />
                     </Button>
                   ) : null}
                 </div>
               </div>
 
-              {user?.roles.length && user.roles.length > 1 && !isDriverContext && !isBookScreen ? (
+              {showMobileRoleSwitcher ? (
                 <div className="mt-2 max-w-full overflow-x-auto pb-0.5 lg:hidden">
                   <div className="flex w-max gap-2">
-                    {user.roles.map((role) => {
+                    {mobileRoleOptions.map((role) => {
                       const Icon = roleIcons[role];
-                      const active = user.role === role;
+                      const active = activeMobileRole === role;
 
                       return (
                         <button
@@ -350,9 +354,9 @@ export function AppShell() {
               ) : null}
 
               {!mobileHeaderMinimal && !isBookScreen ? (
-                <div className={cn("min-w-0 lg:hidden", isRiderShellContext ? "mt-2" : "mt-2.5")}>
+                <div className={cn("min-w-0 lg:hidden", isRiderShellContext ? "mt-2" : isAdminContext ? "mt-2" : "mt-2.5")}>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{frame.eyebrow}</p>
-                  <h1 className={cn("mt-1 truncate font-extrabold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[1.05rem]" : "text-lg")}>{frame.title}</h1>
+                  <h1 className={cn("mt-1 truncate font-extrabold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[1.05rem]" : isAdminContext ? "text-[1rem]" : "text-lg")}>{frame.title}</h1>
                 </div>
               ) : null}
 

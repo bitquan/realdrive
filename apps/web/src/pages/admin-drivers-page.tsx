@@ -575,19 +575,19 @@ export function AdminDriversPage() {
   const missingDocsCount = drivers.filter((driver) => getDriverReviewQueueMeta(driver).stage === "missing_docs").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:space-y-6 md:pb-0">
       <SurfaceHeader
         eyebrow="Driver operations"
         title="Keep the live driver network clean and reviewable"
         description="Approve real applicants, review the required compliance packet, and keep dispatch settings tied to the live driver record."
         aside={
-          <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
+          <div className="rounded-[1.35rem] border border-ops-border-soft bg-ops-panel/55 p-4 md:rounded-[1.7rem] md:p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Selection model</p>
-            <p className="mt-4 text-sm leading-6 text-ops-muted">
+            <p className="mt-3 text-sm leading-6 text-ops-muted md:mt-4">
               The left column defaults to drivers owned by you. Switch to all drivers when you need full oversight across
               both collector admins.
             </p>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2 md:mt-4">
               <Button variant={scope === "owned" ? "default" : "outline"} onClick={() => setScope("owned")}>
                 Owned by me
               </Button>
@@ -607,11 +607,11 @@ export function AdminDriversPage() {
         <MetricCard label="Available now" value={availableCount} meta="Live network capacity" icon={ToggleLeft} tone="success" />
       </MetricStrip>
 
-      <div className="grid gap-6 xl:grid-cols-[0.44fr_0.56fr]">
+      <div className="grid gap-4 xl:grid-cols-[0.44fr_0.56fr] xl:gap-6">
         <PanelSection
           title="Driver queue"
           description="Search by name, contact, or vehicle and open the live review panel on the right."
-          contentClassName="space-y-4"
+          contentClassName="space-y-3.5 md:space-y-4"
         >
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ops-muted" />

@@ -538,15 +538,15 @@ export function AdminDuesPage() {
   const payoutPreview = getPayoutInstructionPreview(payoutForm);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:space-y-6 md:pb-0">
       <SurfaceHeader
         eyebrow="Finance queue"
         title="Batch, reconcile, and collect completed-trip dues"
         description="Drivers only pay against generated dues codes. Cash trips auto-batch on completion, and unresolved completed-trip dues block driver access after 48 hours."
         aside={
-          <div className="rounded-[1.7rem] border border-ops-border-soft bg-ops-panel/55 p-5">
+          <div className="rounded-[1.35rem] border border-ops-border-soft bg-ops-panel/55 p-4 md:rounded-[1.7rem] md:p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-ops-muted">Queue scope</p>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2 md:mt-4">
               <Button variant={scope === "owned" ? "default" : "outline"} onClick={() => setScope("owned")}>
                 Owned by me
               </Button>
@@ -565,10 +565,10 @@ export function AdminDuesPage() {
         <MetricCard label="Pending ad credit" value={formatMoney(pendingAdCreditTotal)} meta="Manual dues offset available" icon={Landmark} tone="success" />
       </MetricStrip>
 
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-6">
+      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr] xl:gap-6">
+        <div className="space-y-4 xl:space-y-6">
           <PanelSection title="Collector dues instructions" description="Drivers see these remittance instructions from their assigned collector admin. They do not change rider trip payment.">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3.5 md:grid-cols-2 md:gap-4">
               <div className="space-y-2">
                 <Label>Cash App handle</Label>
                 <Input value={payoutForm.cashAppHandle ?? ""} onChange={(event) => setPayoutForm((current) => ({ ...current, cashAppHandle: event.target.value }))} />
@@ -590,18 +590,18 @@ export function AdminDuesPage() {
                 <Input value={payoutForm.otherInstructions ?? ""} onChange={(event) => setPayoutForm((current) => ({ ...current, otherInstructions: event.target.value }))} />
               </div>
             </div>
-            <div className="mt-5">
+            <div className="mt-4 md:mt-5">
               <Button disabled={payoutMutation.isPending} onClick={() => payoutMutation.mutate()}>
                 Save dues instructions
               </Button>
             </div>
-            <div className="mt-5 rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+            <div className="mt-4 rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-3.5 md:mt-5 md:rounded-[1.35rem] md:p-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Driver-facing preview</p>
               <p className="mt-2 text-sm text-ops-muted">Last updated {payoutPreview.updatedAtLabel}.</p>
               {payoutPreview.hasInstructions ? (
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="mt-3.5 grid gap-2.5 md:mt-4 md:grid-cols-2 md:gap-3">
                   {payoutPreview.entries.map((entry) => (
-                    <div key={entry.label} className="rounded-[1.1rem] border border-ops-border-soft/90 bg-ops-surface/72 p-3">
+                    <div key={entry.label} className="rounded-[1rem] border border-ops-border-soft/90 bg-ops-surface/72 p-3 md:rounded-[1.1rem]">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">{entry.label}</p>
                       <p className="mt-2 text-sm text-ops-text">{entry.value}</p>
                     </div>
@@ -637,7 +637,7 @@ export function AdminDuesPage() {
           </PanelSection>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 xl:space-y-6">
           <PanelSection title="Open batches" description="These dues codes are live and waiting for payment evidence.">
             <EntityList>
               {filteredOpenBatches.length ? (

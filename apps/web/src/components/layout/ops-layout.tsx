@@ -35,14 +35,14 @@ export function SurfaceHeader({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-5xl border border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.98),rgba(9,12,17,0.98))] p-5 shadow-panel md:p-7", className)}>
-      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+    <section className={cn("rounded-[2rem] border border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.98),rgba(9,12,17,0.98))] p-4 shadow-panel md:rounded-5xl md:p-7", className)}>
+      <div className="flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-3xl">
-          {eyebrow ? <Badge className="border-ops-border-soft bg-ops-panel/92">{eyebrow}</Badge> : null}
-          <h2 className="mt-4 text-[1.65rem] font-extrabold tracking-[-0.035em] text-ops-text md:text-[2.5rem]">{title}</h2>
-          {description ? <p className="mt-3 max-w-2xl text-sm leading-6 text-ops-muted md:text-base">{description}</p> : null}
+          {eyebrow ? <Badge className="border-ops-border-soft bg-ops-panel/92 px-2.5 py-1 text-[11px] md:px-3 md:py-1.5">{eyebrow}</Badge> : null}
+          <h2 className="mt-3 text-[1.45rem] font-extrabold tracking-[-0.04em] text-ops-text md:mt-4 md:text-[2.5rem]">{title}</h2>
+          {description ? <p className="mt-2 max-w-2xl text-sm leading-5 text-ops-muted md:mt-3 md:text-base md:leading-6">{description}</p> : null}
           {actions?.length ? (
-            <div className="mt-5 flex flex-wrap gap-2.5">
+            <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:gap-2.5 md:mt-5">
               {actions.map((action) => {
                 const Icon = action.icon;
 
@@ -51,7 +51,7 @@ export function SurfaceHeader({
                     key={`${action.to}-${action.label}`}
                     to={action.to}
                     className={cn(
-                      "inline-flex h-11 items-center justify-center rounded-2xl border px-4 text-sm font-semibold transition",
+                      "inline-flex h-10 items-center justify-center rounded-2xl border px-3.5 text-sm font-semibold transition sm:h-11 sm:px-4",
                       actionClassName(action.variant)
                     )}
                   >
@@ -101,18 +101,18 @@ export function MetricCard({
 
   return (
     <Card className={cn("overflow-hidden", toneClassName, className)}>
-      <CardContent className="flex min-h-[9.75rem] flex-col justify-between p-5 md:p-6">
+      <CardContent className="flex min-h-[8.35rem] flex-col justify-between p-4 md:min-h-[9.75rem] md:p-6">
         <div className="flex items-start justify-between gap-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{label}</p>
           {Icon ? (
-            <div className="rounded-2xl border border-ops-border-soft bg-ops-panel/85 p-2.5 text-ops-muted">
+            <div className="rounded-2xl border border-ops-border-soft bg-ops-panel/85 p-2 text-ops-muted md:p-2.5">
               <Icon className="h-4 w-4" />
             </div>
           ) : null}
         </div>
         <div>
-          <p className="text-[2.2rem] font-extrabold tracking-[-0.045em] text-ops-text md:text-[2.8rem]">{value}</p>
-          {meta ? <p className="mt-2 text-sm text-ops-muted">{meta}</p> : null}
+          <p className="text-[1.85rem] font-extrabold tracking-[-0.045em] text-ops-text md:text-[2.8rem]">{value}</p>
+          {meta ? <p className="mt-1.5 text-[13px] leading-5 text-ops-muted md:mt-2 md:text-sm">{meta}</p> : null}
         </div>
       </CardContent>
     </Card>
@@ -136,20 +136,20 @@ export function PanelSection({
 }) {
   return (
     <Card className={className}>
-      <CardHeader className="flex flex-col gap-4 border-b border-ops-border-soft/80 pb-4 md:flex-row md:items-end md:justify-between">
+      <CardHeader className="flex flex-col gap-3 border-b border-ops-border-soft/80 pb-3.5 md:gap-4 md:pb-4 md:flex-row md:items-end md:justify-between">
         <div>
           <CardTitle>{title}</CardTitle>
-          {description ? <CardDescription className="mt-2">{description}</CardDescription> : null}
+          {description ? <CardDescription className="mt-1.5 md:mt-2">{description}</CardDescription> : null}
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </CardHeader>
-      <CardContent className={cn("pt-5", contentClassName)}>{children}</CardContent>
+      <CardContent className={cn("pt-4 md:pt-5", contentClassName)}>{children}</CardContent>
     </Card>
   );
 }
 
 export function EntityList({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("space-y-3", className)}>{children}</div>;
+  return <div className={cn("space-y-2.5 md:space-y-3", className)}>{children}</div>;
 }
 
 export function EntityListItem({
@@ -169,7 +169,7 @@ export function EntityListItem({
     <Comp
       {...(onClick ? { type: "button", onClick } : {})}
       className={cn(
-        "w-full rounded-[1.4rem] border px-4 py-3 text-left transition",
+        "w-full rounded-[1.25rem] border px-3.5 py-3 text-left transition md:rounded-[1.4rem] md:px-4",
         active
           ? "border-ops-primary/35 bg-ops-panel text-ops-text shadow-soft"
           : "border-ops-border-soft/90 bg-ops-surface/72 text-ops-text hover:border-ops-border hover:bg-ops-panel/72",
@@ -237,10 +237,10 @@ export function DataField({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4", className)}>
+    <div className={cn("rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-3.5 md:rounded-[1.35rem] md:p-4", className)}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{label}</p>
-      <div className="mt-3 text-base font-semibold leading-7 text-ops-text">{value}</div>
-      {subtle ? <div className="mt-2 text-sm leading-6 text-ops-muted">{subtle}</div> : null}
+      <div className="mt-2.5 text-base font-semibold leading-6 text-ops-text md:mt-3 md:leading-7">{value}</div>
+      {subtle ? <div className="mt-1.5 text-sm leading-5 text-ops-muted md:mt-2 md:leading-6">{subtle}</div> : null}
     </div>
   );
 }

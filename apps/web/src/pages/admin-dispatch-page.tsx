@@ -569,23 +569,23 @@ export function AdminDispatchPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-4 lg:hidden">
-        <div className="rounded-[1.7rem] border border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.98),rgba(9,12,17,0.98))] p-4 shadow-panel">
+    <div className="space-y-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:space-y-5 md:pb-0">
+      <div className="space-y-3.5 lg:hidden">
+        <div className="rounded-[1.45rem] border border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.98),rgba(9,12,17,0.98))] p-3.5 shadow-panel">
           <Badge className="border-ops-border-soft bg-ops-panel/92">Dispatch</Badge>
-          <h2 className="mt-3 text-[1.45rem] font-extrabold tracking-[-0.035em] text-ops-text">Ride-first admin dispatch</h2>
+          <h2 className="mt-2.5 text-[1.28rem] font-extrabold tracking-[-0.035em] text-ops-text">Ride-first admin dispatch</h2>
           <p className="mt-2 text-sm leading-6 text-ops-muted">Live queue, ride detail, and route context tuned for the phone control surface.</p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-3.5 flex flex-wrap gap-2">
             <Link
               to="/admin"
-              className="inline-flex h-10 items-center justify-center rounded-2xl border border-ops-border px-3.5 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+              className="inline-flex h-9 items-center justify-center rounded-[1rem] border border-ops-border px-3 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
             >
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Overview
             </Link>
             <Link
               to="/admin/drivers"
-              className="inline-flex h-10 items-center justify-center rounded-2xl border border-ops-border px-3.5 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
+              className="inline-flex h-9 items-center justify-center rounded-[1rem] border border-ops-border px-3 text-sm font-semibold text-ops-text transition hover:border-ops-primary/35 hover:bg-ops-panel"
             >
               <Users className="mr-2 h-4 w-4" />
               Driver settings
@@ -593,22 +593,22 @@ export function AdminDispatchPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Active</p>
-            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{activeRides.length}</p>
+            <p className="mt-1.5 text-[1.65rem] font-extrabold tracking-[-0.04em] text-ops-text">{activeRides.length}</p>
           </div>
-          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+          <div className="rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Scheduled</p>
-            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{scheduledRides.length}</p>
+            <p className="mt-1.5 text-[1.65rem] font-extrabold tracking-[-0.04em] text-ops-text">{scheduledRides.length}</p>
           </div>
-          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+          <div className="rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Awaiting pay</p>
-            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{ridesAwaitingCollection}</p>
+            <p className="mt-1.5 text-[1.65rem] font-extrabold tracking-[-0.04em] text-ops-text">{ridesAwaitingCollection}</p>
           </div>
-          <div className="rounded-[1.35rem] border border-ops-border-soft/90 bg-ops-panel/45 p-4">
+          <div className="rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-panel/45 p-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ops-muted">Live pings</p>
-            <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ops-text">{livePingCount}</p>
+            <p className="mt-1.5 text-[1.65rem] font-extrabold tracking-[-0.04em] text-ops-text">{livePingCount}</p>
           </div>
         </div>
       </div>
@@ -652,7 +652,7 @@ export function AdminDispatchPage() {
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         <div className="relative sm:col-span-2 xl:col-span-2">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ops-muted" />
           <Input value={filters.search} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} placeholder="Search rider, driver, address, or test label" className="pl-10" />
@@ -661,7 +661,7 @@ export function AdminDispatchPage() {
         <select
           value={filters.status}
           onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value as DispatchStatusFilter }))}
-          className="h-11 rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 text-sm text-ops-text outline-none transition focus:border-ops-primary/70"
+          className="h-10 rounded-[1rem] border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-3.5 text-sm text-ops-text outline-none transition focus:border-ops-primary/70 md:h-11 md:rounded-2xl md:px-4"
         >
           <option value="all">All ride statuses</option>
           <option value="requested">Requested</option>
@@ -678,7 +678,7 @@ export function AdminDispatchPage() {
         <select
           value={filters.paymentMethod}
           onChange={(event) => setFilters((current) => ({ ...current, paymentMethod: event.target.value as DispatchPaymentFilter }))}
-          className="h-11 rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 text-sm text-ops-text outline-none transition focus:border-ops-primary/70"
+          className="h-10 rounded-[1rem] border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-3.5 text-sm text-ops-text outline-none transition focus:border-ops-primary/70 md:h-11 md:rounded-2xl md:px-4"
         >
           <option value="all">All trip payments</option>
           <option value="jim">Jim</option>
@@ -687,12 +687,12 @@ export function AdminDispatchPage() {
         </select>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/60 p-4">
+      <div className="flex flex-wrap items-center gap-2.5 rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-surface/60 p-3.5 md:gap-3 md:rounded-[1.4rem] md:p-4">
         <p className="text-sm font-semibold text-ops-text">Queue priority</p>
         <select
           value={priorityMode}
           onChange={(event) => setPriorityMode(event.target.value as DispatchPriorityMode)}
-          className="h-11 rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 text-sm text-ops-text outline-none transition focus:border-ops-primary/70"
+          className="h-10 rounded-[1rem] border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-3.5 text-sm text-ops-text outline-none transition focus:border-ops-primary/70 md:h-11 md:rounded-2xl md:px-4"
         >
           <option value="dispatch_balance">Release timing</option>
           <option value="manual_attention">Manual attention</option>
@@ -703,7 +703,7 @@ export function AdminDispatchPage() {
 
       {workspaceTab === "queue" ? (
         <>
-          <div className="space-y-5 lg:hidden">
+          <div className="space-y-4 lg:hidden">
             <PanelSection title="Ride queue" description="Filter by rider, driver, ride status, payment method, and test labels without leaving the live dispatch view." contentClassName="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Button variant={bucket === "active" ? "default" : "outline"} onClick={() => setBucket("active")}>
@@ -755,7 +755,7 @@ export function AdminDispatchPage() {
                         setBucket("scheduled");
                         setSelectedRideId(ride.id);
                       }}
-                      className="w-full rounded-[1.4rem] border border-ops-border-soft/90 bg-ops-surface/72 p-4 text-left transition hover:border-ops-primary/35"
+                      className="w-full rounded-[1.2rem] border border-ops-border-soft/90 bg-ops-surface/72 p-3.5 text-left transition hover:border-ops-primary/35 md:rounded-[1.4rem] md:p-4"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-semibold text-ops-text">{ride.rider.name}</p>
@@ -928,15 +928,15 @@ export function AdminDispatchPage() {
           </div>
         </>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[390px_minmax(0,1fr)]">
-          <div className="space-y-6">
+        <div className="grid gap-4 xl:grid-cols-[390px_minmax(0,1fr)] xl:gap-6">
+          <div className="space-y-4 xl:space-y-6">
             <Card className="overflow-hidden border-ops-border-soft/95 bg-[linear-gradient(180deg,rgba(13,17,23,0.96),rgba(9,12,17,0.95))]">
               <CardHeader>
                 <CardTitle className="text-ops-text">Create test job</CardTitle>
                 <CardDescription>Create a real ride with real routing, label it for testing, and optionally pin it to one approved driver account.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+              <CardContent className="space-y-3.5 md:space-y-4">
+                <div className="grid gap-3.5 md:grid-cols-2 md:gap-4 xl:grid-cols-1">
                   <div className="space-y-2">
                     <Label htmlFor="test-rider-name">Rider name</Label>
                     <Input id="test-rider-name" value={testRideForm.riderName} onChange={(event) => setTestRideForm((current) => ({ ...current, riderName: event.target.value }))} placeholder="QA rider" />
@@ -975,7 +975,7 @@ export function AdminDispatchPage() {
                   />
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+                <div className="grid gap-3.5 md:grid-cols-2 md:gap-4 xl:grid-cols-1">
                   <div className="space-y-2">
                     <Label htmlFor="test-ride-type">Ride type</Label>
                     <select id="test-ride-type" value={testRideForm.rideType} onChange={(event) => setTestRideForm((current) => ({ ...current, rideType: event.target.value as Ride["rideType"] }))} className="h-11 w-full rounded-2xl border border-ops-border bg-[linear-gradient(180deg,rgba(20,24,31,0.96),rgba(13,16,22,0.96))] px-4 text-sm text-ops-text outline-none transition focus:border-ops-primary/70">
@@ -1009,7 +1009,7 @@ export function AdminDispatchPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.4rem] border border-ops-border-soft/80 bg-ops-panel/40 p-4 text-sm text-ops-muted">
+                <div className="rounded-[1.2rem] border border-ops-border-soft/80 bg-ops-panel/40 p-3.5 text-sm text-ops-muted md:rounded-[1.4rem] md:p-4">
                   If you target a driver, the test ride only dispatches to that approved driver account. Leave it empty to let any live eligible driver in the area receive the job.
                 </div>
 
@@ -1052,7 +1052,7 @@ export function AdminDispatchPage() {
             </PanelSection>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 xl:space-y-6">
             {selectedTestRide ? (
               <DeferredLiveMap ride={selectedTestRide} title="Test ride live route" height={360} meta="This uses the same live pickup, dropoff, and driver pings that power the production dispatch workspace." />
             ) : null}

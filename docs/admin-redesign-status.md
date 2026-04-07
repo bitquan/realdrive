@@ -14,10 +14,10 @@ Working rule:
 - Sync changes with [docs/18-layered-dev-checklist.md](./18-layered-dev-checklist.md) in the same branch.
 
 ## Scope
-- A dedicated admin redesign has not been started as a new checkpointed workstream in the same way as the driver redesign.
-- This document records the current admin baseline, major existing admin milestones, and what remains before any admin redesign begins.
+- A dedicated admin redesign is now open as a mobile-tightening checkpoint on top of the existing admin baseline.
+- This document records the current admin baseline, the new mobile polish checkpoint, and what remains before a broader admin redesign continues.
 - The admin experience currently lives on the existing `/admin` route family and related tools.
-- This work stops at admin scope planning/status for now.
+- This checkpoint stays inside the current route tree and tightens the real workflows already in production.
 
 ## Final direction
 - existing `/admin` route family
@@ -28,6 +28,32 @@ Working rule:
 - future admin redesign should extend the real workflows already in production
 
 ## Completed phases
+
+### Admin mobile polish checkpoint — shared ops density and key workflow tightening
+- summary
+  - Started the first dedicated admin redesign checkpoint by tightening the mobile shell and the highest-traffic admin workflows.
+- files
+  - [apps/web/src/components/layout/app-shell.tsx](apps/web/src/components/layout/app-shell.tsx)
+  - [apps/web/src/components/layout/ops-layout.tsx](apps/web/src/components/layout/ops-layout.tsx)
+  - [apps/web/src/pages/admin-dashboard-page.tsx](apps/web/src/pages/admin-dashboard-page.tsx)
+  - [apps/web/src/pages/admin-dispatch-page.tsx](apps/web/src/pages/admin-dispatch-page.tsx)
+  - [apps/web/src/pages/admin-drivers-page.tsx](apps/web/src/pages/admin-drivers-page.tsx)
+  - [apps/web/src/pages/admin-dues-page.tsx](apps/web/src/pages/admin-dues-page.tsx)
+- what changed
+  - Tightened mobile admin header spacing, badges, and action controls in the shared shell.
+  - Densified shared ops layout primitives so dashboard, queue, and panel surfaces read more naturally on phones.
+  - Reduced mobile spacing, card padding, and radius on dashboard, dispatch, drivers, and dues pages while adding safer bottom padding around fixed mobile chrome.
+- verification summary
+  - `pnpm --filter web build` passes after the mobile polish pass.
+  - This checkpoint is local in the current branch until a follow-up commit is created.
+- commit message
+  - pending
+- short hash
+  - pending
+- pushed or not pushed
+  - not pushed yet
+- production status
+  - not deployed
 
 ### Baseline admin foundation — Completed-trip dues and collector flows
 - summary
@@ -218,6 +244,7 @@ Working rule:
 | 4 | `b4a8c52` | `feat(admin): add audit logs UI, market config APIs, dispatch scoring, and web test baseline` | expand admin operations and test coverage baseline | yes | yes | unknown |
 | 5 | `43ba144` | `feat(admin): add live activity data tab and baseline SEO` | add admin analytics/data baseline | yes | yes | unknown |
 | 6 | `1f7567a` | `Add admin dispatch test ride lab` | add admin dispatch QA/test-ride tooling | yes | yes | unknown |
+| 7 | `pending` | `pending` | first admin mobile-tightening redesign checkpoint across shared ops layout and core admin workflows | no | yes | local build passed |
 
 ## Known pushed checkpoints from this work
 - No dedicated admin redesign chain has been pushed yet.
