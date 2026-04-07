@@ -272,7 +272,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="space-y-2.5 md:space-y-5">
+    <div className="space-y-2.5 pb-24 md:space-y-5 md:pb-0">
       <PageHero
         eyebrow="Community-powered rideshare pilot"
         icon={Shield}
@@ -350,7 +350,7 @@ export function HomePage() {
       </div>
 
       <div className="space-y-3 md:space-y-4">
-        <div className="rounded-[1.5rem] border border-ops-border-soft bg-[linear-gradient(180deg,rgba(14,18,27,0.96),rgba(9,13,20,0.98))] p-2 shadow-panel">
+        <div className="hidden rounded-[1.5rem] border border-ops-border-soft bg-[linear-gradient(180deg,rgba(14,18,27,0.96),rgba(9,13,20,0.98))] p-2 shadow-panel md:block">
           <div className="grid grid-cols-3 gap-2">
             {homeTabs.map((tab) => {
               const active = homeTab === tab.id;
@@ -1008,6 +1008,31 @@ export function HomePage() {
         </div>
       </div>
       ) : null}
+
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-3 md:hidden">
+        <div className="mx-auto max-w-md rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,15,23,0.94),rgba(8,12,18,0.98))] p-1.5 shadow-[0_20px_48px_rgba(2,6,23,0.34)] backdrop-blur-2xl">
+          <div className="grid grid-cols-3 gap-1.5">
+            {homeTabs.map((tab) => {
+              const active = homeTab === tab.id;
+              return (
+                <button
+                  key={`mobile-${tab.id}`}
+                  type="button"
+                  onClick={() => setHomeTab(tab.id)}
+                  className={`rounded-[1rem] border px-3 py-2.5 text-center transition ${
+                    active
+                      ? "border-ops-primary/40 bg-ops-primary/16 text-white"
+                      : "border-white/8 bg-white/[0.03] text-slate-300"
+                  }`}
+                >
+                  <p className="text-[12px] font-semibold">{tab.label}</p>
+                  <p className={`mt-0.5 text-[10px] ${active ? "text-white/70" : "text-slate-500"}`}>{tab.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
