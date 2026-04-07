@@ -74,7 +74,9 @@ export function PublicStateNav() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 px-3 md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 md:hidden">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[calc(1.4rem+env(safe-area-inset-bottom))] bg-[linear-gradient(180deg,rgba(8,12,18,0),rgba(8,12,18,0.92)_38%,rgba(8,12,18,0.99))] backdrop-blur-2xl" />
+        <div className="relative px-3 pb-[max(0.35rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-md rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,15,23,0.95),rgba(8,12,18,0.98))] p-1.5 shadow-[0_24px_48px_rgba(2,6,23,0.3)] backdrop-blur-2xl">
           <div className="mx-auto mb-1.5 h-1 w-10 rounded-full bg-white/10" />
           <div className="grid grid-cols-4 gap-1.5">
@@ -100,6 +102,7 @@ export function PublicStateNav() {
               );
             })}
           </div>
+        </div>
         </div>
       </div>
     </>

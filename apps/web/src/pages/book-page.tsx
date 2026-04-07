@@ -714,7 +714,7 @@ export function BookPage() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(5.9rem+env(safe-area-inset-bottom))] z-20 px-3 md:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(5.35rem+env(safe-area-inset-bottom))] z-20 px-3 md:hidden">
         <div className="mx-auto max-w-md rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,rgba(13,18,28,0.97),rgba(8,12,20,0.98))] p-2.5 shadow-[0_24px_48px_rgba(2,6,23,0.28)] backdrop-blur-2xl transition-all duration-300 ease-out">
           <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-white/10" />
           <div className="flex items-center justify-between gap-3 px-1 pb-2">
