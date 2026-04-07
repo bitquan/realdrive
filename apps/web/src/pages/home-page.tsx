@@ -350,25 +350,6 @@ export function HomePage() {
       </div>
 
       <div className="space-y-3 md:space-y-4">
-        <div className="rounded-[1.7rem] border border-[#2f9a5d]/28 bg-[linear-gradient(135deg,rgba(25,145,84,0.95),rgba(18,112,72,0.92))] p-4 text-white shadow-[0_20px_50px_rgba(15,118,78,0.28)]">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/72">Rider design phase</p>
-              <p className="mt-1 text-[1.15rem] font-semibold tracking-[-0.03em]">Track every ride from one compact shell</p>
-              <p className="mt-1.5 text-sm leading-5 text-white/80">
-                Real booking, trip history, alerts, and community tools stay live while future rider features are staged as roadmap-linked cards.
-              </p>
-            </div>
-            <Link
-              to={riderEntryTo}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/18 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/16"
-            >
-              Open rider shell
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
-
         <div className="rounded-[1.5rem] border border-ops-border-soft bg-[linear-gradient(180deg,rgba(14,18,27,0.96),rgba(9,13,20,0.98))] p-2 shadow-panel">
           <div className="grid grid-cols-3 gap-2">
             {homeTabs.map((tab) => {
@@ -393,24 +374,25 @@ export function HomePage() {
         </div>
       </div>
 
-      {referredByQuery.data?.ownerName ? (
-        <div className="rounded-4xl border border-ops-primary/20 bg-ops-panel/70 p-4 text-sm text-ops-muted">
-          You were referred by <span className="font-semibold">{referredByQuery.data.ownerName}</span>. Your booking
-          or email signup will keep that referral attached.
-        </div>
-      ) : null}
-
-      <div className="hidden grid-cols-2 gap-2 sm:grid sm:grid-cols-3 md:gap-3">
-        <Stat icon={Car} label="Driver network" value={availableDriver ? "Drivers online" : "On demand"} />
-        <Stat
-          icon={Clock3}
-          label="ETA preview"
-          value={quoteQuery.data ? `${Math.max(5, Math.round(quoteQuery.data.estimatedMinutes / 2))} min` : "From quote"}
-        />
-        <Stat icon={MapPin} label="Route engine" value={quoteQuery.data?.routeProvider === "mapbox" ? "Mapbox live" : "Fallback ready"} />
-      </div>
-
       {homeTab === "book" ? (
+      <div className="space-y-3.5">
+        {referredByQuery.data?.ownerName ? (
+          <div className="rounded-4xl border border-ops-primary/20 bg-ops-panel/70 p-4 text-sm text-ops-muted">
+            You were referred by <span className="font-semibold">{referredByQuery.data.ownerName}</span>. Your booking
+            or email signup will keep that referral attached.
+          </div>
+        ) : null}
+
+        <div className="hidden grid-cols-2 gap-2 sm:grid sm:grid-cols-3 md:gap-3">
+          <Stat icon={Car} label="Driver network" value={availableDriver ? "Drivers online" : "On demand"} />
+          <Stat
+            icon={Clock3}
+            label="ETA preview"
+            value={quoteQuery.data ? `${Math.max(5, Math.round(quoteQuery.data.estimatedMinutes / 2))} min` : "From quote"}
+          />
+          <Stat icon={MapPin} label="Route engine" value={quoteQuery.data?.routeProvider === "mapbox" ? "Mapbox live" : "Fallback ready"} />
+        </div>
+
       <div className="grid gap-3.5 lg:grid-cols-[1.3fr_0.7fr]">
         <Card id="book" className="shadow-elevated">
           <CardHeader>
@@ -822,11 +804,31 @@ export function HomePage() {
 
         </div>
       </div>
+      </div>
       ) : null}
 
       {homeTab === "rider" ? (
       <div className="grid gap-3.5 lg:grid-cols-[1.02fr_0.98fr]">
         <div className="space-y-3 md:space-y-4">
+          <div className="rounded-[1.7rem] border border-[#2f9a5d]/28 bg-[linear-gradient(135deg,rgba(25,145,84,0.95),rgba(18,112,72,0.92))] p-4 text-white shadow-[0_20px_50px_rgba(15,118,78,0.28)]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/72">Rider design phase</p>
+                <p className="mt-1 text-[1.15rem] font-semibold tracking-[-0.03em]">Track every ride from one compact shell</p>
+                <p className="mt-1.5 text-sm leading-5 text-white/80">
+                  Real booking, trip history, alerts, and community tools stay live while future rider features are staged as roadmap-linked cards.
+                </p>
+              </div>
+              <Link
+                to={riderEntryTo}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/18 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/16"
+              >
+                Open rider shell
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
           <RiderFeatureGrid
             context={riderFeatureContext}
             contextPath="/"
