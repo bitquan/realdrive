@@ -389,7 +389,7 @@ export function BookPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 pb-[11.25rem] md:gap-5 md:pb-2">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 pb-[calc(11.25rem+env(safe-area-inset-bottom))] md:gap-5 md:pb-2">
       <PublicStateNav />
 
       {referredByQuery.data?.ownerName ? (
@@ -403,7 +403,7 @@ export function BookPage() {
           <div className="pointer-events-none absolute bottom-8 left-0 top-9 hidden w-px bg-gradient-to-b from-white/0 via-white/12 to-white/0 sm:block" />
           <div className="pointer-events-none absolute bottom-8 right-0 top-9 hidden w-px bg-gradient-to-b from-white/0 via-white/12 to-white/0 sm:block" />
           <div className="pointer-events-none absolute inset-x-5 top-2 h-20 rounded-[1.8rem] border border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))] sm:hidden" />
-          <section className="relative isolate overflow-hidden rounded-[1.85rem] border border-white/10 bg-[linear-gradient(180deg,rgba(14,19,29,0.99),rgba(9,13,22,0.99))] shadow-[0_24px_70px_rgba(2,6,23,0.34)] ring-1 ring-white/5 md:rounded-[2rem]">
+          <section className="relative isolate overflow-hidden rounded-[1.85rem] border border-white/10 bg-[linear-gradient(180deg,rgba(14,19,29,0.99),rgba(9,13,22,0.99))] shadow-[0_24px_70px_rgba(2,6,23,0.34)] ring-1 ring-white/5 transition-all duration-300 ease-out md:rounded-[2rem] motion-safe:hover:-translate-y-0.5">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_60%)]" />
             <div className="border-b border-white/6 bg-[radial-gradient(circle_at_top,rgba(61,110,255,0.22),transparent_48%),linear-gradient(135deg,rgba(16,185,129,0.16),rgba(14,116,144,0.12),rgba(15,23,42,0.98))] px-4 pb-4 pt-3.5 md:px-5 md:pb-5 md:pt-4.5">
             <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-white/12 md:hidden" />
@@ -714,8 +714,8 @@ export function BookPage() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(8.55rem+env(safe-area-inset-bottom))] z-20 px-3 md:hidden">
-        <div className="mx-auto max-w-md rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,rgba(13,18,28,0.97),rgba(8,12,20,0.98))] p-2.5 shadow-[0_24px_48px_rgba(2,6,23,0.28)] backdrop-blur-2xl">
+      <div className="fixed inset-x-0 bottom-[calc(5.9rem+env(safe-area-inset-bottom))] z-20 px-3 md:hidden">
+        <div className="mx-auto max-w-md rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,rgba(13,18,28,0.97),rgba(8,12,20,0.98))] p-2.5 shadow-[0_24px_48px_rgba(2,6,23,0.28)] backdrop-blur-2xl transition-all duration-300 ease-out">
           <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-white/10" />
           <div className="flex items-center justify-between gap-3 px-1 pb-2">
             <div className="min-w-0">

@@ -271,6 +271,13 @@ Working rule:
   - Added native-like pressed, selected, and active section states across the `/book` ride-mode cards, step modules, grouped rows, and action tray.
   - Added animated booking-state feedback so `/book` now reacts to estimating, ready, and submitting states with smoother tray, badge, and quote-card motion.
   - Realigned the Contact and Route modules to match the cleaner Trip-section styling by removing the extra nested field chrome and using the same input-card treatment.
+  - Extended the same native-style sheet treatment into `/`, `/rider`, and `/more` so all public states now use tighter grouped cards, stronger mobile launch tiles, and more tactile transitions.
+  - Removed the duplicate mobile shell nav from the public rider states so the booking tray and public state switcher no longer stack into a crowded triple-bottom-bar layout.
+  - Tightened the `/`, `/rider`, and `/more` headers again with more route-specific hero copy, denser summary panels, and slimmer state-sheet spacing so the public rider shell feels more intentional on mobile.
+  - Added a stronger mobile ad path by making `/more` surface direct phone-first ad posting, adding extra mobile shortcut cards for missing public routes, and redesigning `/advertise` into a denser mobile-first submission flow.
+  - Polished `/roadmap`, `/request-feature`, and `/report-bug` so the secondary public routes now use the same compact mobile hero language, denser summary cards, and cleaner issue-intake framing.
+  - Brought `/community` and `/notifications` into the same mobile system with compact heroes, summary stats, tighter cards, and cleaner form surfaces for proposal posting and notification controls.
+  - Finished a cross-route mobile pass by aligning hover/press motion and adding safer bottom insets across `/book`, `/`, `/community`, and `/notifications` so fixed mobile chrome feels more consistent.
 - verification summary
   - `pnpm --filter web build`
   - Build passed after the latest `/book` native-feel polish pass.
@@ -278,6 +285,13 @@ Working rule:
   - Build passed after the spacing and micro-interaction pass on `/book`.
   - Build passed after the animated booking-state pass on `/book`.
   - Build passed after aligning the Contact and Route styling with the cleaner Trip card language.
+  - Build passed after applying the same tighter native-style treatment to the Home, Rider, and More states.
+  - Build passed after simplifying the mobile bottom navigation stack across the public rider states.
+  - Build passed after tightening the public-state heroes and compacting the sheet spacing on `/`, `/rider`, and `/more`.
+  - Build passed after adding the mobile ad-posting path and redesigning `/advertise` for mobile submission.
+  - Build passed after bringing the roadmap and issue-intake routes into the same mobile sheet style.
+  - Build passed after matching the community board and notification preferences pages to the mobile rider shell style.
+  - Build passed after the final motion-consistency and safe-area tuning pass across the mobile rider shell.
 
 ## Risks / watch items
 - Production state for current rider flows is not yet manually confirmed in this documentation pass.

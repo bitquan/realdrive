@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Bug, Lightbulb, Loader2, ThumbsUp } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,11 +73,54 @@ export function RoadmapPage() {
   const completedFeatures = features.filter((feature) => feature.phase === "completed");
   const requestFeaturePath = user ? `/request-feature?source=${sourceFromRole(user.role)}&contextPath=%2Froadmap` : "/";
   const reportBugPath = user ? `/report-bug?source=${sourceFromRole(user.role)}&contextPath=%2Froadmap` : "/";
+  const stats = [
+    { label: "Active now", value: String(nowFeatures.length), tone: "success" as const },
+    { label: "Planned next", value: String(nextFeatures.length), tone: "primary" as const },
+    { label: "Total votes", value: String(data?.totalVotes || 0), tone: "default" as const }
+  ];
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.7fr_0.3fr]">
+    <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
+      <PageHero
+        eyebrow="Roadmap"
+        icon={Lightbulb}
+        title="Track the live roadmap from the same mobile shell"
+        description={token ? "Vote on current priorities and jump into the existing feature or bug intake routes without leaving the public mobile flow." : "Browse active and planned work, then sign in when you want to vote or submit intake."}
+        compact
+        aside={(
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Mobile roadmap</p>
+            <p className="mt-2 font-semibold text-ops-text">Same workflow, cleaner on phone</p>
+            <div className="mt-2.5 space-y-1.5 text-ops-muted">
+              <p>See active and next work quickly.</p>
+              <p>Vote when signed in.</p>
+              <p>Use the real intake routes for follow-up.</p>
+            </div>
+          </div>
+        )}
+      />
+
+      <div className="grid gap-2.5 sm:grid-cols-3">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className={
+              stat.tone === "success"
+                ? "rounded-[1.2rem] border border-emerald-400/20 bg-emerald-400/10 p-3.5"
+                : stat.tone === "primary"
+                  ? "rounded-[1.2rem] border border-ops-primary/25 bg-ops-primary/10 p-3.5"
+                  : "rounded-[1.2rem] border border-ops-border-soft bg-ops-surface/65 p-3.5"
+            }
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">{stat.label}</p>
+            <p className="mt-2 text-lg font-semibold text-ops-text">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-[0.7fr_0.3fr] md:gap-3.5">
       <div className="space-y-6">
-        <Card>
+        <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
           <CardHeader>
             <CardTitle>Product roadmap</CardTitle>
             <CardDescription>
@@ -155,8 +199,8 @@ export function RoadmapPage() {
         </section>
       </div>
 
-      <div className="space-y-4">
-        <Card>
+      <div className="space-y-3">
+        <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
           <CardHeader>
             <CardTitle className="text-base">Keep intake in the live workflow</CardTitle>
             <CardDescription>Use the same issue intake routes that feed admin triage and GitHub sync.</CardDescription>
@@ -179,6 +223,19 @@ export function RoadmapPage() {
             {!token ? <p className="text-xs text-ops-muted">Sign in first to submit intake and vote.</p> : null}
           </CardContent>
         </Card>
+
+        <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
+          <CardHeader>
+            <CardTitle className="text-base">Mobile notes</CardTitle>
+            <CardDescription>Keep roadmap follow-up short and route-specific.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2.5 text-sm text-ops-muted">
+            <p>Vote on one item at a time so priorities stay clear.</p>
+            <p>Use feature intake for improvements and bug intake for broken behavior.</p>
+            <p>Link back to the exact screen whenever possible.</p>
+          </CardContent>
+        </Card>
+      </div>
       </div>
     </div>
   );
@@ -211,7 +268,7 @@ function RoadmapFeatureCard({ feature, onVote, votingInProgress, canVote }: Road
   }[feature.impact];
 
   return (
-    <Card>
+    <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(17,22,31,0.98),rgba(11,15,22,0.99))]">
       <CardContent className="flex items-start justify-between gap-4 p-4">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">

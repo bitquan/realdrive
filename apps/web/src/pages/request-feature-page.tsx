@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { Lightbulb } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FormActions, FormField, FormLayout } from "@/components/ui/form-layout";
@@ -75,8 +76,28 @@ export function RequestFeaturePage() {
   });
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.68fr_0.32fr]">
-      <Card>
+    <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
+      <PageHero
+        eyebrow="Feature intake"
+        icon={Lightbulb}
+        title="Request a feature from the mobile shell"
+        description="Send one clear improvement request through the same live intake flow used by admin triage and GitHub sync."
+        compact
+        aside={(
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Mobile intake</p>
+            <p className="mt-2 font-semibold text-ops-text">Keep it short and specific</p>
+            <div className="mt-2.5 space-y-1.5 text-ops-muted">
+              <p>One feature per request.</p>
+              <p>Name the role and screen.</p>
+              <p>Describe the expected result.</p>
+            </div>
+          </div>
+        )}
+      />
+
+      <div className="grid gap-3 xl:grid-cols-[0.68fr_0.32fr] md:gap-3.5">
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
         <CardHeader>
           <CardTitle>Request a feature</CardTitle>
           <CardDescription>
@@ -124,7 +145,7 @@ export function RequestFeaturePage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Lightbulb className="h-4 w-4" />
@@ -139,6 +160,7 @@ export function RequestFeaturePage() {
           <p>4) Add useful edge cases only when needed.</p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

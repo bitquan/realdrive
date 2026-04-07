@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { ClipboardList } from "lucide-react";
+import { PageHero } from "@/components/layout/page-hero";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FormActions, FormField, FormLayout } from "@/components/ui/form-layout";
@@ -87,8 +88,28 @@ export function ReportBugPage() {
   });
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.68fr_0.32fr]">
-      <Card>
+    <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
+      <PageHero
+        eyebrow="Bug intake"
+        icon={ClipboardList}
+        title="Report a bug from the same mobile route"
+        description="Send a clear bug report without needing an error code. The report keeps page context and routes straight into engineering triage."
+        compact
+        aside={(
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Mobile bug intake</p>
+            <p className="mt-2 font-semibold text-ops-text">Focus on the visible break</p>
+            <div className="mt-2.5 space-y-1.5 text-ops-muted">
+              <p>Say what happened.</p>
+              <p>Say what should have happened.</p>
+              <p>List the last steps before it broke.</p>
+            </div>
+          </div>
+        )}
+      />
+
+      <div className="grid gap-3 xl:grid-cols-[0.68fr_0.32fr] md:gap-3.5">
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
         <CardHeader>
           <CardTitle>Report a bug</CardTitle>
           <CardDescription>
@@ -162,7 +183,7 @@ export function ReportBugPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ClipboardList className="h-4 w-4" />
@@ -177,6 +198,7 @@ export function ReportBugPage() {
           <p>4) One report per bug keeps the fixes easier to track.</p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

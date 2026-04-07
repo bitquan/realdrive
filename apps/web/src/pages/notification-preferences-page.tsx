@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, Bug, Lightbulb, Loader2, Radio } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PageHero } from "@/components/layout/page-hero";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -175,10 +176,54 @@ export function NotificationPreferencesPage() {
     return "Push enabled, but no active browser subscription";
   }, [prefQuery.data, preferences?.pushEnabled]);
 
+  const stats = [
+    { label: "Sent", value: String(deliverySummary.sent), tone: "success" as const },
+    { label: "Failed", value: String(deliverySummary.failed), tone: "warning" as const },
+    { label: "Socket", value: socketState, tone: socketState === "connected" ? "success" as const : "default" as const }
+  ];
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.58fr_0.42fr]">
-      <div className="space-y-6">
-      <Card>
+    <div className="space-y-3 pb-[calc(7rem+env(safe-area-inset-bottom))] md:space-y-4 md:pb-0">
+      <PageHero
+        eyebrow="Notifications"
+        icon={Bell}
+        title="Keep mobile alerts and realtime continuity in sync"
+        description="Control push and SMS fallback from the same mobile shell, then inspect recent delivery attempts and live socket activity without leaving the page."
+        compact
+        aside={(
+          <div className="rounded-3xl border border-ops-border-soft bg-gradient-to-b from-ops-panel/85 to-[#121c2d] p-3.5 text-sm text-ops-muted shadow-panel md:p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Mobile alerts</p>
+            <p className="mt-2 font-semibold text-ops-text">One place for push and fallback</p>
+            <div className="mt-2.5 space-y-1.5 text-ops-muted">
+              <p>Enable push on this browser.</p>
+              <p>Keep SMS as critical fallback.</p>
+              <p>Watch live delivery health below.</p>
+            </div>
+          </div>
+        )}
+      />
+
+      <div className="grid gap-2.5 sm:grid-cols-3">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className={
+              stat.tone === "success"
+                ? "rounded-[1.2rem] border border-emerald-400/20 bg-emerald-400/10 p-3.5 transition-all duration-200 ease-out motion-safe:hover:-translate-y-0.5"
+                : stat.tone === "warning"
+                  ? "rounded-[1.2rem] border border-amber-400/20 bg-amber-400/10 p-3.5 transition-all duration-200 ease-out motion-safe:hover:-translate-y-0.5"
+                  : "rounded-[1.2rem] border border-ops-border-soft bg-ops-surface/65 p-3.5 transition-all duration-200 ease-out motion-safe:hover:-translate-y-0.5"
+            }
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">{stat.label}</p>
+            <p className="mt-2 text-lg font-semibold text-ops-text">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-[0.58fr_0.42fr] md:gap-3.5">
+      <div className="space-y-3">
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
         <CardHeader>
           <CardTitle>Notification preferences</CardTitle>
           <CardDescription>
@@ -208,7 +253,7 @@ export function NotificationPreferencesPage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 rounded-2xl border border-ops-border-soft bg-ops-panel/35 p-4">
+              <div className="grid gap-3 rounded-[1.25rem] border border-ops-border-soft bg-ops-panel/35 p-4">
                 <label className="flex items-center justify-between gap-3">
                   <div className="space-y-1">
                     <Label className="text-ops-text">Push notifications</Label>
@@ -238,7 +283,7 @@ export function NotificationPreferencesPage() {
                 </label>
               </div>
 
-              <div className="rounded-2xl border border-ops-border-soft bg-ops-panel/35 p-4">
+              <div className="rounded-[1.25rem] border border-ops-border-soft bg-ops-panel/35 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-ops-text">Realtime continuity</p>
                   <Badge className={socketState === "connected" ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-200" : ""}>
@@ -271,7 +316,7 @@ export function NotificationPreferencesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
         <CardHeader>
           <CardTitle className="text-base">Issue intake workflows</CardTitle>
           <CardDescription>Keep product and defect feedback in the same live intake routes tied to role and context.</CardDescription>
@@ -295,8 +340,8 @@ export function NotificationPreferencesPage() {
       </Card>
       </div>
 
-      <div className="space-y-6">
-      <Card>
+      <div className="space-y-3">
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(15,20,29,0.98),rgba(10,14,21,0.99))]">
         <CardHeader>
           <CardTitle>Delivery log</CardTitle>
           <CardDescription>Last 25 notification attempts for your account.</CardDescription>
@@ -331,6 +376,7 @@ export function NotificationPreferencesPage() {
           )}
         </CardContent>
       </Card>
+      </div>
       </div>
     </div>
   );

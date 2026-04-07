@@ -44,6 +44,7 @@ export function AppShell() {
   const isAdminContext = user?.role === "admin" || location.pathname.startsWith("/admin");
   const isRiderShellContext = !isDriverContext && !isAdminContext;
   const isBookScreen = location.pathname === "/book";
+  const isPublicStateRoute = ["/", "/book", "/rider", "/more"].includes(location.pathname);
   const mobileItems = getMobileNavItems(user, { driverRidePath: "/driver?tab=ride", driverInboxPath: "/driver/inbox" });
 
   const canCheckNotificationApi = typeof window !== "undefined" && "Notification" in window;
@@ -453,7 +454,7 @@ export function AppShell() {
         </div>
       </div>
 
-      {mobileItems.length ? (
+      {mobileItems.length && !isPublicStateRoute ? (
         <nav className={cn(
           "fixed inset-x-0 bottom-0 z-40 px-2 shadow-elevated backdrop-blur-2xl lg:hidden",
           isBookScreen
