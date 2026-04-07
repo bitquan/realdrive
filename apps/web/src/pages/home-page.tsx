@@ -30,6 +30,24 @@ import { api } from "@/lib/api";
 import { formatMoney, userHasRole } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
+const homeTabs = [
+  {
+    id: "book" as const,
+    label: "Book",
+    description: "Guest booking + quote"
+  },
+  {
+    id: "rider" as const,
+    label: "Rider",
+    description: "Shell tools + profile"
+  },
+  {
+    id: "more" as const,
+    label: "More",
+    description: "Access + growth"
+  }
+];
+
 const SAVED_PLACES_STORAGE_KEY = "realdrive:rider-saved-places:v1";
 
 const rideModeOptions = [
@@ -123,6 +141,7 @@ export function HomePage() {
     email: "",
     phone: ""
   });
+  const [homeTab, setHomeTab] = useState<(typeof homeTabs)[number]["id"]>("book");
   const [savedPlaces, setSavedPlaces] = useState<Record<"home" | "work", string>>({ home: "", work: "" });
   const [savedPlacesReady, setSavedPlacesReady] = useState(false);
 
@@ -350,13 +369,28 @@ export function HomePage() {
           </div>
         </div>
 
-        <RiderFeatureGrid
-          context={riderFeatureContext}
-          contextPath="/"
-          canRequest={Boolean(user)}
-          title="Rider mobile grid"
-          description="This mock-inspired grid anchors the rider roadmap. Live tools open real routes now, while future tools stay marked and flow into feature intake."
-        />
+        <div className="rounded-[1.5rem] border border-ops-border-soft bg-[linear-gradient(180deg,rgba(14,18,27,0.96),rgba(9,13,20,0.98))] p-2 shadow-panel">
+          <div className="grid grid-cols-3 gap-2">
+            {homeTabs.map((tab) => {
+              const active = homeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setHomeTab(tab.id)}
+                  className={`rounded-[1.1rem] border px-3 py-3 text-left transition ${
+                    active
+                      ? "border-ops-primary/40 bg-ops-primary/14 text-white"
+                      : "border-white/8 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <p className="text-sm font-semibold">{tab.label}</p>
+                  <p className={`mt-1 text-[11px] leading-4 ${active ? "text-white/80" : "text-slate-500"}`}>{tab.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {referredByQuery.data?.ownerName ? (
@@ -376,6 +410,7 @@ export function HomePage() {
         <Stat icon={MapPin} label="Route engine" value={quoteQuery.data?.routeProvider === "mapbox" ? "Mapbox live" : "Fallback ready"} />
       </div>
 
+      {homeTab === "book" ? (
       <div className="grid gap-3.5 lg:grid-cols-[1.3fr_0.7fr]">
         <Card id="book" className="shadow-elevated">
           <CardHeader>
@@ -785,13 +820,162 @@ export function HomePage() {
             </CardContent>
           </Card>
 
+        </div>
+      </div>
+      ) : null}
+
+      {homeTab === "rider" ? (
+      <div className="grid gap-3.5 lg:grid-cols-[1.02fr_0.98fr]">
+        <div className="space-y-3 md:space-y-4">
+          <RiderFeatureGrid
+            context={riderFeatureContext}
+            contextPath="/"
+            canRequest={Boolean(user)}
+            title="Rider mobile grid"
+            description="Live rider tools open real routes now, while future tools stay clearly marked and routed into feature intake."
+          />
+
+          <Card className="border-ops-border-soft/70 bg-gradient-to-b from-[#0f1726] to-[#0d1420]">
+            <CardHeader>
+              <CardTitle className="text-lg">Save your rider profile</CardTitle>
+              <CardDescription>Keep rider info and your share path together without mixing it into the booking tab.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {riderLeadMutation.isSuccess ? (
+                <div className="rounded-3xl border border-ops-success/25 bg-ops-success/10 p-4 text-sm text-ops-success">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <CheckCircle2 className="h-4 w-4" />
+                    You are on the rider list
+                  </div>
+                  <p className="mt-2 text-ops-success/85">You can start sharing your link right away.</p>
+                </div>
+              ) : null}
+              <div className="space-y-2">
+                <Label htmlFor="leadName">Name</Label>
+                <Input
+                  id="leadName"
+                  placeholder="Jordan Smith"
+                  value={leadForm.name}
+                  onChange={(event) => setLeadForm((current) => ({ ...current, name: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="leadEmail">Email</Label>
+                <Input
+                  id="leadEmail"
+                  type="email"
+                  placeholder="jordan@example.com"
+                  value={leadForm.email}
+                  onChange={(event) => setLeadForm((current) => ({ ...current, email: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="leadPhone">Phone</Label>
+                <Input
+                  id="leadPhone"
+                  placeholder="Optional"
+                  value={leadForm.phone}
+                  onChange={(event) => setLeadForm((current) => ({ ...current, phone: event.target.value }))}
+                />
+              </div>
+              <Button
+                className="w-full"
+                disabled={!leadForm.name || !leadForm.email || riderLeadMutation.isPending}
+                onClick={() =>
+                  riderLeadMutation.mutate({
+                    ...leadForm,
+                    phone: leadForm.phone || undefined,
+                    referredByCode
+                  })
+                }
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Save rider profile
+              </Button>
+              {riderLeadMutation.error ? (
+                <p className="text-sm text-ops-error">{riderLeadMutation.error.message}</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-3 md:space-y-4">
+          <Card className="border-ops-border shadow-panel">
+            <CardHeader>
+              <CardTitle className="text-lg">Rider shell summary</CardTitle>
+              <CardDescription>Keep the returning-rider value visible without stacking the whole public page at once.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-ops-muted">
+              <div className="rounded-3xl border border-ops-border bg-gradient-to-b from-ops-panel/80 to-[#101827] p-4">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted/80">Rider focus</p>
+                <p className="mt-2 font-semibold text-ops-text">Trips, alerts, saved places, and phased roadmap tiles now live in one tab instead of mixing with every public block.</p>
+              </div>
+              <div className="rounded-3xl border border-ops-border-soft p-3.5">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Reserve direction</p>
+                <p className="mt-1 text-ops-muted">The booking tab still powers real scheduling, but the rider tab keeps future shell modules separate.</p>
+              </div>
+              <div className="rounded-3xl border border-ops-border-soft p-3.5">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-ops-muted">Returning rider access</p>
+                <p className="mt-1 text-ops-muted">Use this tab to move riders toward sign-in and profile setup without burying the main booking form.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {riderLeadMutation.data?.share ? (
+            <ShareQrCard
+              title="Your rider referral QR"
+              description="Share this from your phone or save the QR for tomorrow’s test."
+              shareUrl={riderLeadMutation.data.share.shareUrl}
+              referralCode={riderLeadMutation.data.share.referralCode}
+              fileName={`realdrive-rider-${riderLeadMutation.data.share.referralCode.toLowerCase()}`}
+            />
+          ) : null}
+        </div>
+      </div>
+      ) : null}
+
+      {homeTab === "more" ? (
+      <div className="grid gap-3.5 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="space-y-3 md:space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Driver and admin access</CardTitle>
+              <CardDescription>Keep operations links separate from rider booking and rider-shell setup.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-ops-muted">
+              <p>Driver signup is live and requires admin approval before ride offers are unlocked.</p>
+              <p>Admin controls dispatch approvals, pricing, dues, payout instructions, and ad review.</p>
+              <p>Rider referrals are tracked through booking and lead capture links.</p>
+              <p>Anyone can submit an ad request, including riders who want to promote a business or offer.</p>
+              <p className="pt-2">
+                <Link to="/driver/login" className="font-semibold text-ops-primary hover:underline">
+                  Approved driver login
+                </Link>
+                {" · "}
+                <Link to="/tablet/ads/login" className="font-semibold text-ops-primary hover:underline">
+                  Tablet ad login
+                </Link>
+                {" · "}
+                <Link to="/admin/login" className="font-semibold text-ops-primary hover:underline">
+                  Admin login
+                </Link>
+                {" · "}
+                <Link to="/advertise" className="font-semibold text-ops-primary hover:underline">
+                  Post an ad
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+
           <ShareQrCard
             title="Advertise on this screen"
             description="Scan this QR code to open the ad form. Riders, drivers, and local businesses can all submit a screen ad request."
             shareUrl={advertiseUrl}
             fileName="realdrive-advertise-here"
           />
+        </div>
 
+        <div className="space-y-3 md:space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>How the growth loop works</CardTitle>
@@ -819,18 +1003,9 @@ export function HomePage() {
               </Link>
             </CardContent>
           </Card>
-
-          {riderLeadMutation.data?.share ? (
-            <ShareQrCard
-              title="Your rider referral QR"
-              description="Share this from your phone or save the QR for tomorrow’s test."
-              shareUrl={riderLeadMutation.data.share.shareUrl}
-              referralCode={riderLeadMutation.data.share.referralCode}
-              fileName={`realdrive-rider-${riderLeadMutation.data.share.referralCode.toLowerCase()}`}
-            />
-          ) : null}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

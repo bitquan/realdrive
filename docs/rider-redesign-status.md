@@ -227,6 +227,7 @@ Working rule:
   - Documented the rider mobile design direction and created a per-feature plan for each visible rider tile.
   - Extended the compact trip-shell language into signed-in ride detail and public tracking on mobile.
   - Added the next rider checkpoint items: rider-login shell alignment, a dedicated reserve entry, local saved-place preview actions, a receipts-summary preview, and safety-toolkit preview modules wired to real support routes.
+  - Split the public rider home into tabs so booking, rider tools, and extra growth/access content no longer stack into one long page.
 - verification summary
   - Design phase implementation is active and should keep using the existing rider/public routes.
 
