@@ -2256,30 +2256,27 @@ export const store: Store = {
           lat,
           lng,
           rating: profile.rating,
-          distance: localDistance,
+          distanceMiles: localDistance,
           dispatchScore
         };
       })
-      .filter(
-        (driver): driver is DriverCandidate & { distance: number | null; dispatchScore: number } =>
-          Boolean(driver)
-      )
+      .filter((driver): driver is DriverCandidate & { distanceMiles: number | null; dispatchScore: number } => Boolean(driver))
       .sort((left, right) => {
         if (left.dispatchScore !== right.dispatchScore) {
           return right.dispatchScore - left.dispatchScore;
         }
-        if (left.distance != null && right.distance != null) {
-          return left.distance - right.distance;
+        if (left.distanceMiles != null && right.distanceMiles != null) {
+          return left.distanceMiles - right.distanceMiles;
         }
-        if (left.distance != null) {
+        if (left.distanceMiles != null) {
           return -1;
         }
-        if (right.distance != null) {
+        if (right.distanceMiles != null) {
           return 1;
         }
         return left.name.localeCompare(right.name);
       })
-      .map(({ distance: _distance, dispatchScore: _dispatchScore, ...driver }) => driver);
+      .map(({ dispatchScore: _dispatchScore, ...driver }) => driver);
   },
 
   async listMarketConfigs() {
@@ -4051,6 +4048,25 @@ export const store: Store = {
         status: "SCHEDULED",
         scheduledFor: {
           lte: releaseBefore
+        }
+      },
+      include: rideInclude
+    });
+
+    return rides.map(mapRide);
+  },
+
+  async findRidesWithExpiredPendingOffers(now) {
+    const rides = await prisma.ride.findMany({
+      where: {
+        status: "OFFERED",
+        offers: {
+          some: {
+            status: "PENDING",
+            expiresAt: {
+              lte: now
+            }
+          }
         }
       },
       include: rideInclude

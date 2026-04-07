@@ -118,6 +118,9 @@ function hasRole(user: SessionUser, role: SessionUser["role"]) {
   return user.role === role || user.roles.includes(role);
 }
 
+const PUBLIC_DISPATCH_RADIUS_MILES = 5;
+const PUBLIC_DISPATCH_WINDOW_MINUTES = 5;
+
 function isOwnerDriver(user: SessionUser) {
   if (env.launchMode !== "solo_driver") {
     return true;
@@ -696,6 +699,22 @@ export function buildApp() {
     }
   });
 
+  const dispatchScheduler = setInterval(() => {
+    void rideService.releaseDueScheduledRides().catch((error) => {
+      app.log.error({ err: error }, "scheduled ride release failed");
+    });
+    void rideService.processDispatchQueues().catch((error) => {
+      app.log.error({ err: error }, "dispatch queue processing failed");
+    });
+  }, 15_000);
+
+  dispatchScheduler.unref?.();
+
+  app.addHook("onClose", (_instance, done) => {
+    clearInterval(dispatchScheduler);
+    done();
+  });
+
   app.decorate("io", io);
   app.decorate("services", {
     store,
@@ -1074,22 +1093,32 @@ export function buildApp() {
   });
 
   app.post("/quotes/ride", async (request, reply) => {
-    const parsed = createRideSchema
-      .pick({
-        pickupAddress: true,
-        dropoffAddress: true,
-        rideType: true
-      })
-      .safeParse(request.body);
+    const parsed = createRideSchema.omit({ scheduledFor: true }).partial({ paymentMethod: true }).safeParse(request.body);
 
     if (!parsed.success) {
       return sendValidationError(reply, parsed.error.flatten());
     }
 
+    const paymentMethod = parsed.data.paymentMethod ?? "jim";
     const route = await maps.estimateRoute(parsed.data.pickupAddress, parsed.data.dropoffAddress);
     const platformMarketKey = route.pickup.stateCode?.toUpperCase() ?? "DEFAULT";
     const pricingRules = await store.listPlatformPricingRules();
     const rule = findPlatformPricingRule(pricingRules, parsed.data.rideType, platformMarketKey);
+    const dispatchCandidates = (await store.listEligibleDriversForRide(route.pickup, route.pickup.stateCode))
+      .filter(
+        (driver) =>
+          driver.distanceMiles != null &&
+          driver.distanceMiles <= PUBLIC_DISPATCH_RADIUS_MILES &&
+          (!driver.acceptedPaymentMethods?.length || driver.acceptedPaymentMethods.includes(paymentMethod))
+      )
+      .slice(0, 6)
+      .map((driver) => ({
+        id: driver.id,
+        name: driver.name,
+        vehicleLabel: driver.vehicle?.makeModel ?? null,
+        rating: driver.rating,
+        distanceMiles: Number(driver.distanceMiles?.toFixed(1) ?? 0)
+      }));
 
     if (!rule) {
       return reply.badRequest("Missing platform pricing rule");
@@ -1102,7 +1131,9 @@ export function buildApp() {
       platformMarketKey,
       estimatedSubtotal: calculateFare(rule, route.distanceMiles, route.durationMinutes),
       estimatedPlatformDue: calculatePlatformDue(calculateFare(rule, route.distanceMiles, route.durationMinutes)),
-      estimatedCustomerTotal: calculateCustomerTotal(calculateFare(rule, route.distanceMiles, route.durationMinutes))
+      estimatedCustomerTotal: calculateCustomerTotal(calculateFare(rule, route.distanceMiles, route.durationMinutes)),
+      dispatchCandidates,
+      dispatchWindowMinutes: PUBLIC_DISPATCH_WINDOW_MINUTES
     });
   });
 
@@ -1159,6 +1190,17 @@ export function buildApp() {
       return sendValidationError(reply, parsed.error.flatten());
     }
 
+    if (parsed.data.targetDriverId) {
+      const driver = await store.getDriverAccount(parsed.data.targetDriverId);
+      if (!driver) {
+        return reply.notFound("Driver not found");
+      }
+
+      if (driver.approvalStatus !== "approved" || !driver.available) {
+        return reply.badRequest("Selected driver is not currently available for dispatch.");
+      }
+    }
+
     const referredByUser = parsed.data.referredByCode
       ? await store.findUserByReferralCode(parsed.data.referredByCode)
       : null;
@@ -1182,7 +1224,8 @@ export function buildApp() {
         {
           publicTrackingToken: createPublicTrackingToken(),
           referredByUserId: referredByUser?.id ?? null,
-          referredByCode: referredByUser?.referralCode ?? null
+          referredByCode: referredByUser?.referralCode ?? null,
+          targetDriverId: parsed.data.targetDriverId ?? null
         }
       );
 

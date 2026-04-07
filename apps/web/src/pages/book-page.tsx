@@ -183,6 +183,37 @@ function BookingFieldRow({
   );
 }
 
+function DispatchDriverChip({
+  name,
+  vehicleLabel,
+  distanceMiles,
+  selected,
+  onClick
+}: {
+  name: string;
+  vehicleLabel: string | null;
+  distanceMiles: number;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "min-w-[10.5rem] rounded-[1.05rem] border px-3 py-2 text-left transition-all duration-200 active:scale-[0.985]",
+        selected
+          ? "border-ops-primary/45 bg-ops-primary/16 shadow-[0_12px_24px_rgba(54,91,255,0.14)]"
+          : "border-white/8 bg-white/[0.04]"
+      )}
+    >
+      <p className="truncate text-xs font-semibold text-ops-text">{name}</p>
+      <p className="mt-1 truncate text-[11px] text-ops-muted">{vehicleLabel ?? "Driver online"}</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-ops-primary">{distanceMiles.toFixed(1)} mi away</p>
+    </button>
+  );
+}
+
 export function BookPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -190,6 +221,7 @@ export function BookPage() {
   const referredByCode = searchParams.get("ref") ?? undefined;
   const [pickupSuggestionsOpen, setPickupSuggestionsOpen] = useState(false);
   const [dropoffSuggestionsOpen, setDropoffSuggestionsOpen] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [savedPlaces, setSavedPlaces] = useState<Record<"home" | "work", string>>({ home: "", work: "" });
   const [savedPlacesReady, setSavedPlacesReady] = useState(false);
   const [bookingForm, setBookingForm] = useState({
@@ -269,7 +301,8 @@ export function BookPage() {
   const deferredQuoteInput = useDeferredValue({
     pickupAddress: bookingForm.pickupAddress,
     dropoffAddress: bookingForm.dropoffAddress,
-    rideType: bookingForm.rideType
+    rideType: bookingForm.rideType,
+    paymentMethod: bookingForm.paymentMethod
   });
 
   const publicDriversQuery = useQuery({
@@ -289,7 +322,8 @@ export function BookPage() {
       api.quoteRide({
         pickupAddress: deferredQuoteInput.pickupAddress,
         dropoffAddress: deferredQuoteInput.dropoffAddress,
-        rideType: deferredQuoteInput.rideType
+        rideType: deferredQuoteInput.rideType,
+        paymentMethod: deferredQuoteInput.paymentMethod
       }),
     enabled: deferredQuoteInput.pickupAddress.length > 3 && deferredQuoteInput.dropoffAddress.length > 3
   });
@@ -304,6 +338,10 @@ export function BookPage() {
   });
 
   const availableDriver = publicDriversQuery.data?.find((entry) => entry.available) ?? publicDriversQuery.data?.[0];
+  const nearbyDrivers = quoteQuery.data?.dispatchCandidates ?? [];
+  const selectedDispatchDriver = nearbyDrivers.find((driver) => driver.id === selectedDriverId) ?? null;
+  const dispatchPreviewDriver = selectedDispatchDriver ?? nearbyDrivers[0] ?? availableDriver ?? null;
+  const dispatchPreviewVehicleLabel = selectedDispatchDriver?.vehicleLabel ?? nearbyDrivers[0]?.vehicleLabel ?? availableDriver?.vehicle?.makeModel ?? null;
   const riderEntryLabel = userHasRole(user, "rider") ? "My rides" : "Rider sign in";
   const riderEntryTo = userHasRole(user, "rider") ? "/rider/rides" : "/rider/login";
   const canBook =
@@ -332,6 +370,12 @@ export function BookPage() {
   const routeSuggestionsVisible =
     (pickupSuggestionsOpen && bookingForm.pickupAddress.trim().length >= 3) ||
     (dropoffSuggestionsOpen && bookingForm.dropoffAddress.trim().length >= 3);
+
+  useEffect(() => {
+    if (selectedDriverId && !nearbyDrivers.some((driver) => driver.id === selectedDriverId)) {
+      setSelectedDriverId(null);
+    }
+  }, [nearbyDrivers, selectedDriverId]);
 
   function setRideMode(mode: "now" | "scheduled") {
     setBookingForm((current) => ({
@@ -378,7 +422,8 @@ export function BookPage() {
         bookingForm.scheduleMode === "scheduled" && bookingForm.scheduledFor
           ? new Date(bookingForm.scheduledFor).toISOString()
           : null,
-      referredByCode
+      referredByCode,
+      targetDriverId: selectedDriverId ?? undefined
     });
   }
 
@@ -425,8 +470,8 @@ export function BookPage() {
               </div>
 
               <div className="hidden rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-right text-xs text-white/80 sm:block">
-                <p className="font-semibold text-white">{availableDriver ? availableDriver.name : "Dispatch ready"}</p>
-                <p>{availableDriver?.vehicle?.makeModel ?? "Driver network live"}</p>
+                <p className="font-semibold text-white">{dispatchPreviewDriver ? dispatchPreviewDriver.name : "Dispatch ready"}</p>
+                <p>{dispatchPreviewVehicleLabel ?? "Driver network live"}</p>
               </div>
             </div>
 
@@ -682,6 +727,39 @@ export function BookPage() {
               </div>
 
               <div className="rounded-[1.35rem] border border-ops-border-soft bg-ops-surface/65 p-3.5 text-sm text-ops-muted md:rounded-[1.5rem] md:p-4">
+                <div className="mb-3 rounded-[1.15rem] border border-white/8 bg-white/[0.03] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ops-muted">Dispatch choices</p>
+                      <p className="mt-1 text-sm font-semibold text-ops-text">
+                        {selectedDispatchDriver ? `${selectedDispatchDriver.name} selected first` : "Auto-select the next best nearby driver"}
+                      </p>
+                    </div>
+                    <Button type="button" variant={selectedDriverId ? "outline" : "default"} className="h-9 px-3 text-xs" onClick={() => setSelectedDriverId(null)}>
+                      Auto select
+                    </Button>
+                  </div>
+
+                  {nearbyDrivers.length ? (
+                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                      {nearbyDrivers.map((driver) => (
+                        <DispatchDriverChip
+                          key={driver.id}
+                          name={driver.name}
+                          vehicleLabel={driver.vehicleLabel}
+                          distanceMiles={driver.distanceMiles}
+                          selected={selectedDriverId === driver.id}
+                          onClick={() => setSelectedDriverId(driver.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs leading-5 text-ops-muted">
+                      Add both addresses to load online drivers within 5 miles. Auto select still falls back through the eligible queue for up to {quoteQuery.data?.dispatchWindowMinutes ?? 5} minutes.
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold text-ops-text">Rider access</p>
                   <Sparkles className="h-4 w-4 text-ops-primary" />
@@ -737,6 +815,31 @@ export function BookPage() {
               <p className="text-[11px] text-ops-muted">{tripSummary}</p>
             </div>
           </div>
+          <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => setSelectedDriverId(null)}
+              className={cn(
+                "min-w-[8.75rem] rounded-[1.05rem] border px-3 py-2 text-left transition-all duration-200 active:scale-[0.985]",
+                selectedDriverId == null
+                  ? "border-ops-primary/45 bg-ops-primary/16 shadow-[0_10px_24px_rgba(54,91,255,0.14)]"
+                  : "border-white/8 bg-white/[0.04]"
+              )}
+            >
+              <p className="text-xs font-semibold text-ops-text">Auto select</p>
+              <p className="mt-1 text-[11px] text-ops-muted">Queue nearby drivers first</p>
+            </button>
+            {nearbyDrivers.map((driver) => (
+              <DispatchDriverChip
+                key={driver.id}
+                name={driver.name}
+                vehicleLabel={driver.vehicleLabel}
+                distanceMiles={driver.distanceMiles}
+                selected={selectedDriverId === driver.id}
+                onClick={() => setSelectedDriverId(driver.id)}
+              />
+            ))}
+          </div>
           <div className={cn(
             "mb-2 flex items-center justify-between rounded-[1.05rem] border px-3 py-2 transition-all duration-300",
             bookingMutation.isPending
@@ -747,7 +850,20 @@ export function BookPage() {
           )}>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ops-muted">Dispatch</p>
-              <p className="truncate text-xs font-semibold text-ops-text">{availableDriver ? availableDriver.name : "Driver network live"}</p>
+              <p className="truncate text-xs font-semibold text-ops-text">
+                {selectedDispatchDriver
+                  ? selectedDispatchDriver.name
+                  : nearbyDrivers.length
+                    ? `${nearbyDrivers.length} nearby drivers live`
+                    : dispatchPreviewDriver?.name ?? "Driver network live"}
+              </p>
+              <p className="truncate text-[11px] text-ops-muted">
+                {selectedDispatchDriver
+                  ? `${selectedDispatchDriver.distanceMiles.toFixed(1)} mi away · first in queue`
+                  : nearbyDrivers.length
+                    ? `Auto rotates through the eligible queue for up to ${quoteQuery.data?.dispatchWindowMinutes ?? 5} min`
+                    : "Online drivers inside 5 miles show here after the quote loads."}
+              </p>
             </div>
             <span className={cn(
               "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition-all duration-300",

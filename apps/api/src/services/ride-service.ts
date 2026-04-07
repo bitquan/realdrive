@@ -17,6 +17,8 @@ import {
 import type { MapsService, RideEventPublisher, Store } from "./types.js";
 
 const ACTIVE_DRIVER_STATUSES = new Set<RideStatus>(["accepted", "en_route", "arrived", "in_progress"]);
+const DISPATCH_TOTAL_WINDOW_MS = 5 * 60 * 1000;
+const DISPATCH_OFFER_WINDOW_MS = 60 * 1000;
 
 const DRIVER_TRANSITIONS: Record<string, RideStatus[]> = {
   accepted: ["en_route"],
@@ -74,58 +76,101 @@ export function createRideService(deps: {
     targetDriverId?: string | null;
   }) {
     const eligibleDrivers = await store.listEligibleDriversForRide(options.pickup, options.pickupStateCode);
-    const targetedDrivers = options.targetDriverId
-      ? eligibleDrivers.filter((driver) => driver.id === options.targetDriverId)
-      : eligibleDrivers;
+    const targetedDriver = options.targetDriverId
+      ? eligibleDrivers.find((driver) => driver.id === options.targetDriverId) ?? null
+      : null;
 
-    if (options.targetDriverId && !targetedDrivers.length) {
+    if (options.targetDriverId && !targetedDriver) {
       throw new Error("Selected driver is unavailable for this pickup area or is not currently dispatch eligible.");
     }
 
-    const compatibleDrivers = targetedDrivers.filter((driver) => isDriverPaymentCompatible(driver, options.paymentMethod));
-
-    if (targetedDrivers.length && !compatibleDrivers.length) {
-      const acceptedPaymentMethods = Array.from(
-        new Set(targetedDrivers.flatMap((driver) => driver.acceptedPaymentMethods ?? []))
-      );
-      const acceptedLabel = acceptedPaymentMethods.length
-        ? acceptedPaymentMethods.map(formatPaymentMethod).join(", ")
-        : "none";
-
+    if (targetedDriver && !isDriverPaymentCompatible(targetedDriver, options.paymentMethod)) {
+      const acceptedPaymentMethods = getDriverAcceptedPaymentMethods(targetedDriver);
       throw new Error(
-        `Driver does not accept ${formatPaymentMethod(options.paymentMethod)}. Accepted payment methods: ${acceptedLabel}.`
+        `Driver does not accept ${formatPaymentMethod(options.paymentMethod)}. Accepted payment methods: ${acceptedPaymentMethods
+          .map(formatPaymentMethod)
+          .join(", ")}.`
       );
     }
 
+    const compatibleDrivers = eligibleDrivers.filter((driver) => isDriverPaymentCompatible(driver, options.paymentMethod));
+    const dispatchDrivers = targetedDriver
+      ? [targetedDriver, ...compatibleDrivers.filter((driver) => driver.id !== targetedDriver.id)]
+      : compatibleDrivers;
+
     return {
       eligibleDrivers,
-      dispatchDrivers: compatibleDrivers
+      dispatchDrivers
     };
   }
 
-  async function dispatchRide(rideId: string): Promise<Ride> {
+  async function cancelUnacceptedRide(ride: Ride, reason: string) {
+    const canceled = await store.updateRideAdmin(ride.id, {
+      status: "canceled"
+    });
+
+    await store.addAuditLog({
+      action: "ride.dispatch.canceled",
+      entityType: "ride",
+      entityId: ride.id,
+      metadata: {
+        reason,
+        offerCount: ride.offers.length,
+        targetedDriverId: ride.test.targetDriverId ?? null
+      }
+    });
+
+    events.rideUpdated(canceled);
+    return canceled;
+  }
+
+  async function dispatchRide(rideId: string, now = new Date()): Promise<Ride> {
     const ride = await store.getRideById(rideId);
     if (!ride) {
       throw new Error("Ride not found");
     }
 
-    const { dispatchDrivers } = await listDispatchCandidates({
-      pickup: ride.pickup,
-      pickupStateCode: ride.pickup.stateCode,
-      paymentMethod: ride.payment.method,
-      targetDriverId: ride.test.targetDriverId
-    });
-    const offeredRide = await store.createRideOffers(
-      ride.id,
-      dispatchDrivers.map((driver) => driver.id),
-      new Date(Date.now() + 2 * 60 * 1000)
-    );
-
-    if (dispatchDrivers.length) {
-      events.rideOffered(offeredRide, dispatchDrivers.map((driver) => driver.id));
-    } else {
-      events.rideUpdated(offeredRide);
+    if (["accepted", "en_route", "arrived", "in_progress", "completed", "canceled"].includes(ride.status)) {
+      return ride;
     }
+
+    const pendingOffers = ride.offers.filter((offer) => offer.status === "pending");
+    const hasLivePendingOffer = pendingOffers.some((offer) => new Date(offer.expiresAt).getTime() > now.getTime());
+
+    if (hasLivePendingOffer) {
+      return ride;
+    }
+
+    let refreshedRide = ride;
+
+    if (pendingOffers.length) {
+      refreshedRide = await store.expireRideOffers(ride.id);
+    }
+
+    const { dispatchDrivers } = await listDispatchCandidates({
+      pickup: refreshedRide.pickup,
+      pickupStateCode: refreshedRide.pickup.stateCode,
+      paymentMethod: refreshedRide.payment.method,
+      targetDriverId: refreshedRide.test.targetDriverId
+    });
+
+    const attemptedDriverIds = new Set(refreshedRide.offers.map((offer) => offer.driverId));
+    const nextDriver = dispatchDrivers.find((driver) => !attemptedDriverIds.has(driver.id));
+    const queueStartedAt = refreshedRide.offers.length
+      ? Math.min(...refreshedRide.offers.map((offer) => new Date(offer.offeredAt).getTime()))
+      : now.getTime();
+    const remainingWindowMs = DISPATCH_TOTAL_WINDOW_MS - (now.getTime() - queueStartedAt);
+
+    if (!nextDriver || remainingWindowMs <= 0) {
+      return cancelUnacceptedRide(
+        refreshedRide,
+        remainingWindowMs <= 0 ? "dispatch_window_elapsed" : "no_eligible_drivers_remaining"
+      );
+    }
+
+    const expiresAt = new Date(now.getTime() + Math.min(DISPATCH_OFFER_WINDOW_MS, remainingWindowMs));
+    const offeredRide = await store.createRideOffers(ride.id, [nextDriver.id], expiresAt);
+    events.rideOffered(offeredRide, [nextDriver.id]);
 
     return offeredRide;
   }
@@ -219,6 +264,17 @@ export function createRideService(deps: {
       return released;
     },
 
+    async processDispatchQueues(now = new Date()) {
+      const rides = await store.findRidesWithExpiredPendingOffers(now);
+      const updated: Ride[] = [];
+
+      for (const ride of rides) {
+        updated.push(await dispatchRide(ride.id, now));
+      }
+
+      return updated;
+    },
+
     async acceptRideOffer(rideId: string, driverId: string) {
       if (await store.driverHasOverdueDues(driverId)) {
         throw new Error("Driver has overdue platform dues and cannot accept new rides");
@@ -290,8 +346,7 @@ export function createRideService(deps: {
         throw new Error("Offer not found");
       }
 
-      events.rideUpdated(declined);
-      return declined;
+      return dispatchRide(rideId);
     },
 
     async cancelRide(rideId: string, actor: SessionUser, input?: { reason?: string }) {

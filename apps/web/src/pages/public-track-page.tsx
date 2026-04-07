@@ -68,7 +68,10 @@ export function PublicTrackPage() {
   }
 
   const { ride, share, communityAccess } = trackQuery.data;
-  const supportCopy = statusSupportCopy(ride.status);
+  const supportCopy =
+    ride.status === "canceled" && !ride.driverId && ride.offers.length > 0
+      ? "No driver accepted within the five minute dispatch window. RealDrive closed the request automatically and kept this page live for follow-up."
+      : statusSupportCopy(ride.status);
   const marketCondition = deriveMarketCondition(ride);
   const riderAccessUrl = `/rider/login`;
   const mobileActions = [

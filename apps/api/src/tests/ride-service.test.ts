@@ -181,7 +181,7 @@ function createStore(stubs: Partial<Store>): Store {
     getRideById: async () => makeRide(),
     getRideByPublicTrackingToken: async () => makeRide(),
     listRiderRides: async () => [],
-    listEligibleDriversForRide: async () => [{ ...driverAccount, lat: 33.76, lng: -84.38, rating: 4.9 }],
+    listEligibleDriversForRide: async () => [{ ...driverAccount, lat: 33.76, lng: -84.38, rating: 4.9, distanceMiles: 1.2 }],
     createRideOffers: async () =>
       makeRide({
         status: "offered",
@@ -441,6 +441,7 @@ function createStore(stubs: Partial<Store>): Store {
     updateDriver: async () => driverAccount,
     setDriverAvailability: async () => driver,
     findDueScheduledRides: async () => [],
+      findRidesWithExpiredPendingOffers: async () => [],
     getCommunityEligibility: async () => ({
       canRead: true,
       canCreateProposal: true,
@@ -574,7 +575,8 @@ describe("ride service", () => {
             acceptedPaymentMethods: ["cashapp"],
             lat: 33.76,
             lng: -84.38,
-            rating: 4.9
+            rating: 4.9,
+            distanceMiles: 1.4
           }
         ]
       }),
@@ -607,14 +609,207 @@ describe("ride service", () => {
     });
 
     await expect(
-      service.createRide(rider, {
-        pickupAddress: "123 Main St, Richmond, VA",
-        dropoffAddress: "Airport, Richmond, VA",
-        rideType: "standard",
-        paymentMethod: "jim"
-      })
+      service.createRide(
+        rider,
+        {
+          pickupAddress: "123 Main St, Richmond, VA",
+          dropoffAddress: "Airport, Richmond, VA",
+          rideType: "standard",
+          paymentMethod: "jim"
+        },
+        {
+          targetDriverId: driver.id
+        }
+      )
     ).rejects.toThrow("Accepted payment methods: Cash App");
   });
+
+    it("offers the next eligible driver after a decline", async () => {
+      const rideOffered = vi.fn();
+      const fallbackDriver = {
+        ...driverAccount,
+        id: "driver-2",
+        name: "Nina Lane",
+        email: "nina@example.com",
+        lat: 33.8,
+        lng: -84.35,
+        rating: 4.8,
+        distanceMiles: 2.1
+      };
+
+      let currentRide = makeRide({
+        status: "offered",
+        offers: [
+          {
+            id: "offer-1",
+            rideId: "ride-1",
+            driverId: driver.id,
+            status: "pending",
+            offeredAt: new Date().toISOString(),
+            respondedAt: null,
+            expiresAt: new Date(Date.now() + 60_000).toISOString()
+          }
+        ],
+        test: {
+          isTest: false,
+          label: null,
+          createdByAdminId: null,
+          targetDriverId: driver.id
+        }
+      });
+
+      const service = createRideService({
+        store: createStore({
+          getRideById: async () => currentRide,
+          listEligibleDriversForRide: async () => [
+            { ...driverAccount, lat: 33.76, lng: -84.38, rating: 4.9, distanceMiles: 1.2 },
+            fallbackDriver
+          ],
+          declineRideOffer: async () => {
+            currentRide = makeRide({
+              status: "expired",
+              offers: [
+                {
+                  id: "offer-1",
+                  rideId: "ride-1",
+                  driverId: driver.id,
+                  status: "declined",
+                  offeredAt: new Date().toISOString(),
+                  respondedAt: new Date().toISOString(),
+                  expiresAt: new Date(Date.now() + 60_000).toISOString()
+                }
+              ],
+              test: {
+                isTest: false,
+                label: null,
+                createdByAdminId: null,
+                targetDriverId: driver.id
+              }
+            });
+            return currentRide;
+          },
+          createRideOffers: async (_rideId, driverIds) => {
+            currentRide = makeRide({
+              status: "offered",
+              offers: [
+                {
+                  id: "offer-1",
+                  rideId: "ride-1",
+                  driverId: driver.id,
+                  status: "declined",
+                  offeredAt: new Date().toISOString(),
+                  respondedAt: new Date().toISOString(),
+                  expiresAt: new Date(Date.now() + 60_000).toISOString()
+                },
+                {
+                  id: "offer-2",
+                  rideId: "ride-1",
+                  driverId: driverIds[0],
+                  status: "pending",
+                  offeredAt: new Date().toISOString(),
+                  respondedAt: null,
+                  expiresAt: new Date(Date.now() + 60_000).toISOString()
+                }
+              ],
+              test: {
+                isTest: false,
+                label: null,
+                createdByAdminId: null,
+                targetDriverId: driver.id
+              }
+            });
+            return currentRide;
+          }
+        }),
+        maps: {
+          estimateRoute: vi.fn(),
+          autocompleteAddress: vi.fn()
+        },
+        events: {
+          rideOffered,
+          rideUpdated: vi.fn(),
+          rideLocationUpdated: vi.fn(),
+          driverAvailabilityChanged: vi.fn()
+        }
+      });
+
+      const updated = await service.declineRideOffer("ride-1", driver.id);
+
+      expect(updated.status).toBe("offered");
+      expect(updated.offers.find((offer) => offer.driverId === fallbackDriver.id)?.status).toBe("pending");
+      expect(rideOffered).toHaveBeenCalledWith(expect.objectContaining({ status: "offered" }), [fallbackDriver.id]);
+    });
+
+    it("cancels the ride after the five minute dispatch window closes", async () => {
+      const rideUpdated = vi.fn();
+      const updateRideAdmin = vi.fn(async () => makeRide({ status: "canceled", offers: [] }));
+      const addAuditLog = vi.fn();
+      const sixMinutesAgo = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+      let currentRide = makeRide({
+        status: "offered",
+        offers: [
+          {
+            id: "offer-1",
+            rideId: "ride-1",
+            driverId: driver.id,
+            status: "pending",
+            offeredAt: sixMinutesAgo,
+            respondedAt: null,
+            expiresAt: new Date(Date.now() - 1_000).toISOString()
+          }
+        ]
+      });
+
+      const service = createRideService({
+        store: createStore({
+          findRidesWithExpiredPendingOffers: async () => [currentRide],
+          getRideById: async () => currentRide,
+          expireRideOffers: async () => {
+            currentRide = makeRide({
+              status: "expired",
+              offers: [
+                {
+                  id: "offer-1",
+                  rideId: "ride-1",
+                  driverId: driver.id,
+                  status: "expired",
+                  offeredAt: sixMinutesAgo,
+                  respondedAt: new Date().toISOString(),
+                  expiresAt: new Date(Date.now() - 1_000).toISOString()
+                }
+              ]
+            });
+            return currentRide;
+          },
+          listEligibleDriversForRide: async () => [{ ...driverAccount, lat: 33.76, lng: -84.38, rating: 4.9, distanceMiles: 1.2 }],
+          updateRideAdmin,
+          addAuditLog
+        }),
+        maps: {
+          estimateRoute: vi.fn(),
+          autocompleteAddress: vi.fn()
+        },
+        events: {
+          rideOffered: vi.fn(),
+          rideUpdated,
+          rideLocationUpdated: vi.fn(),
+          driverAvailabilityChanged: vi.fn()
+        }
+      });
+
+      const processed = await service.processDispatchQueues(new Date());
+
+      expect(processed).toHaveLength(1);
+      expect(processed[0]?.status).toBe("canceled");
+      expect(updateRideAdmin).toHaveBeenCalledWith("ride-1", { status: "canceled" });
+      expect(addAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "ride.dispatch.canceled",
+          metadata: expect.objectContaining({ reason: "dispatch_window_elapsed" })
+        })
+      );
+      expect(rideUpdated).toHaveBeenCalledWith(expect.objectContaining({ status: "canceled" }));
+    });
 
   it("rejects a second acceptance once the offer is gone", async () => {
     let claimed = false;

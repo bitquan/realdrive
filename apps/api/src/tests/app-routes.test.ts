@@ -6,9 +6,12 @@ const { mockStore, mockMaps } = vi.hoisted(() => ({
     ensureUserReferralCode: vi.fn(),
     listDriverOffers: vi.fn(),
     listPlatformPricingRules: vi.fn(),
+    listEligibleDriversForRide: vi.fn(),
     getFeatureVoteCount: vi.fn(),
     hasUserVotedForFeature: vi.fn(),
     getRideById: vi.fn(),
+    findDueScheduledRides: vi.fn(),
+    findRidesWithExpiredPendingOffers: vi.fn(),
     listIssueReports: vi.fn(),
     updateRideAdmin: vi.fn(),
     addAuditLog: vi.fn(),
@@ -84,8 +87,50 @@ describe("app route integration", () => {
         updatedAt: new Date("2026-04-05T12:00:00.000Z").toISOString()
       }
     ]);
+    mockStore.listEligibleDriversForRide.mockResolvedValue([
+      {
+        id: approvedDriver.id,
+        role: "driver",
+        roles: ["driver"],
+        name: approvedDriver.name,
+        phone: approvedDriver.phone,
+        email: approvedDriver.email,
+        approved: true,
+        approvalStatus: "approved",
+        available: true,
+        pricingMode: "platform",
+        homeState: "VA",
+        homeCity: "Richmond",
+        acceptedPaymentMethods: ["jim", "cashapp", "cash"],
+        dispatchSettings: {
+          localEnabled: true,
+          localRadiusMiles: 25,
+          serviceAreaEnabled: true,
+          serviceAreaStates: ["VA"],
+          nationwideEnabled: false
+        },
+        customRates: [],
+        vehicle: null,
+        documents: [],
+        documentReview: {
+          requiredTypes: [],
+          submittedTypes: [],
+          approvedTypes: [],
+          missingTypes: [],
+          rejectedTypes: [],
+          pendingCount: 0,
+          readyForApproval: false
+        },
+        lat: 37.55,
+        lng: -77.44,
+        rating: 4.9,
+        distanceMiles: 2.3
+      }
+    ]);
     mockStore.getFeatureVoteCount.mockResolvedValue(0);
     mockStore.hasUserVotedForFeature.mockResolvedValue(false);
+    mockStore.findDueScheduledRides.mockResolvedValue([]);
+    mockStore.findRidesWithExpiredPendingOffers.mockResolvedValue([]);
     mockStore.getRideById.mockResolvedValue({
       id: "ride-1",
       riderId: "rider-1",
@@ -202,7 +247,15 @@ describe("app route integration", () => {
       platformMarketKey: "VA",
       estimatedSubtotal: 28.6,
       estimatedPlatformDue: 1.43,
-      estimatedCustomerTotal: 30.08
+      estimatedCustomerTotal: 30.08,
+      dispatchWindowMinutes: 5,
+      dispatchCandidates: [
+        expect.objectContaining({
+          id: approvedDriver.id,
+          name: approvedDriver.name,
+          distanceMiles: 2.3
+        })
+      ]
     });
   });
 

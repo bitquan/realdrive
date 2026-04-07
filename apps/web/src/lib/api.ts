@@ -333,7 +333,7 @@ export const api = {
       body: JSON.stringify(input)
     }, token);
   },
-  quoteRide(input: Omit<CreateRideInput, "paymentMethod" | "scheduledFor"> & { pickupAddress: string; dropoffAddress: string }) {
+  quoteRide(input: Omit<CreateRideInput, "scheduledFor"> & { pickupAddress: string; dropoffAddress: string }) {
     return apiFetch<RideQuoteResponse>("/quotes/ride", {
       method: "POST",
       body: JSON.stringify(input)

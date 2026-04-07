@@ -755,7 +755,8 @@ export const publicRideRequestSchema = createRideSchema.extend({
   riderName: z.string().min(2),
   phone: z.string().min(8),
   email: z.string().email().optional(),
-  referredByCode: z.string().min(4).max(40).optional()
+  referredByCode: z.string().min(4).max(40).optional(),
+  targetDriverId: z.string().min(1).optional()
 });
 
 export const adminCreateTestRideSchema = createRideSchema.extend({
@@ -1208,7 +1209,17 @@ export const rideQuoteResponseSchema = z.object({
   platformMarketKey: z.string(),
   estimatedSubtotal: z.number().nonnegative(),
   estimatedPlatformDue: z.number().nonnegative(),
-  estimatedCustomerTotal: z.number().nonnegative()
+  estimatedCustomerTotal: z.number().nonnegative(),
+  dispatchCandidates: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      vehicleLabel: z.string().nullable(),
+      rating: z.number().nonnegative(),
+      distanceMiles: z.number().nonnegative()
+    })
+  ),
+  dispatchWindowMinutes: z.number().int().positive()
 });
 
 export const addressSuggestionsResponseSchema = z.array(addressSuggestionSchema);

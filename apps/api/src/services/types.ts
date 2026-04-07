@@ -75,6 +75,7 @@ export interface DriverCandidate extends DriverAccount {
   lat: number | null;
   lng: number | null;
   rating: number;
+  distanceMiles?: number | null;
 }
 
 export interface RouteEstimate {
@@ -309,6 +310,7 @@ export interface Store {
   ): Promise<DriverAccount>;
   setDriverAvailability(driverId: string, available: boolean): Promise<SessionUser>;
   findDueScheduledRides(releaseBefore: Date): Promise<Ride[]>;
+  findRidesWithExpiredPendingOffers(now: Date): Promise<Ride[]>;
   getCommunityEligibility(user: SessionUser): Promise<CommunityEligibility>;
   listCommunityProposals(viewerId?: string | null): Promise<CommunityProposal[]>;
   createCommunityProposal(
