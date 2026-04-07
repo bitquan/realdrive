@@ -81,6 +81,7 @@ function BookingStep({
   description,
   meta,
   state = "idle",
+  allowOverflow = false,
   children
 }: {
   step: string;
@@ -88,12 +89,14 @@ function BookingStep({
   description: string;
   meta?: string;
   state?: "idle" | "active" | "complete";
+  allowOverflow?: boolean;
   children: ReactNode;
 }) {
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-[1.45rem] border bg-[linear-gradient(180deg,rgba(22,28,39,0.98),rgba(14,19,30,0.99))] shadow-[0_18px_40px_rgba(2,6,23,0.16),inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-300 ease-out md:rounded-[1.6rem]",
+        allowOverflow ? "overflow-visible" : "overflow-hidden",
+        "rounded-[1.45rem] border bg-[linear-gradient(180deg,rgba(22,28,39,0.98),rgba(14,19,30,0.99))] shadow-[0_18px_40px_rgba(2,6,23,0.16),inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-300 ease-out md:rounded-[1.6rem]",
         state === "active"
           ? "border-ops-primary/22 shadow-[0_22px_44px_rgba(54,91,255,0.12),inset_0_1px_0_rgba(255,255,255,0.05)]"
           : state === "complete"
@@ -128,7 +131,7 @@ function BookingStep({
           </div>
         </div>
       </div>
-      <div className="px-3 py-3 md:px-4 md:py-3.5">{children}</div>
+      <div className={cn("px-3 py-3 md:px-4 md:py-3.5", allowOverflow && "relative z-10")}>{children}</div>
     </section>
   );
 }
@@ -158,18 +161,18 @@ function BookingFieldRow({
   return (
     <div
       className={cn(
-        "rounded-[1.15rem] border bg-ops-surface/55 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all duration-200 ease-out",
+        "rounded-[1.1rem] border bg-ops-surface/55 px-2.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-all duration-200 ease-out md:rounded-[1.15rem] md:px-3 md:py-3",
         active ? "border-white/16 shadow-[0_12px_30px_rgba(2,6,23,0.12),inset_0_1px_0_rgba(255,255,255,0.03)]" : "border-white/8"
       )}
     >
-      <div className="flex items-start gap-2.5">
-        <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] border ${accentClassName}`}>
-          <Icon className="h-4 w-4" />
+      <div className="flex items-start gap-2 md:gap-2.5">
+        <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.95rem] border md:h-9 md:w-9 md:rounded-[1rem] ${accentClassName}`}>
+          <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="mb-1.5 flex items-center justify-between gap-2 md:mb-2">
             <Label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ops-muted">{label}</Label>
-            {hint ? <span className="text-[11px] text-ops-muted">{hint}</span> : null}
+            {hint ? <span className="text-[10px] text-ops-muted md:text-[11px]">{hint}</span> : null}
           </div>
           <div className={cn("transition-all duration-200", active ? "opacity-100" : "opacity-95")}>
             {children}
@@ -185,6 +188,8 @@ export function BookPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const referredByCode = searchParams.get("ref") ?? undefined;
+  const [pickupSuggestionsOpen, setPickupSuggestionsOpen] = useState(false);
+  const [dropoffSuggestionsOpen, setDropoffSuggestionsOpen] = useState(false);
   const [savedPlaces, setSavedPlaces] = useState<Record<"home" | "work", string>>({ home: "", work: "" });
   const [savedPlacesReady, setSavedPlacesReady] = useState(false);
   const [bookingForm, setBookingForm] = useState({
@@ -324,6 +329,9 @@ export function BookPage() {
   const trayState = bookingMutation.isPending ? "submitting" : canBook ? "ready" : quoteLoading || quoteRefreshing ? "estimating" : "draft";
   const dispatchLabel = bookingMutation.isPending ? "Sending" : quoteLoading || quoteRefreshing ? "Checking" : "Ready";
   const ctaLabel = bookingMutation.isPending ? "Booking…" : quoteLoading ? "Estimating…" : "Book as guest";
+  const routeSuggestionsVisible =
+    (pickupSuggestionsOpen && bookingForm.pickupAddress.trim().length >= 3) ||
+    (dropoffSuggestionsOpen && bookingForm.dropoffAddress.trim().length >= 3);
 
   function setRideMode(mode: "now" | "scheduled") {
     setBookingForm((current) => ({
@@ -516,17 +524,18 @@ export function BookPage() {
               </div>
             </BookingStep>
 
-            <BookingStep step="2" title="Route" description="Set pickup and dropoff to generate the live trip estimate." meta="Quote" state={routeComplete ? "complete" : activeStep === "route" ? "active" : "idle"}>
-              <div className={cn("rounded-[1.15rem] border bg-ops-surface/55 p-3 transition-all duration-300", activeStep === "route" ? "border-white/14 shadow-[0_16px_32px_rgba(2,6,23,0.12)]" : "border-white/8")}>
+            <BookingStep step="2" title="Route" description="Set pickup and dropoff to generate the live trip estimate." meta="Quote" state={routeComplete ? "complete" : activeStep === "route" ? "active" : "idle"} allowOverflow>
+              <div className={cn("rounded-[1.15rem] border bg-ops-surface/55 p-2.5 transition-all duration-300 md:p-3", routeSuggestionsVisible ? "pb-[16rem] md:pb-[14rem]" : undefined, activeStep === "route" ? "border-white/14 shadow-[0_16px_32px_rgba(2,6,23,0.12)]" : "border-white/8")}>
                 <div className="relative space-y-2.5">
-                  <div className="pointer-events-none absolute left-[1.1rem] top-10 bottom-10 w-px bg-gradient-to-b from-emerald-300/50 via-white/12 to-ops-primary/50" />
+                  <div className="pointer-events-none absolute left-[1rem] top-9 bottom-9 w-px bg-gradient-to-b from-emerald-300/50 via-white/12 to-ops-primary/50 md:left-[1.1rem] md:top-10 md:bottom-10" />
 
                   <BookingFieldRow icon={Navigation} label="Pickup" hint="Start" accent="pickup" active={activeStep === "route"}>
                     <AddressAutocompleteInput
                       id="book-pickupAddress"
                       placeholder="123 Main St"
                       value={bookingForm.pickupAddress}
-                      inputClassName="h-11 rounded-[1rem] border-white/10 bg-gradient-to-b from-ops-panel to-[#111a2a] px-4 shadow-none transition-all duration-200 focus:border-ops-primary/45 focus:ring-0"
+                      onOpenChange={setPickupSuggestionsOpen}
+                      inputClassName="h-10 rounded-[0.95rem] border-white/10 bg-gradient-to-b from-ops-panel to-[#111a2a] px-3 text-[0.95rem] shadow-none transition-all duration-200 focus:border-ops-primary/45 focus:ring-0 md:h-11 md:rounded-[1rem] md:px-4 md:text-base"
                       onValueChange={(value) => setBookingForm((current) => ({ ...current, pickupAddress: value }))}
                     />
                   </BookingFieldRow>
@@ -536,7 +545,8 @@ export function BookPage() {
                       id="book-dropoffAddress"
                       placeholder="Airport, downtown, hotel, work..."
                       value={bookingForm.dropoffAddress}
-                      inputClassName="h-11 rounded-[1rem] border-white/10 bg-gradient-to-b from-ops-panel to-[#111a2a] px-4 shadow-none transition-all duration-200 focus:border-ops-primary/45 focus:ring-0"
+                      onOpenChange={setDropoffSuggestionsOpen}
+                      inputClassName="h-10 rounded-[0.95rem] border-white/10 bg-gradient-to-b from-ops-panel to-[#111a2a] px-3 text-[0.95rem] shadow-none transition-all duration-200 focus:border-ops-primary/45 focus:ring-0 md:h-11 md:rounded-[1rem] md:px-4 md:text-base"
                       onValueChange={(value) => setBookingForm((current) => ({ ...current, dropoffAddress: value }))}
                     />
                   </BookingFieldRow>
