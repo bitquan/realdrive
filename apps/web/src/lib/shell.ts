@@ -68,11 +68,12 @@ export interface ShellFrame {
 
 const riderItems: ShellNavItem[] = [
   {
-    id: "ride",
-    label: "Ride",
-    to: "/",
+    id: "book",
+    label: "Book",
+    shortLabel: "Book",
+    to: "/book",
     icon: CarFront,
-    matchPatterns: ["/", "/track/:token"]
+    matchPatterns: ["/", "/book", "/track/:token"]
   },
   {
     id: "my-rides",
@@ -655,7 +656,27 @@ const shellFrames: Array<{ patterns: string[]; frame: ShellFrame }> = [
     }
   },
   {
-    patterns: ["/"],
+    patterns: ["/rider"],
+    frame: {
+      eyebrow: "Rider",
+      title: "Rider tools",
+      description: "Open rider history, roadmap-backed rider modules, and profile setup without mixing it into booking.",
+      mapMode: "off",
+      mobileHeaderMode: "minimal"
+    }
+  },
+  {
+    patterns: ["/more"],
+    frame: {
+      eyebrow: "Access",
+      title: "More routes",
+      description: "Keep admin, driver, and growth links separate from the booking state.",
+      mapMode: "off",
+      mobileHeaderMode: "minimal"
+    }
+  },
+  {
+    patterns: ["/", "/book"],
     frame: {
       eyebrow: "Ride",
       title: "Book a ride",

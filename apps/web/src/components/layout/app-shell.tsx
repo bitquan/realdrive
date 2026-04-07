@@ -43,6 +43,7 @@ export function AppShell() {
   const isDriverContext = user?.role === "driver" || location.pathname.startsWith("/driver");
   const isAdminContext = user?.role === "admin" || location.pathname.startsWith("/admin");
   const isRiderShellContext = !isDriverContext && !isAdminContext;
+  const isBookScreen = location.pathname === "/book";
   const mobileItems = getMobileNavItems(user, { driverRidePath: "/driver?tab=ride", driverInboxPath: "/driver/inbox" });
 
   const canCheckNotificationApi = typeof window !== "undefined" && "Notification" in window;
@@ -256,25 +257,46 @@ export function AppShell() {
         </aside>
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-40 border-b border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(7,9,13,0.96),rgba(6,8,12,0.94))] backdrop-blur supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
-            <div className={cn("px-3 md:px-6 md:py-4", isRiderShellContext ? "py-2" : "py-2.5")}>
+          <header className={cn(
+            "sticky top-0 z-40 backdrop-blur supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]",
+            isBookScreen
+              ? "border-b-0 bg-[linear-gradient(180deg,rgba(5,8,14,0.92),rgba(7,9,13,0.72),transparent)]"
+              : "border-b border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(7,9,13,0.96),rgba(6,8,12,0.94))]"
+          )}>
+            <div className={cn("px-3 md:px-6 md:py-4", isBookScreen ? "py-1.5" : isRiderShellContext ? "py-2" : "py-2.5")}>
               <div className="flex min-w-0 items-center justify-between gap-2 lg:hidden">
-                <Link to="/" className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <div className={cn("rounded-2xl border border-ops-border bg-ops-panel/88 text-ops-primary", isRiderShellContext ? "p-1.5" : "p-2")}>
-                    <CarFront className="h-4 w-4" />
+                {isBookScreen ? (
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <Link
+                      to="/"
+                      className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-ops-primary transition hover:bg-white/[0.08]"
+                      aria-label="Back to overview"
+                    >
+                      <CarFront className="h-4 w-4" />
+                    </Link>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">RealDrive</p>
+                      <p className="truncate text-[1rem] font-semibold tracking-[-0.03em] text-ops-text">Book</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{shellIntro}</p>
-                    <p className={cn("truncate font-bold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[0.95rem]" : "text-sm")}>{shellTitle}</p>
-                  </div>
-                </Link>
+                ) : (
+                  <Link to="/" className="flex min-w-0 flex-1 items-center gap-2.5">
+                    <div className={cn("rounded-2xl border border-ops-border bg-ops-panel/88 text-ops-primary", isRiderShellContext ? "p-1.5" : "p-2")}>
+                      <CarFront className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{shellIntro}</p>
+                      <p className={cn("truncate font-bold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[0.95rem]" : "text-sm")}>{shellTitle}</p>
+                    </div>
+                  </Link>
+                )}
 
                 <div className="flex shrink-0 items-center gap-1.5">
-                  {user && !isDriverContext ? (
+                  {user && !isDriverContext && !isBookScreen ? (
                     <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
                       {roleLabel(user.role)}
                     </Badge>
-                  ) : !user ? (
+                  ) : !user && !isBookScreen ? (
                     <Badge className={cn("border-ops-border-soft bg-ops-panel/92 normal-case tracking-[0.02em] text-ops-text", isRiderShellContext ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5")}>
                       {t("shell.guestMode")}
                     </Badge>
@@ -298,7 +320,7 @@ export function AppShell() {
                 </div>
               </div>
 
-              {user?.roles.length && user.roles.length > 1 && !isDriverContext ? (
+              {user?.roles.length && user.roles.length > 1 && !isDriverContext && !isBookScreen ? (
                 <div className="mt-2 max-w-full overflow-x-auto pb-0.5 lg:hidden">
                   <div className="flex w-max gap-2">
                     {user.roles.map((role) => {
@@ -326,7 +348,7 @@ export function AppShell() {
                 </div>
               ) : null}
 
-              {!mobileHeaderMinimal ? (
+              {!mobileHeaderMinimal && !isBookScreen ? (
                 <div className={cn("min-w-0 lg:hidden", isRiderShellContext ? "mt-2" : "mt-2.5")}>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-ops-muted">{frame.eyebrow}</p>
                   <h1 className={cn("mt-1 truncate font-extrabold tracking-[-0.03em] text-ops-text", isRiderShellContext ? "text-[1.05rem]" : "text-lg")}>{frame.title}</h1>
@@ -419,11 +441,12 @@ export function AppShell() {
             className={cn(
               "min-w-0 flex-1 px-4 pb-28 pt-3 md:px-6 md:pb-10 md:pt-5",
               isRiderShellContext && "px-3 pb-24 pt-2.5 md:px-6 md:pb-10 md:pt-4",
+              isBookScreen && "px-2.5 pb-24 pt-1 md:px-6 md:pb-10 md:pt-4",
               isDriverContext && "pt-2 md:pt-3",
               frame.layout === "immersive" && "px-3 pt-3 md:px-5 md:pt-4"
             )}
           >
-            {!isDriverContext ? <div className="mb-4">{notificationPrompt}</div> : null}
+            {!isDriverContext && !isBookScreen ? <div className="mb-4">{notificationPrompt}</div> : null}
             <Outlet />
             {isDriverContext ? <div className="mt-4">{notificationPrompt}</div> : null}
           </main>
@@ -431,7 +454,13 @@ export function AppShell() {
       </div>
 
       {mobileItems.length ? (
-        <nav className={cn("fixed inset-x-0 bottom-0 z-40 border-t border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))] px-2 shadow-elevated lg:hidden", isRiderShellContext ? "pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5" : "pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2")}>
+        <nav className={cn(
+          "fixed inset-x-0 bottom-0 z-40 px-2 shadow-elevated backdrop-blur-2xl lg:hidden",
+          isBookScreen
+            ? "border-t border-white/6 bg-[linear-gradient(180deg,rgba(8,11,17,0.9),rgba(7,9,13,0.95))]"
+            : "border-t border-ops-border-soft/90 bg-[linear-gradient(180deg,rgba(9,12,17,0.98),rgba(7,9,13,0.98))]",
+          isRiderShellContext ? "pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5" : "pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2"
+        )}>
           <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
             {mobileItems.map((item) => {
               const active = isNavItemActive(item, location.pathname, location.search);
@@ -444,7 +473,13 @@ export function AppShell() {
                   className={cn(
                     "flex flex-col items-center rounded-2xl px-2 text-center text-[11px] font-semibold transition",
                     isRiderShellContext ? "gap-0.5 py-1.5" : "gap-1 py-2",
-                    active ? "bg-ops-panel text-ops-text" : "text-ops-muted hover:bg-ops-panel/72 hover:text-ops-text"
+                    active
+                      ? isBookScreen
+                        ? "bg-white/[0.05] text-ops-text"
+                        : "bg-ops-panel text-ops-text"
+                      : isBookScreen
+                        ? "text-slate-400 hover:bg-white/[0.03] hover:text-ops-text"
+                        : "text-ops-muted hover:bg-ops-panel/72 hover:text-ops-text"
                   )}
                 >
                   <span
@@ -452,8 +487,12 @@ export function AppShell() {
                       "rounded-xl border",
                       isRiderShellContext ? "p-1.5" : "p-2",
                       active
-                        ? "border-ops-primary/28 bg-ops-primary/18 text-ops-primary"
-                        : "border-ops-border-soft bg-ops-surface/86 text-ops-muted"
+                        ? isBookScreen
+                          ? "border-white/12 bg-white/[0.08] text-ops-primary"
+                          : "border-ops-primary/28 bg-ops-primary/18 text-ops-primary"
+                        : isBookScreen
+                          ? "border-white/8 bg-white/[0.03] text-slate-400"
+                          : "border-ops-border-soft bg-ops-surface/86 text-ops-muted"
                     )}
                   >
                     <Icon className="h-4 w-4" />

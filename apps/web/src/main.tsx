@@ -9,6 +9,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { roleHome, userHasRole } from "@/lib/utils";
 
 const HomePage = lazy(() => import("@/pages/home-page").then((module) => ({ default: module.HomePage })));
+const BookPage = lazy(() => import("@/pages/book-page").then((module) => ({ default: module.BookPage })));
 const AdvertisePage = lazy(() => import("@/pages/advertise-page").then((module) => ({ default: module.AdvertisePage })));
 const AdsDisplayPage = lazy(() => import("@/pages/ads-display-page").then((module) => ({ default: module.AdsDisplayPage })));
 const AdsVisitPage = lazy(() => import("@/pages/ads-visit-page").then((module) => ({ default: module.AdsVisitPage })));
@@ -220,6 +221,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           />
           <Route path="/" element={<AppShell />}>
             <Route index element={<PageLoader><HomePage /></PageLoader>} />
+            <Route path="book" element={<PageLoader><BookPage /></PageLoader>} />
+            <Route path="rider" element={<PageLoader><HomePage /></PageLoader>} />
+            <Route path="more" element={<PageLoader><HomePage /></PageLoader>} />
             <Route path="advertise" element={<PageLoader><AdvertisePage /></PageLoader>} />
             <Route path="track/:token" element={<PageLoader><PublicTrackPage /></PageLoader>} />
             <Route path="drive-with-us" element={<PageLoader><DriverInterestPage /></PageLoader>} />

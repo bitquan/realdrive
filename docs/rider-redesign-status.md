@@ -234,9 +234,50 @@ Working rule:
 ## Deferred / intentionally not included
 - full rider visual parity across ride detail and public tracking has not shipped yet
 - no rider route restructuring has been started yet
+- a dedicated `/book` mobile booking state is now the next active route checkpoint
 - no separate rider app or duplicate rider route tree has been introduced
 - no backend rewrite beyond existing baseline rider features has been done for this redesign effort
 - no admin or driver redesign work is counted here unless it directly affects rider behavior
+
+## Active route checkpoint
+
+### dedicated mobile booking route
+- summary
+  - Started moving booking into a dedicated rider/public mobile state so riders do not have to scroll through the mixed home shell before entering pickup and dropoff.
+- files
+  - [apps/web/src/pages/book-page.tsx](apps/web/src/pages/book-page.tsx)
+  - [apps/web/src/main.tsx](apps/web/src/main.tsx)
+  - [apps/web/src/lib/shell.ts](apps/web/src/lib/shell.ts)
+  - [apps/web/src/pages/home-page.tsx](apps/web/src/pages/home-page.tsx)
+- what changed
+  - Added a dedicated `/book` route with a compact mobile-first booking surface.
+  - Updated rider/public shell navigation so booking resolves to the new route state.
+  - Switched the public home CTA to open the dedicated booking screen instead of relying only on in-page scrolling.
+  - Added route-driven public rider states for `/`, `/rider`, and `/more` so mobile state switching is no longer local-only.
+  - Added a reusable public state switcher and a scheduled deep-link path for `/book?mode=scheduled`.
+  - Tightened mobile spacing across the public states with a compact hero mode, denser state switcher, and slimmer route cards.
+  - Added a sticky mobile booking CTA summary so riders can confirm a trip without scrolling back to the bottom of the form.
+  - Cleaned the `/book` form by removing redundant timing controls, deduplicating booking actions, and hiding desktop-only sidebar blocks on mobile.
+  - Tightened `/book` again by grouping contact and route inputs into clearer blocks and shrinking the remaining helper copy.
+  - Reframed `/book` into clearer mobile-style steps for contact, route, trip, and payment so the screen reads more like an app flow than a web form.
+  - Merged the `/book` hero and form into a stronger app-style canvas with native-looking summary chips, sheet-like step cards, and a more tactile sticky action bar.
+  - Styled the `/book` contact and route inputs as native-style list rows, including a stacked pickup/dropoff route block with connector cues.
+  - Reduced mobile shell chrome around `/book` with a smaller app-like top bar, tighter insets, and less shared shell noise above the booking canvas.
+  - Added app-frame rails and a stronger mobile device-like canvas around `/book` so the booking surface feels less like a generic web form.
+  - Polished the floating public state switcher and softened the shared shell bottom nav while `/book` is active.
+  - Refined the sticky mobile action sheet with dispatch status, clearer timing context, and a more tactile confirm CTA.
+  - Restyled the `/book` step modules into more native sheet cards with clearer header rails, softer grouped rows, and tighter mobile summary chips.
+  - Tightened `/book` vertical spacing so the fixed booking tray and bottom navigation do not crowd the lower sections as aggressively on mobile.
+  - Added native-like pressed, selected, and active section states across the `/book` ride-mode cards, step modules, grouped rows, and action tray.
+  - Added animated booking-state feedback so `/book` now reacts to estimating, ready, and submitting states with smoother tray, badge, and quote-card motion.
+  - Realigned the Contact and Route modules to match the cleaner Trip-section styling by removing the extra nested field chrome and using the same input-card treatment.
+- verification summary
+  - `pnpm --filter web build`
+  - Build passed after the latest `/book` native-feel polish pass.
+  - Build passed again after the follow-up native card and field-row refinement pass.
+  - Build passed after the spacing and micro-interaction pass on `/book`.
+  - Build passed after the animated booking-state pass on `/book`.
+  - Build passed after aligning the Contact and Route styling with the cleaner Trip card language.
 
 ## Risks / watch items
 - Production state for current rider flows is not yet manually confirmed in this documentation pass.

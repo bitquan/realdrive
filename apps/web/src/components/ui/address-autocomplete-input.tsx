@@ -2,19 +2,24 @@ import { useCallback, useDeferredValue, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 export function AddressAutocompleteInput({
   id,
   value,
   onValueChange,
   placeholder,
-  minQueryLength = 3
+  minQueryLength = 3,
+  className,
+  inputClassName
 }: {
   id: string;
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
   minQueryLength?: number;
+  className?: string;
+  inputClassName?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const deferredQuery = useDeferredValue(value.trim());
@@ -41,7 +46,7 @@ export function AddressAutocompleteInput({
   const suggestions = isOpen ? (suggestionsQuery.data ?? []) : [];
 
   return (
-    <div className="relative">
+    <div className={cn("relative", className)}>
       <Input
         id={id}
         placeholder={placeholder}
@@ -49,6 +54,7 @@ export function AddressAutocompleteInput({
         onFocus={() => setIsOpen(true)}
         onBlur={closeSuggestions}
         onChange={(event) => onValueChange(event.target.value)}
+        className={inputClassName}
       />
 
       {isOpen && value.trim().length >= minQueryLength ? (
