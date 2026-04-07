@@ -342,6 +342,9 @@ export function BookPage() {
   const selectedDispatchDriver = nearbyDrivers.find((driver) => driver.id === selectedDriverId) ?? null;
   const dispatchPreviewDriver = selectedDispatchDriver ?? nearbyDrivers[0] ?? availableDriver ?? null;
   const dispatchPreviewVehicleLabel = selectedDispatchDriver?.vehicleLabel ?? nearbyDrivers[0]?.vehicleLabel ?? availableDriver?.vehicle?.makeModel ?? null;
+  const mobileScrollPadding = nearbyDrivers.length
+    ? "pb-[calc(18.5rem+env(safe-area-inset-bottom))]"
+    : "pb-[calc(11.25rem+env(safe-area-inset-bottom))]";
   const riderEntryLabel = userHasRole(user, "rider") ? "My rides" : "Rider sign in";
   const riderEntryTo = userHasRole(user, "rider") ? "/rider/rides" : "/rider/login";
   const canBook =
@@ -442,7 +445,7 @@ export function BookPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 pb-[calc(11.25rem+env(safe-area-inset-bottom))] md:gap-5 md:pb-2">
+    <div className={cn("mx-auto flex w-full max-w-3xl flex-col gap-3 md:gap-5 md:pb-2", mobileScrollPadding)}>
       <PublicStateNav />
 
       {referredByQuery.data?.ownerName ? (
